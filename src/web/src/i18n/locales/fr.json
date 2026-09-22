@@ -1,0 +1,39 @@
+{
+  "app": {
+    "name": "Quart",
+    "workplace": "Presotea Montmorency"
+  },
+  "language": {
+    "label": "Changer de langue",
+    "switchTo": "English"
+  },
+  "home": {
+    "eyebrow": "Squelette de départ",
+    "title": "Quart est en marche",
+    "subtitle": "Cette page prouve que toute la chaîne fonctionne : navigateur, application et API.",
+    "status": {
+      "loading": "Vérification de l'API…",
+      "ok": "API joignable",
+      "error": "L'API n'a pas répondu"
+    },
+    "version": "Version",
+    "environment": "Environnement",
+    "serverTime": "Heure du serveur",
+    "retry": "Réessayer"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "back": "Retour à l'accueil"
+  },
+  "errors": {
+    "common": {
+      "not_found": "Nous n'avons pas trouvé ce que tu cherches.",
+      "validation": "Des informations manquent ou ne sont pas valides.",
+      "unauthorized": "Reconnecte-toi, s'il te plaît.",
+      "forbidden": "Tu n'as pas accès à ceci.",
+      "conflict": "Quelqu'un a modifié ceci en même temps. Actualise et réessaie.",
+      "unexpected": "Un problème est survenu de notre côté. Réessaie dans un instant.",
+      "network": "Aucune connexion au serveur. Vérifie ton internet et réessaie."
+    }
+  }
+}

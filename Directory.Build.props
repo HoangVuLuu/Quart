@@ -1,0 +1,14 @@
+<Project>
+  <!-- Settings every C# project in the repository inherits. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <Deterministic>true</Deterministic>
+    <!-- Strict in CI, forgiving on your machine so a stray warning never blocks you mid-change.
+         GitHub Actions sets CI=true, and MSBuild reads environment variables as properties. -->
+    <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

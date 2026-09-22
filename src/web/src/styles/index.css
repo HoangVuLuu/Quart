@@ -1,0 +1,153 @@
+/* Fonts are self-hosted through Fontsource: no request to Google, no visitor IP leaving for a
+   third party. Quicksand carries the whole interface; Titan One is only ever the Quart wordmark
+   and the join code (spec section 19). */
+@import '@fontsource-variable/quicksand';
+@import '@fontsource/titan-one';
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------------------------
+   Design tokens. The single definition of the look described in spec section 19 and shown in
+   docs/prototype/quart-design-prototype.html. Components use these names (bg-primary,
+   rounded-card, shadow-press) and never hard-code a colour, radius or shadow (AD-048).
+
+   Every text/background pair below meets WCAG 2.2 AA at 4.5:1 in both themes (NFR-009). The one
+   deliberate exception is white on --color-primary (2.6:1), used only inside the logo blob: a
+   logotype, which WCAG 2.2 excludes from contrast requirements. Never use it for text.
+   --------------------------------------------------------------------------------------------- */
+@theme {
+  --font-sans: 'Quicksand Variable', Quicksand, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Titan One', var(--font-sans);
+
+  /* Surfaces */
+  --color-bg: #e9eefd; /* the app's pale periwinkle background */
+  --color-surface: #ffffff; /* cards */
+  --color-surface-2: #fbfbfd; /* sheets and secondary panels */
+  --color-surface-3: #eef0f7; /* rows and wells inside a card */
+  --color-line: #dce3fa;
+
+  /* Text */
+  --color-ink: #1b1b22;
+  --color-muted: #5e6380;
+  --color-link: #3f5fc4;
+
+  /* Brand */
+  --color-primary: #7f9ff2; /* hero cards, selected pills, the logo blob */
+  --color-accent: #f48da0; /* badges and counts, never large areas */
+  /* Text on primary or accent is always this, in both themes: those two colours stay pale in dark
+     mode, so --color-ink (which flips to near-white there) would drop to 2.2:1 on them. */
+  --color-on-primary: #1b1b22;
+
+  /* Status pairs: strong colour for text and icons, soft colour behind them */
+  --color-success: #11643a;
+  --color-success-soft: #ddf3e4;
+  --color-danger: #8e1a33;
+  --color-danger-soft: #fde1e6;
+  --color-warning: #6b4a00;
+  --color-warning-soft: #fff0c9;
+  --color-neutral: #4a4f66;
+  --color-neutral-soft: #ecedf3;
+
+  /* Shift flavours: opening is bright, closing is dusk */
+  --color-opening: #cdd35b;
+  --color-closing: #ada8da;
+
+  /* Shape: pills for anything tappable, generous rounding for anything holding content */
+  --radius-pill: 99px;
+  --radius-chip: 18px;
+  --radius-field: 20px;
+  --radius-card: 28px;
+  --radius-hero: 32px;
+  --radius-sheet: 36px;
+
+  /* Elevation, two kinds on purpose: cards float softly, tappable things sit on a hard 3px edge
+     that makes them feel like physical buttons. */
+  --shadow-card: 0 8px 24px rgba(60, 80, 160, 0.08);
+  --shadow-press: 0 3px 0 rgba(40, 50, 110, 0.12);
+  --shadow-float: 0 10px 30px rgba(60, 80, 160, 0.18);
+
+  /* Motion: one curve and duration for sheets; everything else is faster. */
+  --ease-sheet: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Dark mode follows the device (NFR-011). The design prototype is light only, so these are
+   derived: same hues, same roles, darker surfaces. Check them on a real phone before the pilot. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #121523;
+    --color-surface: #1b2032;
+    --color-surface-2: #242a42;
+    --color-surface-3: #262b3f;
+    --color-line: #39406a;
+    --color-ink: #eceef7;
+    --color-muted: #a8b0ce;
+    --color-link: #9db4f8;
+    --color-success: #8fe3b4;
+    --color-success-soft: #123524;
+    --color-danger: #ffb3bf;
+    --color-danger-soft: #3a1520;
+    --color-warning: #f3d08a;
+    --color-warning-soft: #33280e;
+    --color-neutral: #c4cae2;
+    --color-neutral-soft: #262b3f;
+    --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-press: 0 3px 0 rgba(0, 0, 0, 0.45);
+    --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
+  }
+}
+
+@layer base {
+  html {
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    /* Quicksand is a rounded, friendly face; the interface leans on its heavier weights. */
+    font-weight: 600;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  /* Visible focus everywhere, for keyboard users (NFR-007). */
+  :focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
+  }
+
+  /* NFR-010 */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* The wordmark: an organic blob, tilted, with the name in Titan One. The uneven radius is what
+     makes it read as hand-drawn instead of as a rounded rectangle. */
+  .quart-blob {
+    background: var(--color-primary);
+    border-radius: 58% 42% 55% 45% / 52% 58% 42% 48%;
+    transform: rotate(-8deg);
+    box-shadow: var(--shadow-press);
+  }
+
+  .quart-blob > * {
+    display: block;
+    transform: rotate(6deg);
+  }
+}

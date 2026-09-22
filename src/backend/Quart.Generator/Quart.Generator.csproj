@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The schedule generator and evaluator (AD-002, AD-003).
+       Pure library: no ASP.NET Core, no database, no clock, no NuGet packages.
+       An architecture test fails the build if that ever changes. -->
+</Project>

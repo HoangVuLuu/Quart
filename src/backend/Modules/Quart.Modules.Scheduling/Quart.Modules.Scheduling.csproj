@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Periods, availability, drafts, generation, publishing. Built in M5 and M6. The only module that uses Quart.Generator.
+       A module owns its own database schema and exposes only what its public SchedulingModule class exposes.
+       It may reference Quart.SharedKernel, never another module (enforced by Quart.ArchitectureTests). -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Quart.SharedKernel\Quart.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\Quart.Generator\Quart.Generator.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,31 @@
+# Services the app talks to during development. The API and the web app run on your machine
+# (dotnet run / npm run dev) so you get fast reloads; these run in Docker.
+name: quart
+
+services:
+  postgres:
+    # Keep the major version in step with the Supabase projects (staging, production).
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: quart
+      POSTGRES_USER: quart
+      POSTGRES_PASSWORD: quart_dev # local only; never used anywhere else
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U quart -d quart']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    # Catches every email the app sends. Open http://localhost:8025 to read them.
+    image: axllent/mailpit:latest
+    ports:
+      - '8025:8025' # web inbox
+      - '1025:1025' # SMTP
+
+volumes:
+  postgres-data:

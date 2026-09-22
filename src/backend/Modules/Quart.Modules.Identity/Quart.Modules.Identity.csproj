@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Accounts, sign-in, email verification, password reset, two-factor, sessions. Built in M2.
+       A module owns its own database schema and exposes only what its public IdentityModule class exposes.
+       It may reference Quart.SharedKernel, never another module (enforced by Quart.ArchitectureTests). -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Quart.SharedKernel\Quart.SharedKernel.csproj" />
+  </ItemGroup>
+</Project>

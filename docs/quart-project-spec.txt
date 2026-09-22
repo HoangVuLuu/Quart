@@ -1,0 +1,1777 @@
+================================================================================
+QUART — SHIFT SCHEDULING FOR PRESOTEA MONTMORENCY
+PROJECT SPECIFICATION AND ARCHITECTURE BASE FILE
+================================================================================
+Version:        1.3
+Date:           2026-09-22  (v1.2: 2026-09-21, v1.1: 2026-09-21,
+                             v1.0: 2026-09-11)
+Owner:          Hoang Vu Luu (sole developer)
+Client:         Philippe, owner of Presotea Montmorency (Montreal, Quebec)
+Status:         Planning complete. Prototype built. Repository scaffolded;
+                issues planned in docs/issues (section 15).
+
+--------------------------------------------------------------------------------
+0. HOW TO USE THIS DOCUMENT
+--------------------------------------------------------------------------------
+This is the single source of truth for the project. It is written so that a
+person or an AI agent joining with no prior context can act without asking
+what was already decided.
+
+Requirements are numbered (FR-xxx functional, BR-xxx business rule,
+NFR-xxx non-functional, AD-xxx architecture decision). GitHub issues should
+reference these IDs in their description so an issue can always be traced
+back to the requirement it implements.
+
+This file lives in the repository at docs/quart-project-spec.txt. Decision
+records in docs/decisions explain choices in the code in more detail; the
+issue plan is in docs/issues; the two prototypes are in docs/prototype, and
+the design they set is section 19 plus docs/design.
+
+Rules for anyone editing this file:
+  - Decisions that change must be edited in place AND appended to section 17
+    (Decision log) with a date and a reason. Never silently overwrite.
+  - Anything still undecided belongs in section 16 (Open questions), never
+    invented inline.
+  - If an implementation detail contradicts this file, this file is wrong or
+    the implementation is wrong. Resolve it explicitly, do not leave both.
+
+--------------------------------------------------------------------------------
+1. PROJECT SUMMARY
+--------------------------------------------------------------------------------
+Quart is a web application that replaces the Excel sheet Philippe uses to
+build the staff schedule at Presotea Montmorency, a bubble tea shop.
+
+The problem it solves, in Philippe's words: figuring out the puzzle of who can
+and cannot work on which days takes a long time every cycle. The auto-generated
+schedule is the feature he asked for. Everything else in this document exists to
+make that feature usable and to keep it correct after the schedule goes out.
+
+The core loop:
+  1. Philippe defines the shop's weekly shift grid once.
+  2. Each cycle, staff are asked for their availability. They tap the shifts
+     they can work.
+  3. Philippe clicks Generate. The app produces a schedule that respects
+     availability, coverage, seniority requirements and desired hours.
+  4. He fixes anything he does not like by hand, checks the issues list,
+     and publishes.
+  5. Staff see their shifts, give away shifts they cannot work, claim open
+     ones, and trade with each other, within rules Philippe controls.
+  6. Philippe posts announcements, including photos of recipes, to a News tab
+     only members can see.
+
+"Quart" is Quebec French for a work shift. It is the working name in code
+only; the user-facing name lives in the translation files and can change
+without touching logic. Final brand name: see section 16.
+
+--------------------------------------------------------------------------------
+2. STAKEHOLDERS AND CONTEXT
+--------------------------------------------------------------------------------
+2.1 People
+  - Hoang Vu Luu: sole developer, software engineering student at Concordia
+    (co-op program). Owns the cloud, database, repository and domain accounts.
+    Formerly worked at Presotea Montmorency. Unpaid; this is a favour plus a
+    portfolio project.
+  - Philippe: owner of Presotea Montmorency. The only admin. Also works shifts
+    himself. Currently schedules in Excel and collects availability by Google
+    Form.
+  - ~15 staff total including Philippe. Baristas graded level 1, 2, 3.
+
+2.2 The shop as of planning
+  - Two shifts every day, seven days a week:
+      Opening  10:00-16:00  (6 h)
+      Closing  16:00-23:00  (7 h)
+  - 2 people per shift, every day including weekends.
+  - 14 shifts per week, 28 slots per week, 182 scheduled hours per week.
+  - Every shift requires at least one level 3 barista.
+  - Levels are a ladder: a level 3 can do anything a level 1 or 2 can do.
+  - No mixing restrictions beyond the level 3 requirement.
+  - No overnight shifts. Nothing crosses midnight.
+
+2.3 Commercial and legal posture
+  - This is a real production tool for one business, not a public SaaS.
+  - No payment system, ever. No user will be charged.
+  - Free hosting tiers only for now; paid tiers possible later if needed.
+  - Multi-workplace support exists in the data model because it costs almost
+    nothing, but workplace creation is restricted (FR-032).
+  - Quebec's Law 25 applies because the app holds personal information of
+    Quebec employees. See section 12.
+  - The app holds business-confidential content now (recipe photos) and will
+    hold highly sensitive personal information later (payslips, backlog).
+    Security is designed for the payslip case from the start, so that feature
+    can be added without reworking the app (section 12.7).
+
+--------------------------------------------------------------------------------
+3. SCOPE
+--------------------------------------------------------------------------------
+3.1 In scope for v1 (milestones M0-M6)
+  Accounts and login, workplace membership, the weekly shift template,
+  availability collection, schedule generation (proven first in an internal
+  lab), manual editing, the issues dashboard, publishing with version history,
+  in-app and email notifications, and the launch work: production environment,
+  domain, privacy policy, retention, backups and monitoring. M6 ends with
+  Presotea running a real cycle in the app.
+
+3.2 In scope after v1 (M7-M9)
+  Give away / claim / trade, approvals, the News tab (announcements with
+  photos), the installable app and push notifications, Google sign-in, Google
+  Calendar import, and a calendar feed of your own shifts.
+
+3.3 Backlog (agreed as valuable, deliberately not built yet)
+  - Time-off requests: an employee requests a range of full days with a written
+    reason explaining why. Any admin approves or declines. Approved days are
+    blocked in availability forms and in the generator. Explicitly deferred.
+  - Payslips: a Payslips area where the owner attaches PDF pay stubs to each
+    employee's profile (drag and drop on desktop, tap to choose a file on
+    phones and iPads), and a Payslips tab where each employee opens only their
+    own. Not built in v1. v1 must still ship the security foundation this
+    feature depends on, so it can be added later without reworking the app.
+    Requirements: FR-300..311. Foundation: section 12.7.
+
+3.4 Out of scope (will not be built)
+  - Clock-in / clock-out, timesheets, worked-hours tracking
+  - Payroll calculation, wages, labour cost budgets. (Delivering payslip PDFs
+    produced by the owner's payroll service is a backlog item, 3.3, not
+    payroll.)
+  - Chat of any kind: group chat, direct messages, read receipts, message
+    reactions, media in messages. Removed 2026-09-21. The News tab (6.10) is
+    one-way posting by admins, not chat.
+  - Multiple physical locations under one business entity
+  - Any payment or billing system
+  - Native iOS/Android app store applications (see NFR-012 for the PWA route)
+  - Labour law compliance rules encoded in the product. Rules are configurable
+    per workplace; the app does not claim to enforce any legislation.
+
+--------------------------------------------------------------------------------
+4. GLOSSARY
+--------------------------------------------------------------------------------
+  Workplace        A shop. Owns its own members, template, periods, settings.
+  Membership       The link between a user and a workplace. Carries the role.
+  Template         The repeating weekly grid of shift blocks for a workplace.
+  Shift block      One entry in the template, e.g. "Monday closing 16:00-23:00".
+  Shift            A dated instance of a shift block, e.g. "2026-09-14 closing".
+  Slot             One person-sized opening inside a shift. A shift with a
+                   headcount of 2 has 2 slots.
+  Period           The stretch of dates a schedule covers. 1 to 4 weeks.
+  Availability     The set of shifts one employee says they can work in a period.
+  Draft            The schedule Philippe is working on. Not visible to staff.
+  Published        The schedule staff see. Versioned: v1, v2, ...
+  Level            Barista seniority, 1 to 3. Called "role" in early planning.
+  Give-away        A published shift its holder wants someone else to take.
+  Claim            A request to take an open slot or a given-away shift.
+  Trade            A one-for-one swap of two published shifts between two people.
+  Issue            Anything the evaluator flags about a schedule.
+  Evaluator        The single component that scores a schedule and produces
+                   the issue list. Shared by the generator and the dashboard.
+  Availability     An optional note an employee attaches to their availability
+  comment          for a period. Admins only (FR-103).
+  Announcement     A post by an admin in the News tab: text, photos, or both.
+  Stored file      Any uploaded file. Has a scope that decides who may read it
+                   (AD-017). Announcement photos now, payslips later.
+  Permission       A named right such as ManageSchedule or ManagePayslips.
+                   Roles are bundles of permissions (5.5).
+  Step-up          Asking a signed-in user to confirm their password again
+                   before a sensitive action (AD-044).
+  Payslip          (Backlog) A PDF pay stub produced by the owner's payroll
+                   service and attached to one employee.
+
+--------------------------------------------------------------------------------
+5. ROLES AND PERMISSIONS
+--------------------------------------------------------------------------------
+5.1 Principle (AD-001)
+Roles do not belong to accounts. They belong to memberships. One person can be
+an admin of one workplace and an employee of another. The sign-up form does not
+ask whether you are a manager.
+
+5.2 Roles
+  Platform admin   A flag on the user account, not a membership. Hoang only.
+                   Can create workplaces and access support tooling. Is not
+                   automatically a member of any workplace, is never scheduled,
+                   and can never read availability comments or, later,
+                   payslips through the app (see 12.5 on infrastructure access).
+  Owner            One per workplace. Everything an admin can do, plus transfer
+                   ownership and delete the workplace.
+  Admin            Full management of the workplace. There may be several.
+  Employee         Member of the workplace, scheduled, no management rights.
+
+5.3 Permission matrix
+  Action                                   Owner  Admin  Employee
+  Edit workplace info and settings           Y      Y       N
+  Edit the shift template                    Y      Y       N
+  Assign barista levels to members           Y      Y       N
+  Regenerate / rotate the join code          Y      Y       N
+  Remove a member                            Y      Y       N
+  Promote or demote an admin                 Y      N       N
+  Transfer ownership                         Y      N       N
+  Delete the workplace                       Y      N       N
+  Open / close an availability cycle         Y      Y       N
+  Reopen one person's availability           Y      Y       N
+  Generate, edit, publish a schedule         Y      Y       N
+  Approve claims and trades                  Y      Y       N
+  Post announcements, with photos            Y      Y       N
+  Edit or delete any announcement            Y      Y       N
+  React to announcements                     Y      Y       Y
+  Read others' availability comments         Y      Y       N
+  Submit availability                        Y*     Y*      Y
+  Be scheduled on shifts                     Y*     Y*      Y
+  Give away / claim / trade shifts           Y*     Y*      Y
+  Manage payslips (backlog)                  Y      P       N
+  Open own payslips (backlog)                Y*     Y*      Y
+  * only when "I work shifts too" is enabled on that membership (FR-036)
+  P only if the owner explicitly grants ManagePayslips to that admin. Being an
+    admin is not enough to see anyone's pay.
+
+5.4 Levels are admin-assigned (FR-035)
+Barista level is a property of the membership, set only by an owner or admin.
+Employees can see their own level and their coworkers' levels but can never
+change any level, including their own. Changing a level takes effect
+immediately for the generator and the evaluator; it does not retroactively
+alter an already published schedule.
+
+5.5 Permissions, not role checks (AD-042)
+Code never asks "is this person an admin?". It asks for a named permission:
+  ManageWorkplace, ManageMembers, ManageLevels, ManageTemplate,
+  ManageSchedule, ApproveRequests, PostAnnouncements,
+  ViewAvailabilityComments, TransferOwnership, DeleteWorkplace,
+  ManagePayslips (backlog).
+Owner holds all of them. Admin holds all except TransferOwnership,
+DeleteWorkplace and ManagePayslips. Employee holds none. Individual
+permissions can be granted to a specific membership on top of its role; that
+is how an owner would let a trusted admin handle payslips. This is the piece
+that lets payslips arrive later as one new permission instead of a new set of
+rules scattered through the code.
+
+--------------------------------------------------------------------------------
+6. FUNCTIONAL SPECIFICATION
+--------------------------------------------------------------------------------
+
+6.1 ACCOUNTS AND AUTHENTICATION
+FR-001  Sign up with first name, last name, email, password, confirm password.
+        All fields mandatory. No phone number is collected anywhere in the app.
+FR-002  Names accept accents, hyphens and apostrophes (Marc-Olivier, Côté,
+        O'Connor). Do not restrict to ASCII letters.
+FR-003  Password minimum length 8 characters. No forced symbol/digit/case
+        composition rules. Check the password against a breached-password list
+        using the Have I Been Pwned range API (k-anonymity: only the first 5
+        characters of the SHA-1 hash leave the server; the password never does).
+        Reject known-breached passwords with a clear message.
+FR-004  Email verification is required before the account can be used.
+        Verification link is single use and expires in 24 hours.
+FR-005  Forgot password sends an email containing a link to a reset page on the
+        site with new password and confirm password fields. The token expires in
+        30-60 minutes, works exactly once, and successful reset signs out all
+        other sessions.
+FR-006  Sign in with Google is offered alongside email and password. Google
+        OAuth is needed anyway for Calendar import, so the login integration is
+        nearly free. Matching is by verified email address.
+FR-007  Login is rate limited and the account locks temporarily after repeated
+        failures. Rate limits also apply to password reset requests and to join
+        code attempts.
+FR-008  A user can change their display name, language and notification
+        preferences. Changing email requires re-verification.
+FR-009  A user can delete their account. On deletion: profile and their
+        availability comments are deleted; their name in past schedules is
+        replaced by "Former employee" so historical schedules stay readable;
+        announcements they posted stay, attributed to "Former member".
+
+6.2 WORKPLACES AND MEMBERSHIP
+FR-030  A workplace has a name and an address, both entered at creation.
+FR-031  A workplace has a time zone. Default America/Toronto (covers Montreal).
+FR-032  Only a platform admin can create a workplace. Anyone can create an
+        account, but an account with no membership can do nothing except join
+        with a code. This prevents strangers creating workplaces on free-tier
+        infrastructure. The data model itself supports many workplaces.
+FR-033  Every workplace has a join code: 10 characters, uppercase letters and
+        digits, excluding look-alike characters (no 0/O, no 1/I/L). Matching is
+        case-insensitive. An admin can regenerate the code at any time, which
+        invalidates the old one. The code can also be shared as a link or QR
+        code that pre-fills the join screen.
+FR-034  Joining is instant by default. An optional workplace setting requires
+        admin approval before a new member becomes active.
+FR-035  An admin assigns each member a barista level (1, 2 or 3). See 5.4.
+FR-036  Each membership has an "I work shifts too" flag. When on, that member
+        submits availability, has a weekly desired-hours target, and can be
+        scheduled. Philippe has this on.
+FR-037  Each member who works shifts has a weekly desired hours target, and an
+        optional maximum set by an admin. There is no minimum-hours concept.
+FR-038  A member can leave a workplace. An admin can remove a member. In both
+        cases every future shift held by that person becomes an open slot and
+        the admins are notified. Past shifts are left intact.
+FR-039  One user can be a member of several workplaces at once.
+FR-040  Members can see each other's name, level, contact email, and the full
+        team schedule. No other personal information is exposed. Availability
+        comments are never shown to coworkers.
+FR-041  Ownership can be transferred to another admin of the same workplace.
+        The transfer requires confirmation from the current owner.
+FR-042  Creating a workplace produces a single-use owner invitation link, valid
+        7 days, which the platform admin sends to the future owner. Whoever
+        signs in and accepts it becomes the owner. The platform admin never
+        becomes a member, and can revoke and reissue the link while it is
+        unused. Until it is accepted the workplace has no members.
+
+6.3 SHIFT TEMPLATE
+FR-060  The template is a weekly grid, Monday to Sunday. Each shift block has a
+        day, a start time, an end time, a headcount and its level requirements.
+FR-061  Times snap to 15 minutes.
+FR-062  No shift may cross midnight. End time must be after start time on the
+        same day. Reject anything else at validation time.
+FR-063  Shift blocks on the same day may overlap (e.g. an opener and a mid).
+        The shop does not use this today but the model must allow it.
+FR-064  Headcount is an exact target number per shift block, adjustable with
+        a plus/minus control. A shift below its headcount is reported as an
+        issue to the admin and appears to employees as an open shift.
+FR-065  Each shift block can require a minimum quantity of a given level, for
+        example "at least 1 level 3". Requirements are configured per shift
+        block, not globally, and count inside the headcount rather than on top
+        of it (3 people of whom at least 1 is level 3, not 3 plus 1).
+FR-066  Because levels are a ladder, a requirement for level N is satisfied by
+        anyone at level N or above.
+FR-067  Desktop and iPad support drag-to-create on a week grid, the way Google
+        Calendar creates events. Phone and iPad also support a tap-only path:
+        tap an empty slot, enter start and end time, choose which days it
+        repeats on. The tap path must be able to do everything the drag path
+        can do. Presotea's whole template is created by entering 10:00-16:00
+        once and applying it to all seven days, then 16:00-23:00 likewise.
+FR-068  Editing the template affects future, unpublished periods only. It never
+        rewrites a published schedule.
+FR-069  If a shift block is changed after availability has been collected for a
+        period that uses it, every answer for that block resets to unanswered
+        and the affected employees are notified.
+
+6.4 AVAILABILITY CYCLES
+FR-090  The admin sets a period length of 1, 2, 3 or 4 weeks. "Monthly" means
+        4-week blocks, not calendar months, so that weeks and hours targets
+        stay aligned.
+FR-091  The admin sets how many days before the period starts the availability
+        request goes out, and a submission deadline. Automatic reminders are
+        sent to anyone who has not submitted.
+FR-092  Starting a period copies the template into real, dated shifts. From that
+        point the period has its own shifts, which the admin may edit for that
+        period only (a holiday closure, extended December hours).
+FR-093  An employee sets availability by tapping the shift blocks they can work,
+        for each date in the period. There is no free-form time painting: the
+        unit of availability is the shift the shop actually runs.
+FR-094  Availability is per workplace, since it is expressed in that workplace's
+        shifts. Shifts the employee already holds at another workplace grey out
+        the overlapping blocks automatically. The other workplace's admin sees
+        only "unavailable" and never where the person is working.
+FR-095  Helper: "Same as last period" loads the previous period's answers so
+        they can be extended or edited before sending.
+FR-096  Helper: "Copy week 1 to the rest" repeats the first week's pattern
+        across the remaining weeks of the period.
+FR-097  Helper: import from Google Calendar. Uses the free/busy lookup, which
+        returns only busy time ranges and never event titles or details. A shift
+        block is marked available only if the entire block is free. Events the
+        user has marked "free" in Google do not block anything. The employee
+        chooses which of their calendars count, reviews the result, and sends it
+        themselves. Import is one-time per press, never a continuous sync.
+FR-098  Submitting sends the availability to the admin. An employee may edit and
+        resend as many times as they like until the schedule is generated.
+FR-099  Anyone who has not submitted has the status "not sent". They are never
+        treated as available. The admin can still place them on a shift by hand
+        (FR-121).
+FR-100  Availability locks the moment the admin starts building the schedule,
+        whether by clicking Generate or by starting a manual build. Both paths
+        behave identically.
+FR-101  After the lock, an admin can reopen availability for one specific person
+        without reopening it for everyone. That person is notified.
+FR-102  Because availability locks, there is no "my availability changed after
+        publishing" flow. After the lock, the only way out of a shift is to give
+        it away (6.7). This is a deliberate simplification of the original idea
+        and removes the auto-removal race it created.
+FR-103  An employee may add one optional comment about their overall
+        availability for the period: plain text, up to 500 characters,
+        enforced on the server and not only in the text box. It is sent with
+        the availability, locks with it (FR-100) and reopens with it (FR-101).
+        Admins see it beside that person in the team availability view and, in
+        short form, in the "add someone" list of the shift panel (FR-141).
+        Coworkers never see it. People may explain their availability with
+        health or family reasons, so it is treated as personal information
+        (12.4, class B) and follows raw availability retention (section 13).
+        It is rendered as text, never as HTML.
+
+6.5 SCHEDULE GENERATION
+FR-120  The admin clicks Generate and receives a complete draft schedule.
+FR-121  The admin can build or edit entirely by hand. The editor allows placing
+        someone who is unavailable or who never submitted; those assignments are
+        shown in red and reported as issues. The generator never does this.
+FR-122  Generation is seeded and randomized. Clicking Generate again produces a
+        different valid schedule. The seed is stored so any result can be
+        reproduced exactly.
+FR-123  The admin can lock individual assignments. Locked assignments survive
+        regeneration; everything else is rebuilt around them.
+FR-124  "Reuse a past schedule" copies assignments from a previous period into
+        the current one, then re-checks every assignment against the current
+        availability and flags the conflicts.
+FR-125  If a shift cannot be filled, the generator leaves the slot empty and
+        reports it. It never fills a slot by breaking a hard rule.
+
+6.6 MANUAL EDITING AND THE ISSUES DASHBOARD
+FR-140  The schedule view shows the week as a grid of dated shift cards, each
+        showing its time, its fill count (e.g. 2/2) and the people on it.
+FR-141  Tapping a shift opens a panel with: the current roster, and a list of
+        everyone who could be added. Every name carries a colour for their
+        availability status (available / not available / no answer), their
+        level, and a live hours counter for the week that shift falls in, shown
+        as assigned/desired, e.g. 3/13.
+FR-142  From that panel the admin can add someone, remove someone, or lock an
+        assignment.
+FR-143  The issues dashboard lists everything the evaluator found. Issue types:
+          - shift below its headcount
+          - shift missing a required level
+          - person assigned who is not available
+          - person assigned who never submitted availability
+          - person under their desired hours
+          - person over their desired hours
+          - person working more consecutive days than allowed
+          - person working both shifts in one day
+        Employees see the subset that concerns them, plus open shifts.
+FR-144  Each issue type has an admin setting controlling what happens at publish
+        time: block publishing, ask for confirmation, or just display.
+        Defaults: missing required level = block; below headcount = confirm;
+        unavailable or unsubmitted person assigned = confirm; everything else
+        = display.
+
+6.7 PUBLISHING
+FR-160  Publishing makes the draft visible to staff as version 1 and notifies
+        everyone.
+FR-161  After publishing, admin edits happen in a draft. An Update button
+        appears only when the draft differs from what is live.
+FR-162  On update, the app compares the draft against the live schedule as it
+        stands at that moment, since trades and claims may have changed it in
+        between. If a trade or claim touched the same shift, the admin is shown
+        a conflict rather than silently overwriting it.
+FR-163  Update bumps the version and notifies only the people whose own shifts
+        changed, with a summary of what changed ("Thursday moved to 16:00").
+        Everyone else is not notified.
+FR-164  Every published version is retained as history within the retention
+        window (section 13).
+FR-165  A schedule may be published with empty slots. Those become open shifts
+        that employees can claim.
+
+6.8 GIVE AWAY, CLAIM, TRADE
+FR-180  An employee can offer a published shift they hold. The shift is
+        broadcast to the rest of the team as available to take.
+FR-181  The person giving the shift away remains responsible for it until
+        somebody else actually takes it. Offering does not remove them.
+FR-182  There is no cutoff. A shift may be offered at any time before it starts.
+FR-183  If an offered shift is still unclaimed X hours before it starts, the
+        admins are notified. X is a workplace setting.
+FR-184  An employee can claim an open slot or an offered shift.
+FR-185  Claims are not restricted by desired hours, by level, or by whether the
+        person marked themselves available. The app warns but does not block.
+        The one hard block: a person cannot claim a shift that overlaps another
+        shift they already hold, in this workplace or any other.
+FR-186  A warning is shown when the claim would leave the shift without its
+        required level.
+FR-187  When approval for claims is switched on and several people request the
+        same shift, the admin sees all requesters and picks one. Approving one
+        automatically declines the others for that shift. When approval is off,
+        the first claim wins.
+FR-188  Trades are strictly one-for-one: one of my published shifts for one of
+        yours.
+FR-189  Trade lifecycle: requested -> the coworker accepts or declines -> if
+        approval is on, the admin approves or declines -> applied.
+FR-190  The requester can cancel a trade at any time until it is approved.
+FR-191  A pending trade expires after 14 days, or when either shift starts,
+        whichever comes first. It is also cancelled automatically if the admin
+        edits either of the two shifts.
+FR-192  At the moment of approval the app re-validates everything: both people
+        still hold those shifts, required levels are still covered, and nobody
+        ends up double-booked. A trade that no longer makes sense is rejected
+        with an explanation, never applied blindly.
+FR-193  Approval requirements are two independent settings: one for claims, one
+        for trades.
+
+6.9 NOTIFICATIONS
+FR-210  Three channels: in-app, push, and email.
+FR-211  Email is used for account essentials only: email verification and
+        password reset. It is additionally used as a fallback for actionable
+        items (a new or changed schedule, a trade waiting on you) for people who
+        have not enabled push. Deliberately quiet by default.
+FR-212  Push notifications are delivered through the installed PWA. See NFR-012.
+FR-213  Notifications generated close together are bundled. Five edits in ten
+        minutes produce one notification, not five.
+FR-214  Philippe receives one email per month containing the final schedule for
+        the month as PDF and CSV, so the business keeps its own records without
+        the app storing them indefinitely.
+FR-215  Notification events: availability requested; availability reminder;
+        availability reopened for you; schedule published; your schedule changed;
+        someone is giving away a shift; someone claims a shift (to admins);
+        your claim was approved or declined; a trade request (to the coworker);
+        a trade awaiting approval (to admins); an offered shift is still
+        unclaimed (to admins); a member left or was removed (to admins);
+        a new announcement (to all members, bundled per FR-213);
+        (backlog) a new payslip is available (to that employee only).
+FR-216  Notification and email text never carries sensitive content: no
+        availability comments, no announcement photos, and (backlog) never pay
+        amounts or payslip files. Push notifications appear on lock screens.
+        Emails contain a link that requires signing in, never an attachment.
+        The one exception is the owner's monthly schedule email (FR-214),
+        which goes only to the owner and attaches the schedule as PDF and CSV.
+
+6.10 ANNOUNCEMENTS (THE NEWS TAB)
+FR-230  The landing page shows fixed cards: next shift, hours this week against
+        target, open shifts, pending requests, and a preview of the latest
+        announcement that opens the News tab.
+FR-231  Announcements have their own tab, "News", for every member. Only
+        holders of PostAnnouncements (owner and admins) can post. This is where
+        Philippe posts recipes.
+FR-232  A post is text, photos, or both. Up to 6 photos per post. Accepted:
+        JPEG, PNG, WebP, and HEIC (converted on the server). Maximum 10 MB per
+        photo before processing. Type is checked by file content, never by the
+        file name or the browser's claim (AD-034).
+FR-233  Every photo is re-encoded on the server before it is stored. This
+        strips all metadata, including the GPS location phones embed in photos,
+        and resizes to at most 2048 px on the long edge. Screenshots stay PNG so
+        recipe text stays sharp; photos become JPEG. The browser also shrinks
+        photos before upload to save mobile data, but the server never trusts
+        that step.
+FR-234  Members can react with a single thumbs-up. There are no replies or
+        comments; announcements are one-way.
+FR-235  Admins can edit and delete posts. Deleting a post deletes its photos
+        from storage in the same operation.
+FR-236  Photos open full screen inside the app. There is no download button.
+        This is a deterrent, not a protection; see 12.6.
+FR-237  Photos are private files scoped to the workplace (AD-017). They are
+        only ever delivered through short-lived links issued to active members.
+        When someone leaves or is removed, they lose access immediately.
+FR-238  Posts and their photos are kept until an admin deletes them. Recipes
+        are reference material, not personal information.
+FR-239  Photos are not stored for offline use by the installed app (AD-040).
+
+6.11 LANGUAGES
+FR-260  The entire interface is available in French and English.
+FR-261  Language is a per-user setting. Emails and push notifications are sent
+        in the recipient's language.
+FR-262  Dates, times and numbers use fr-CA and en-CA formats respectively.
+FR-263  No user-facing string is ever hard-coded in the backend. The API returns
+        error codes; the client translates them.
+
+6.12 PAYSLIPS (BACKLOG — NOT BUILT IN V1)
+Written now so v1 is built to receive this feature. Do not build before
+Q-10 and Q-11 are answered and every item in 12.7 exists.
+FR-300  An admin area lists members. A holder of ManagePayslips drags PDFs onto
+        a member on desktop, or taps a member and chooses files on phones and
+        iPads. Both paths do everything (NFR-002).
+FR-301  Several PDFs can be uploaded at once. The app suggests which member each
+        file belongs to, from the name in the file name and in the PDF's text.
+        A suggestion is never applied without explicit confirmation.
+FR-302  Uploads land as "staged". Employees see nothing until the uploader
+        reviews the whole batch and publishes it. A wrong match caught at
+        review is a correction; one caught after publishing is a
+        confidentiality incident (12.8).
+FR-303  A published payslip can be recalled, which hides it immediately, and
+        replaced. Both are audited.
+FR-304  Each employee's Payslips tab lists only their own, newest first, by pay
+        date.
+FR-305  Opening a payslip requires step-up authentication (AD-044) and the
+        second factor if the user has one enrolled (AD-043).
+FR-306  PDF only, checked by content (the file must start with %PDF), maximum
+        5 MB. Stored as a member-scoped private file (AD-017), delivered through
+        a link valid for 5 minutes, sent with no-store caching headers, and
+        never saved by the installed app for offline use.
+FR-307  The notification says only that a new payslip is available (FR-216).
+FR-308  Every view and download is written to the audit log: who, which
+        payslip, when. These entries are kept longer than other audit events
+        (section 13) so an incident can be investigated.
+FR-309  ManagePayslips is owner-only by default (5.5). Anyone holding it must
+        have two-factor authentication turned on (AD-043).
+FR-310  Former employees keep read-only access to their own payslips for a
+        limited time after leaving, since they often need them for employment
+        insurance or taxes. Proposed: 90 days. To confirm under Q-11.
+FR-311  The owner's payroll service remains the official record. The app is a
+        delivery channel only and keeps payslips for a limited period (Q-11).
+
+--------------------------------------------------------------------------------
+7. BUSINESS RULES: THE GENERATOR AND THE EVALUATOR
+--------------------------------------------------------------------------------
+7.1 One rulebook (AD-002)
+A single Evaluator component grades any schedule and returns a score plus the
+list of issues. The generator optimises that score. The dashboard displays that
+same issue list. They cannot disagree, because they are the same code. Never
+implement a second, parallel set of checks anywhere.
+
+7.2 Generator interface (AD-003)
+The generator is a pure function with no database, HTTP or time dependencies:
+
+  input:  shifts, members (level, desired hours, max hours), availability,
+          locked assignments, workplace rules, random seed
+  output: assignments, issues
+
+This makes it fast, deterministic for a given seed, and trivially testable.
+
+7.3 Hard rules — the generator never breaks these
+BR-001  Only people who marked themselves available for that exact shift.
+BR-002  Nobody is assigned to two shifts that overlap in time, in this workplace
+        or in another one.
+BR-003  Never more people on a shift than its headcount.
+BR-004  Locked assignments are preserved exactly.
+BR-005  Nobody exceeds the workplace's maximum consecutive working days.
+        This is a hard rule in every phase of the algorithm, including local
+        search. (Learned the hard way in the prototype: when this was only a
+        weighted penalty, a scarcity of level 3s made the optimiser put the
+        owner on 28 straight shifts because covering a shift scored higher than
+        the rest-day penalty. An absurd schedule is worse than a reported gap.)
+
+7.4 Soft goals — optimised in this priority order
+BR-010  Fill every slot.                                  (weight: highest)
+BR-011  Satisfy each shift's level requirement.
+BR-012  Get each person as close as possible to their desired weekly hours.
+BR-013  Spread opening shifts fairly, if enabled.
+BR-014  Spread closing shifts fairly, if enabled.
+BR-015  Avoid giving one person both shifts in the same day. Permitted only as
+        a last resort when no other assignment can fill the slot. An admin may
+        still create a double by hand; it is flagged, not blocked.
+
+7.5 Fairness definition
+BR-020  Opening and closing fairness are two independent on/off settings.
+BR-021  Fairness is proportional, not equal: someone working 30 hours should
+        take more closings than someone working 10.
+BR-022  Fairness is measured against what each person is actually available for.
+        Expected openings = that person's total shifts multiplied by the share
+        of openings within their own availability. An employee who is only ever
+        free in the evenings is not penalised for never opening.
+BR-023  There is no weekend fairness rule. With only two shifts per day, the
+        opening and closing settings already balance days against evenings.
+
+7.6 Other rules
+BR-030  A shift is either fully covered by one person or not assigned to them.
+        Splitting a shift between two people across its duration is not
+        supported in v1.
+BR-031  Hours count the full shift length. No unpaid break is deducted.
+        Opening = 6 h, closing = 7 h.
+BR-032  Desired hours is a single weekly target per person per workplace, with
+        an optional admin-set maximum. There is no minimum.
+BR-033  Under/over hours is reported when the total deviates from the target by
+        more than 2 hours over the period.
+BR-034  Opening and closing are identified automatically as the first and last
+        shift block of each day. An admin can override the classification.
+BR-035  Availability comments (FR-103) inform the admin's judgment only. The
+        generator never reads them.
+
+7.7 Algorithm (AD-004)
+Randomized greedy construction followed by local search:
+  1. Order shifts by scarcity (fewest available candidates first), with a small
+     random jitter from the seed.
+  2. For each shift, satisfy the level requirement first, then fill remaining
+     slots. Candidates are scored on distance from their desired hours, with a
+     random tiebreak among the top few. Hard rules filter the candidate pool.
+  3. Local search: repeatedly try substituting one person for another and keep
+     any change that improves the evaluator score. Hard rules are re-checked
+     before any substitution is applied.
+
+Scale: Presotea is 14 shifts and 28 slots per week over at most 4 weeks, with
+15 people. The prototype runs a 2-week generation in roughly 150-200 ms in a
+browser. The backend will be faster. If schedule quality ever disappoints,
+Google OR-Tools CP-SAT can be swapped in behind the same interface without
+changing anything else.
+
+7.8 Testing the generator (AD-005)
+  - Property tests: thousands of randomised inputs, asserting that no hard rule
+    is ever broken, that no slot is overfilled and that locks always survive.
+  - Golden tests: run against a real month of Presotea's Google Form responses
+    and compare against the schedule Philippe built by hand.
+  - Performance test: a 4-week period must generate in under 2 seconds.
+Build and test the generator as a standalone library BEFORE building any UI
+around it. If it does not produce schedules Philippe likes, that must surface
+in week one, not after the screens are done.
+
+--------------------------------------------------------------------------------
+8. DATA MODEL
+--------------------------------------------------------------------------------
+8.1 Entities (fields abbreviated; every table has id, created_at, updated_at)
+
+  User                  email (unique, citext), email_verified, password_hash,
+                        first_name, last_name, language, is_platform_admin,
+                        deleted_at
+  Workplace             name, address, time_zone, join_code, require_approval,
+                        owner_membership_id, settings (jsonb)
+  Membership            user_id, workplace_id, role, level, works_shifts,
+                        desired_weekly_hours, max_weekly_hours, status,
+                        joined_at, left_at
+  MembershipPermission  membership_id, permission, granted_by, granted_at
+                        (extra grants on top of the role, e.g. ManagePayslips)
+  ShiftBlock            workplace_id, days (set of weekdays), start_time,
+                        end_time, headcount, is_opening_override,
+                        is_closing_override
+  ShiftBlockRequirement shift_block_id, level, min_count
+  Period                workplace_id, start_date, weeks, status, locked_at,
+                        request_sent_at, deadline_at
+  Shift                 period_id, date, start_time, end_time, headcount,
+                        source_block_id, time_range (tstzrange, see AD-011)
+  ShiftRequirement      shift_id, level, min_count      (copied from template)
+  Availability          period_id, membership_id, status, submitted_at,
+                        reopened_at, comment (text, max 500, nullable)
+  AvailabilityBlock     availability_id, shift_id
+  ScheduleVersion       period_id, version, published_at, published_by
+  Assignment            shift_id, membership_id, user_id, schedule_version_id
+                        (null for draft), is_current, is_locked,
+                        source (generated|manual|claim|trade),
+                        time_range (tstzrange, see AD-011)
+  GenerationRun         period_id, seed, settings_snapshot (jsonb), score,
+                        created_by, created_at
+  GiveAway              shift_id, from_membership_id, status, taken_by, posted_at
+  Claim                 shift_id, membership_id, giveaway_id, status, decided_by
+  Trade                 a_membership_id, a_shift_id, b_membership_id, b_shift_id,
+                        status, expires_at
+  Announcement          workplace_id, author_membership_id, body, edited_at,
+                        deleted_at
+  AnnouncementPhoto     announcement_id, stored_file_id, position
+  AnnouncementReaction  announcement_id, membership_id   (one thumbs-up each)
+  StoredFile            workplace_id, scope (workplace|member),
+                        subject_membership_id (null unless scope = member),
+                        kind (announcement_photo|payslip), storage_key,
+                        content_type, size_bytes, sha256, created_by,
+                        deleted_at
+  Payslip (backlog)     stored_file_id, membership_id, pay_date, period_start,
+                        period_end, status (staged|published|recalled),
+                        published_by, published_at, recalled_at
+  Notification          membership_id, type, payload (jsonb), read_at
+  OutboxMessage         type, payload (jsonb), attempts, send_after, sent_at
+  ScheduledJob          type, workplace_id, run_at, status, payload (jsonb)
+  AuditEvent            workplace_id, actor_membership_id, action, target,
+                        before (jsonb), after (jsonb), occurred_at
+
+8.2 Model decisions
+AD-010  Template and dated shifts are separate. Starting a period copies the
+        template into Shift rows. Editing the template later cannot corrupt a
+        period already in progress. Availability points at Shift rows, which is
+        what makes the tap-a-block UI trivial to store.
+AD-011  Assignment and Shift both carry a tstzrange column holding the shift's
+        start and end instants. The application computes it from the local
+        date, local times and the workplace time zone; Postgres cannot generate
+        it because time zone conversion is not an immutable function. A
+        Postgres exclusion constraint on (user_id, time_range) over current
+        live assignments (btree_gist plus a GiST index) makes double-booking
+        impossible at the database level even if two requests arrive at the
+        same instant, including across workplaces (BR-002). Drafts are checked
+        by the evaluator instead. Ranges are half-open, so a shift ending at
+        16:00 and one starting at 16:00 do not overlap.
+AD-012  The published schedule is the source of truth for employees. The draft
+        is admin-only. Publishing writes a ScheduleVersion and stamps the
+        assignments belonging to it.
+AD-013  Rows that several people can act on concurrently (Shift, Claim, Trade,
+        GiveAway) carry a version column for optimistic concurrency. Two people
+        tapping Claim at the same moment: one succeeds, the other is told the
+        shift was just taken.
+AD-014  Retired with chat on 2026-09-21. Number kept so references stay stable.
+AD-015  Every module owns its tables in its own Postgres schema. Cross-module
+        foreign keys are avoided in favour of module-level interfaces, so the
+        boundaries stay real.
+AD-016  AuditEvent records every schedule change with who, what and when. This
+        is what answers "nobody told me I was working Saturday". It also records
+        file uploads and deletions, permission grants, and (backlog) every read
+        of a payslip. The same table serves both; the action name tells them
+        apart.
+AD-017  Every uploaded file goes through one StoredFile record and one storage
+        service. Its scope decides who may read it: "workplace" means any active
+        member of that workplace (announcement photos); "member" means that one
+        member plus holders of a named permission (payslips). There is exactly
+        one code path that issues download links, and it checks the scope every
+        time. Adding payslips means adding a kind, not a second file system.
+
+--------------------------------------------------------------------------------
+9. SYSTEM ARCHITECTURE
+--------------------------------------------------------------------------------
+9.1 Shape of the system
+  React PWA  ->  ASP.NET Core app (serves both the API and the built React app)
+                     |
+                     +-- PostgreSQL (Supabase, Montreal)
+                     +-- Object storage (Supabase, private: announcement
+                     |   photos now, payslips later)
+                     +-- Email provider (transactional)
+                     +-- Google APIs (sign-in, Calendar free/busy)
+                     +-- Web Push (Apple / Google push services)
+  Scheduled job  ->  calls one "tick" endpoint every 5 minutes
+
+9.2 Backend: a modular monolith (AD-020)
+One ASP.NET Core application containing strictly separated modules:
+  Identity       accounts, login, tokens, email verification
+  Workplaces     memberships, levels, settings, join codes, template
+  Scheduling     periods, availability, drafts, generation, publishing
+  Marketplace    give-aways, claims, trades, approvals
+  Announcements  posts, photos, reactions
+  Files          private storage, validation by content, image re-encoding,
+                 download links, file access audit
+  Payslips       (backlog) staged uploads, matching, publishing, recall
+  Notifications  in-app, push, email dispatch, bundling
+  Jobs           job queue and the tick command (called "Scheduler" in v1.0;
+                 renamed so it cannot be confused with Scheduling)
+
+Rules:
+  - Each module owns its own database schema and exposes a small public
+    interface. Modules never query another module's tables.
+  - An automated architecture test (NetArchTest or ArchUnitNET) fails the build
+    if a module references another module's internals.
+  - The generator is a separate class library with no dependency on the web
+    stack or the database.
+
+Why not microservices: at 15 users they would add network failures, distributed
+transactions and deployment complexity for no benefit. The module boundaries
+mean any piece could be extracted later if it ever needs to be. This is the
+choice a senior developer makes at this scale, and the discipline is enforced
+by a test rather than by good intentions.
+
+9.3 Inside a module
+  - Organised by feature. One use case ("publish schedule") is one folder
+    holding its endpoint, handler, validation and tests.
+  - Business rules live in domain classes, not in endpoints.
+  - Plain handler classes; no MediatR and no AutoMapper. Both moved to
+    commercial licensing in 2025 and neither earns its dependency here.
+  - EF Core with Npgsql for data access. Raw SQL where a query genuinely needs
+    it, which is fine and expected.
+
+9.4 API
+AD-021  REST with an OpenAPI description generated from the code.
+AD-022  The TypeScript client used by React is generated from that description
+        in CI. A renamed field breaks the frontend build instead of breaking
+        production silently.
+AD-023  Errors are returned as machine-readable codes plus a problem-details
+        body. The client renders the translated message. The server never sends
+        user-facing English.
+
+9.5 Authentication and authorisation
+AD-024  ASP.NET Core Identity with cookie authentication. Cookies work cleanly
+        because the API and the web app share one origin. Includes password
+        hashing, reset tokens, email confirmation and lockout out of the box.
+AD-025  Anti-forgery protection on all state-changing requests.
+AD-026  Every request resolves the caller's membership in the target workplace
+        before anything else. Authorisation is membership-based, never
+        role-on-account.
+AD-027  Integration tests prove that an employee cannot reach admin endpoints,
+        that no member can read another workplace's data, that no employee can
+        read another member's availability comment, and that no file link is
+        issued to a non-member, a removed member, or (backlog) anyone but the
+        employee and ManagePayslips holders for a payslip.
+AD-042  Authorisation is by named permission (section 5.5), never by comparing
+        role names.
+AD-043  Two-factor authentication with an authenticator app (time-based codes),
+        using ASP.NET Core Identity's built-in support, plus one-time recovery
+        codes. Built in M2 and optional for everyone. Mandatory for anyone
+        holding ManagePayslips before payslips launch.
+AD-044  Step-up authentication: sensitive actions require the password to have
+        been confirmed within the last 10 minutes. Applies to changing email,
+        transferring ownership, regenerating the join code, granting
+        permissions, turning off two-factor, and (backlog) opening payslips.
+AD-045  Session cookies are HttpOnly, Secure and SameSite=Lax. Sessions are
+        stored server-side so signing out, a password reset, or "sign out of all
+        devices" revokes them immediately. ASP.NET Core Data Protection keys are
+        persisted in Postgres; otherwise every scale-to-zero restart would
+        invalidate every cookie, antiforgery token and emailed link.
+
+9.6 Time
+AD-028  NodaTime throughout. A shift is stored as a local date plus local times
+        plus the workplace's time zone, and converted to an instant only when
+        scheduling a notification. This is what keeps a 16:00 shift at 16:00
+        across daylight saving transitions.
+
+9.7 Background work
+AD-029  Hosted background services and in-process timers are not reliable on a
+        platform that scales to zero. Instead: a ScheduledJob table, and a
+        Container Apps scheduled job that runs the application's own image with
+        the "tick" command every 5 minutes. The command runs whatever is due,
+        idempotently, and exits. It does not call the web app over HTTP: the
+        app scales to zero only after 300 seconds without requests, so an HTTP
+        tick every 5 minutes would keep it awake permanently and use up the
+        free grant. In development, POST /internal/tick runs one tick.
+        Jobs: send availability requests, send reminders, alert on unclaimed
+        offered shifts, expire trades, delete data past retention, send the
+        monthly schedule email, retry outbox messages.
+
+9.8 Notifications
+AD-030  Outbox pattern. The business change and its "send this" record are
+        written in the same database transaction, then delivered separately
+        with retries. A failing email provider can never lose a notification or
+        roll back a schedule publish. Delivery is attempted right after the
+        transaction commits; the tick only retries failures, so account emails
+        arrive in seconds rather than at the next tick.
+
+9.9 Real-time
+AD-031  No persistent real-time connection in v1. With chat removed, nothing
+        needs instant delivery. Screens refetch when the app returns to the
+        foreground and on a modest interval where freshness matters (requests
+        inbox, open shifts). Push notifications carry anything urgent. This
+        removes WebSockets, their hosting cost while connections are open, and
+        the old open question on real-time delivery.
+AD-032  Retired with chat. Number kept so references stay stable.
+AD-033  If live updates are ever needed, SignalR can be added later as a
+        "this changed" signal on top of the same REST API, without changing it.
+
+9.10 File uploads and downloads
+AD-034  Uploads go through the API, not straight from the browser to storage.
+        The API checks the uploader's permission, identifies the type from the
+        file's first bytes (never the name or the browser's claim), enforces the
+        size limit, re-encodes images (FR-233), and only then writes to private
+        storage. Nothing unvalidated ever lands in storage. With chat gone, the
+        only uploads are admin photos up to 10 MB and, later, PDFs up to 5 MB,
+        so passing them through the API is cheap. SVG is refused outright
+        because it can carry scripts.
+AD-047  Downloads use links valid for 5 minutes, issued only after the scope
+        check (AD-017), and served with "no-store" caching and a strict
+        content type. Link issuing is rate limited per user, so nobody can
+        quietly pull every file. The storage bucket is private; nothing is ever
+        publicly readable.
+
+9.11 Frontend
+AD-035  Vite + React + TypeScript. Not Next.js: the C# backend already does the
+        server-side work, and a second server-side framework would only add a
+        deployment target and confusion about where logic lives.
+AD-036  TanStack Query for all server state. React state for UI state only.
+AD-037  react-hook-form with zod for forms and validation. Validation rules are
+        shared with the generated API types where possible.
+AD-038  Tailwind for styling with Radix primitives underneath anything
+        interactive (dialogs, menus, switches), which gives keyboard and screen
+        reader behaviour for free.
+AD-039  react-i18next for translations, with fr and en resource files.
+AD-040  vite-plugin-pwa for the installable app, push notifications and an
+        offline read-only copy of your own shifts. The offline cache is an
+        allowlist: the app shell and the user's own published shifts, nothing
+        else. It never stores files from storage (announcement photos,
+        payslips) or any response marked no-store. This matters on shared and
+        lost phones.
+AD-041  Frontend folders mirror the backend modules so that a feature lives in
+        one obvious place on both sides.
+AD-048  Design tokens are defined once, as Tailwind theme variables in
+        src/web/src/styles/index.css: colours, type, radii, shadows and the one
+        motion curve (section 19). Components use token names (bg-primary,
+        rounded-card, shadow-press) and never a literal colour, radius or
+        shadow. Changing the palette or the typeface is then one edit, and a
+        screen that drifts from the design is visible in review.
+
+9.12 Browser security headers
+AD-046  Every response carries: a strict Content-Security-Policy (no inline
+        scripts, images only from the app and the storage domain, no framing by
+        other sites), Strict-Transport-Security, X-Content-Type-Options:
+        nosniff, Referrer-Policy: no-referrer (so download links never leak to
+        other sites), and a Permissions-Policy that turns off camera,
+        microphone and location. User text (announcements, availability
+        comments) is always rendered as text, never as HTML.
+
+--------------------------------------------------------------------------------
+10. STACK DECISIONS AND REJECTED ALTERNATIVES
+--------------------------------------------------------------------------------
+10.1 Chosen stack
+  Frontend      React 19, TypeScript, Vite, Tailwind, Radix, TanStack Query,
+                react-hook-form, zod, react-i18next, vite-plugin-pwa
+  Fonts         Quicksand (interface) and Titan One (wordmark only), both
+                self-hosted through Fontsource so no visitor's IP address
+                reaches a font CDN (section 19, 12.2)
+  Backend       .NET 10 (LTS), ASP.NET Core, EF Core, Npgsql, ASP.NET Core
+                Identity (with authenticator-app two-factor), NodaTime,
+                Serilog, SkiaSharp for image re-encoding (MIT licence; chosen
+                over ImageSharp to avoid its licence terms)
+  Database      PostgreSQL on Supabase, Canada (Central) region = Montreal
+  Storage       Supabase Storage, same project and region, private buckets
+                only
+  Hosting       Azure Container Apps, Canada East region = Quebec City
+  Images        GitHub Container Registry (public repository)
+  CI/CD         GitHub Actions with federated credentials (OIDC), no stored
+                secrets
+  Tests         xUnit v3, Testcontainers, CsCheck for property tests,
+                Playwright including WebKit
+
+10.2 Why PostgreSQL (AD-050)
+The data is deeply relational: users, memberships, workplaces, shifts,
+assignments, claims and trades all reference each other. Claims and trades need
+real transactions so two people cannot take the same shift. Postgres exclusion
+constraints prevent double-booking at the storage layer, which no amount of
+application code can guarantee as reliably. EF Core's Postgres support is
+mature, and Supabase offers a free tier with a Montreal region.
+
+10.3 Why Azure Container Apps (AD-051)
+Decided in preference to Google Cloud Run, which is technically equivalent for
+this workload. The deciding factor is career value: Azure is the common cloud
+in companies hiring .NET developers, and this project doubles as internship
+evidence. Supporting facts: the free monthly grant (180,000 vCPU-seconds,
+360,000 GiB-seconds, 2 million requests) far exceeds what 15 users generate;
+nothing is billed while the app is asleep; scheduled jobs are built into the
+platform; and Canada East is in Quebec City, which keeps the workload in the
+province.
+  Trade-offs accepted: more concepts to set up than Cloud Run; Azure Container
+  Registry is not free (~$0.167/day at its cheapest), which is why images live
+  on GitHub's registry instead; Azure's default logging configuration is a
+  well-known source of surprise costs and must be kept minimal; Quebec City is
+  ~250 km from the Montreal database, adding a few milliseconds per query.
+
+10.4 Rejected hosting options and why
+  Vercel            The free Hobby plan is restricted to non-commercial personal
+                    use, and a tool built for a business is at best a grey area.
+                    Free-plan scheduled functions run at most once a day within
+                    an imprecise window, which cannot support "warn 24 hours
+                    before an unclaimed shift". WebSocket support only reached
+                    public beta in June 2026, pins connections to one instance,
+                    and caps them at 5 minutes by default. (The WebSocket point
+                    no longer matters after chat was removed; the other reasons
+                    stand.) Vercel also has no first-class .NET support; it
+                    would require containerising anyway.
+  Google Cloud Run  A good option and the runner-up. Simpler setup and Montreal
+                    region. Rejected only on career value.
+  Azure App Service Free F1 tier allows 60 CPU-minutes per day, forbids custom
+                    domains, and unloads the app after ~20 minutes idle. It is
+                    a testing tier.
+  Render            Easiest setup and needs no credit card, but the free service
+                    sleeps after 15 minutes and takes about a minute to wake,
+                    and there is no Canadian region. Philippe would wait every
+                    morning, and the data would leave Quebec.
+  Oracle Cloud      A genuinely always-free always-on VM in Montreal, but it
+                    makes the developer the system administrator (patching,
+                    TLS, restarts, backups), and Oracle reclaims free instances
+                    that stay under 20% CPU for a week, which this app would.
+  AWS Lambda        Would require reshaping the app into many small functions
+                    plus separate services for real-time messaging. More moving
+                    parts, no benefit at this scale.
+  Azure for Students Needs no credit card, but is limited to learning and
+                    development use and stops when the credit or the year runs
+                    out. Use it for experiments; never for Philippe's live data.
+
+10.5 Other rejected choices
+  Microservices     See 9.2.
+  Next.js           See AD-035.
+  MediatR/AutoMapper Commercial licensing since 2025; unnecessary at this size.
+  In-memory test DB Hides real Postgres behaviour, especially constraints and
+                    concurrency. Tests run against real Postgres in a container.
+  Chat              Removed from the product on 2026-09-21 (3.4).
+  WebSockets/SignalR in v1   Nothing needs them without chat (AD-031).
+  Direct browser-to-storage uploads   Were chosen for 50 MB chat videos. The
+                    only uploads left are small admin files, and routing them
+                    through the API is what lets the server validate and
+                    re-encode everything (AD-034).
+  Blocking screenshots of recipes   Not possible on the web, and no app can
+                    stop a second phone photographing the screen (12.6).
+  Continuous Google Calendar sync   Would produce a stream of change
+                    notifications to the admin and would need broader, more
+                    invasive calendar permissions. One-time free/busy import
+                    instead (FR-097).
+
+--------------------------------------------------------------------------------
+11. INFRASTRUCTURE, ENVIRONMENTS AND DELIVERY
+--------------------------------------------------------------------------------
+11.1 Repository (AD-060)
+One public GitHub repository containing the backend, the web app, tests, and a
+docs/decisions folder holding one short record per significant decision (date,
+context, decision, consequences), docs/issues (the issue plan, section 15) and
+docs/runbooks (how each environment is built and operated). Public because the
+code is a portfolio piece and because GitHub's container registry is free for
+public images. No secrets, no real data, no production configuration is ever
+committed.
+
+11.2 Environments
+  Local       Docker Compose: Postgres plus Mailpit to catch outgoing email.
+  Staging     Where Philippe tries the app. Fake data, its own Supabase project,
+              its own Container App.
+  Production  Real data. Deployed only from a release tag.
+
+11.3 CI/CD (AD-061)
+  - Every pull request: build, unit tests, integration tests against a Postgres
+    container, architecture tests, linting, and generation of the TypeScript
+    API client (a diff means the client is out of date).
+  - Merge to main: deploy to staging automatically.
+  - Release tag: deploy to production.
+  - Database migrations run as a separate step before the new revision goes
+    live, and are written so that the previous version keeps working during the
+    rollover (expand, migrate, contract).
+  - Authentication to Azure uses federated credentials, so no cloud passwords
+    are stored in GitHub.
+
+11.4 Domain (AD-062)
+A custom domain under $30/year is required before the pilot with real staff,
+not after. Reasons: installed PWAs and their push subscriptions are bound to
+the origin, so changing the address later forces every person to reinstall and
+re-enable notifications; transactional email providers either require a
+verified domain to send to third parties or deliver poorly without one, which
+would put password resets in spam; Google's OAuth verification requires one.
+Check the renewal price, not just the first-year price.
+
+11.5 Monitoring and backups
+  - Structured logging with Serilog, kept deliberately small to avoid log costs.
+  - A health endpoint plus an external uptime check that emails on failure.
+  - A nightly database dump we control, stored in Montreal, independent of the
+    provider's own backups. The dataset is small enough that this costs cents.
+    Backups are encrypted with a key stored separately from them, because they
+    contain availability comments now and would contain payslip records
+    later. Storage files (recipe photos) are backed up too, encrypted the same
+    way.
+  - Two-factor authentication is turned on for every infrastructure account
+    (GitHub, Azure, Supabase, the domain registrar, the email provider) before
+    any real data exists. These accounts can reach everything.
+  - A budget alert set at $1 on the cloud account so any charge is noticed
+    immediately.
+
+--------------------------------------------------------------------------------
+12. PRIVACY, SECURITY AND LEGAL
+--------------------------------------------------------------------------------
+12.1 Quebec Law 25
+The app holds personal information about Quebec employees, so Law 25 applies.
+The developer is not a lawyer and this section is not legal advice; it records
+the practical decisions taken.
+  - Personal information is stored in Quebec: database and file storage in
+    Montreal, application in Quebec City. Law 25 requires an assessment before
+    personal information is communicated outside Quebec; keeping it in-province
+    avoids that question for the main data store.
+  - The transactional email provider will likely process data outside Quebec.
+    This is the one known exception and should be raised with Philippe.
+  - A privacy policy is required and must state what is collected, why, who can
+    see it, and the rules for keeping and destroying it (section 13).
+  - The business is responsible for the personal information it holds. Since
+    the developer personally owns the infrastructure accounts, the arrangement
+    between Hoang and Philippe should be written down, including who is
+    responsible for the data and how it is protected. It does not need to be a
+    long document.
+
+12.2 Data minimisation
+  - No phone numbers are collected.
+  - Google Calendar integration reads free/busy only, never event details.
+  - Employees see only names, levels, work email and the schedule.
+  - Availability comments are visible only to their author and admins.
+  - Photos have their location metadata removed before storage (FR-233).
+  - The platform admin account is not a workplace member and cannot read
+    availability comments or, later, payslips through the app.
+
+12.3 Security practices
+  - Passwords: minimum 8 characters, breached-password check, hashing by
+    ASP.NET Core Identity, temporary lockout after repeated failures.
+  - Single-use, short-lived tokens for password reset; reset invalidates other
+    sessions.
+  - Rate limiting on login, password reset and join code attempts.
+  - Anti-forgery protection on state-changing requests.
+  - Authorisation checked per membership on every request, with tests proving
+    cross-workplace and cross-user access is impossible.
+  - Files served through 5-minute links from private buckets, never public
+    (AD-047). Uploads validated by content and images re-encoded (AD-034).
+  - Optional two-factor authentication for everyone; step-up confirmation for
+    sensitive actions (AD-043, AD-044).
+  - Security headers and a strict Content-Security-Policy (AD-046).
+  - Dependency scanning (Dependabot) and secret scanning enabled on the repo.
+
+12.4 Classes of sensitive data
+Every piece of data belongs to one class, and the class decides the controls.
+
+  Class A  Highly sensitive personal information: payslips (backlog).
+           Member-scoped files; ManagePayslips permission; two-factor required
+           for uploaders; step-up to open; every read audited; staged
+           publishing and recall; never cached offline; never in notification
+           text; longer-kept access log.
+  Class B  Personal information: names, emails, levels, availability,
+           availability comments, schedules.
+           Membership-based access; comments admin-only; retention per
+           section 13.
+  Class C  Business-confidential, not personal: recipe photos and
+           announcements.
+           Workplace-scoped private files; metadata stripped; 5-minute links;
+           access ends the moment someone leaves; not cached offline; no
+           download button.
+
+Law 25 covers classes A and B. Class C is protected because it matters to the
+business, not because the law requires it.
+
+12.5 Access by the developer
+Hoang owns the infrastructure accounts, so he can technically read anything in
+the database or storage, including, later, payslips. The app cannot remove that
+completely, so it is managed instead:
+  - two-factor on every infrastructure account (11.5);
+  - no routine access to production data; any access is for a stated support
+    reason;
+  - the written arrangement with Philippe (12.1) says who can access what and
+    why;
+  - for payslips, an optional further step: encrypt each payslip file with a
+    key held in Azure Key Vault, so that reaching the storage bucket alone is
+    not enough to read one. This reduces exposure; it does not eliminate it,
+    since the same person administers Key Vault.
+
+12.6 What the app cannot prevent
+Anyone allowed to see a recipe photo can screenshot it, or photograph the
+screen with another phone. No website can block that reliably, and no app can
+stop a second device. The app's job is to limit who can see recipes, end
+access the moment someone leaves, and record who posted what. Keeping recipes
+confidential beyond that is an employment matter for Philippe, for example a
+confidentiality clause (Q-12).
+
+12.7 Payslip readiness: what v1 must already contain
+These are built as part of v1 even though payslips are not, because each one
+is expensive to add to a finished app and cheap to add now:
+  1. Named permissions with per-member grants (5.5, AD-042)       M2-10
+  2. Authenticator-app two-factor and recovery codes (AD-043)     M2-08
+  3. Step-up confirmation for sensitive actions (AD-044)          M2-06
+  4. Server-side, revocable sessions (AD-045)                     M2-02, M2-04
+  5. One stored-file model with scopes and one link path (AD-017) M8-02
+  6. Upload validation by content, SVG refused (AD-034)           M8-02
+  7. Short-lived, rate-limited download links (AD-047)            M8-02
+  8. Offline cache allowlist (AD-040)                             M8-05
+  9. Notification content rule (FR-216)                           M2-14
+ 10. Audit log able to record reads, not only writes (AD-016)     M5-12
+ 11. Security headers and CSP (AD-046)                            M0-05
+ 12. Encrypted backups; two-factor on infrastructure (11.5)       M0-02, M6-08,
+                                                                  M8-09
+ 13. Incident register and response runbook (12.8)               M6-04
+When all thirteen exist, payslips are a new module and a new file kind, not a
+rework.
+
+12.8 Confidentiality incidents
+Law 25 requires the business to keep a register of confidentiality incidents
+and, when an incident presents a risk of serious harm, to notify the
+Commission d'accès à l'information and the people affected. The business,
+meaning Philippe, is responsible; the developer supports him. I am not a
+lawyer; this records the practical plan. Before payslips launch, write a
+one-page runbook: how to recall a file and invalidate its links, how to use
+the audit log to see who opened it, who tells whom, and where the register
+lives. A payslip published to the wrong person is an incident.
+
+--------------------------------------------------------------------------------
+13. DATA RETENTION
+--------------------------------------------------------------------------------
+Storage is not the constraint; a shift assignment is a tiny row. Retention here
+is about privacy, relevance, and Law 25's requirement that the business state
+its retention and destruction rules.
+
+  Announcements and their photos  until an admin deletes them
+  Notifications                   60 days
+  Raw availability submissions    60 days after the period ends
+  Availability comments           60 days after the period ends
+  Published schedules             2 months
+  Audit events                    2 months
+  Generation runs (seed, score)   2 months
+  Payslips (backlog)              to be decided before build (Q-11)
+  Payslip access log (backlog)    12 months, so incidents can be investigated
+  Accounts                        until deleted by the user
+
+Supporting rules:
+  - Deletion runs nightly as a scheduled job, never manually.
+  - Admins can export any schedule to CSV and PDF at any time.
+  - Philippe automatically receives each month's final schedule by email as
+    PDF and CSV (FR-214), so the business keeps records beyond the app's
+    retention window without the app holding them.
+  - Deleted accounts: profile and availability comments removed; past
+    schedules show "Former employee"; their announcements show
+    "Former member".
+
+--------------------------------------------------------------------------------
+14. NON-FUNCTIONAL REQUIREMENTS
+--------------------------------------------------------------------------------
+NFR-001  Works on desktop, iPad and iPhone. iOS Safari is a first-class target,
+         not an afterthought.
+NFR-002  Phone and iPad interfaces are tap-only. No drag interaction is ever
+         required to complete a task. Drag exists on desktop as an accelerator
+         for building the template, never as the only way.
+NFR-003  Week view on desktop and iPad; a 1-day or 3-day view on phones.
+NFR-004  Generating a 4-week schedule completes in under 2 seconds.
+NFR-005  Normal screens respond in under 500 ms once the app is warm.
+NFR-006  The app scales to zero when idle; a cold start may take a few seconds.
+         The installed PWA caches its shell and the user's own shifts so that
+         only fresh data waits.
+NFR-007  Keyboard operable throughout, with visible focus. Any drag interaction
+         has a keyboard equivalent.
+NFR-008  Colour is never the only carrier of meaning. Availability states use
+         colour plus text plus an icon.
+NFR-009  Contrast meets WCAG 2.2 AA. Tap targets at least 44x44 px.
+NFR-010  prefers-reduced-motion is respected.
+NFR-011  Light and dark mode, following the device setting.
+NFR-012  Push notifications on iPhone require the site to be added to the Home
+         Screen. First login on an iPhone walks the person through: Share ->
+         Add to Home Screen -> open from the icon -> enable notifications.
+         People who skip it still receive in-app and email notifications. A
+         native app is not planned; if it is ever needed, the same React code
+         can be wrapped with Capacitor, at the cost of a $99/year Apple
+         developer account and App Store review.
+NFR-013  Every user-facing string exists in both French and English before a
+         feature is considered done. A missing translation fails CI.
+NFR-014  Test coverage is required on the generator, the evaluator, and every
+         permission boundary. UI coverage is not a target.
+NFR-015  Every file endpoint has automated tests for: a member of another
+         workplace, a removed member, an employee asking for another member's
+         file, an expired link, a disguised file type, and an SVG upload. All
+         must be refused.
+NFR-016  The Settings screen for admins sits behind a gear in the top bar on
+         phones, so the bottom bar never exceeds five tabs. It is a regular
+         sidebar entry on wider screens.
+NFR-017  Every screen follows the design language in section 19 and uses the
+         shared tokens and components (AD-048). A new colour, radius or shadow
+         is added as a token with its contrast checked, never written inline.
+         A screen is not done until it has been seen at 390 px wide, in dark
+         mode, at 200% zoom and driven from the keyboard.
+
+--------------------------------------------------------------------------------
+15. MILESTONES AND ISSUE BREAKDOWN
+--------------------------------------------------------------------------------
+15.1 How the work is cut (docs/decisions/0006)
+  - Every milestone ends with something that can be clicked on staging. No
+    milestone is backend-only or frontend-only.
+  - Every feature issue carries its backend work, its frontend work, its tests
+    and a "done when" list together (label stack:full).
+  - The generator comes first, in M1, behind an internal lab page: a naive
+    version so the page works end to end on day one, then each algorithm step
+    visibly improves it, then Philippe's real month is compared against it.
+    The riskiest question is answered before any product screen depends on it.
+  - Dependencies always point to earlier issues. The issue script enforces it.
+  - v1 is M0-M6: Presotea goes live at the end of M6, right after the core
+    loop, instead of waiting for the marketplace, News and Google work.
+
+15.2 Where the issues live
+The full issues (goal, what you will see, backend, frontend, tests, done when,
+spec references and dependencies) are in docs/issues, one file per milestone.
+scripts/github/create-issues.mjs checks them against this file (every spec ID
+cited must exist here) and creates the labels, milestones and issues on GitHub.
+After that, GitHub is where work is tracked. Issue titles start with their
+plan ID (for example M2-03), so code comments and commits can cite them.
+
+Labels: type:feature, type:chore, type:decision, type:bug; stack:full,
+stack:backend, stack:frontend; size:S, size:M, size:L; one or more area:
+labels (infra, security, privacy, auth, workplace, template, availability,
+generator, scheduling, marketplace, news, files, notifications, calendar, ui,
+i18n, a11y); needs:philippe (blocked on the owner); payslip-readiness (an
+item from 12.7); good-first-issue.
+
+15.3 Milestones and their issues
+Each milestone's demo is at the top of its file in docs/issues.
+
+M0 — Walking skeleton  (12 issues)
+  M0-01  Push the scaffold and get CI green
+  M0-02  Turn on two-factor for every infrastructure account
+  M0-03  Connect to Postgres and show it on the home page
+  M0-04  Structured logging that stays cheap and never logs personal data
+  M0-05  Security headers and a strict Content-Security-Policy
+  M0-06  Generate the TypeScript API client from OpenAPI
+  M0-07  Provision staging: Supabase in Montreal, Container Apps in Quebec City
+  M0-08  Run database migrations as a separate deploy step
+  M0-09  Publish the image and deploy staging on every merge to main
+  M0-10  App shell: bottom tabs on phones, sidebar on wider screens
+  M0-11  Base UI kit on Radix, with a gallery page
+  M0-12  Background jobs: a short-lived tick job every 5 minutes
+
+M1 — Generator lab  (10 issues)
+  M1-01  Generator contract, a naive generator and the lab page
+  M1-02  Evaluator: one rulebook for score and issues
+  M1-03  Hard rules the generator never breaks, proven by property tests
+  M1-04  Greedy construction: scarcity first, level first, hours-aware, seeded
+  M1-05  Local search, fairness and last-resort doubles
+  M1-06  Scenario editor in the lab
+  M1-07  Lock assignments and regenerate around them
+  M1-08  Performance budget: four weeks in under two seconds
+  M1-09  Golden test against Philippe's real month
+  M1-10  Review the lab with Philippe and settle the scheduling rules
+
+M2 — Accounts and workplaces  (16 issues)
+  M2-01  Choose the transactional email provider
+  M2-02  Sign up
+  M2-03  Email verification, sent through the outbox
+  M2-04  Sign in, sign out, lockout and rate limits
+  M2-05  Forgot password and reset
+  M2-06  Step-up confirmation for sensitive actions
+  M2-07  Profile, language and email change
+  M2-08  Two-factor authentication with an authenticator app
+  M2-09  Create a workplace and invite its owner
+  M2-10  Named permissions and the authorization guard
+  M2-11  Join a workplace with a code, a link or a QR code
+  M2-12  Members screen: levels, "I work shifts too", desired hours
+  M2-13  Admins, permission grants and ownership transfer
+  M2-14  In-app notifications inbox
+  M2-15  Leave a workplace or remove a member
+  M2-16  Delete my account
+
+M3 — Shift template  (5 issues)
+  M3-01  Template editor, tap path
+  M3-02  Headcount and level requirements
+  M3-03  Opening and closing labels, with an override
+  M3-04  Drag to create on desktop, with a keyboard equivalent
+  M3-05  Workplace settings: details and scheduling rules
+
+M4 — Availability  (8 issues)
+  M4-01  Periods: dated shifts copied from the template
+  M4-02  Availability screen: tap the shifts you can work
+  M4-03  Optional availability comment, admins only
+  M4-04  Team availability and progress for admins
+  M4-05  Availability requests, deadline and reminders
+  M4-06  Helpers: same as last period, copy week 1 to the rest
+  M4-07  Lock when building starts, reopen one person
+  M4-08  Template changes after answers are collected
+
+M5 — Build and publish  (12 issues)
+  M5-01  Generate a draft for a real period
+  M5-02  Shift panel: roster, candidates and live hours
+  M5-03  Lock assignments and regenerate around them
+  M5-04  Issues dashboard for admins and employees
+  M5-05  Publish checks and publishing v1
+  M5-06  My schedule, team schedule and the home cards
+  M5-07  Update after publishing: diff, conflicts and targeted notifications
+  M5-08  Reuse a past schedule
+  M5-09  Export a schedule to CSV and PDF
+  M5-10  Leaving releases future shifts
+  M5-11  Cross-workplace conflicts
+  M5-12  Audit log for schedule changes
+
+M6 — Go live  (12 issues)
+  M6-01  Production environment and release-tag deploys
+  M6-02  Custom domain, TLS and email authentication
+  M6-03  Privacy policy and retention statement in the app
+  M6-04  Data arrangement with Philippe and the incident runbook
+  M6-05  Retention: automatic nightly deletion
+  M6-06  Monthly schedule email to the owner
+  M6-07  Monitoring: uptime check and alerts
+  M6-08  Encrypted nightly backup, stored in Montreal
+  M6-09  End-to-end tests of the core loop, including Safari's engine
+  M6-10  Accessibility review of every v1 screen
+  M6-11  Set up Presotea in production
+  M6-12  Pilot: one real cycle alongside Excel
+
+M7 — Give away, claim, trade  (8 issues)
+  M7-01  Requests tab and inbox
+  M7-02  Give away a shift
+  M7-03  Claim an open or offered shift
+  M7-04  Approval settings and choosing among claimants
+  M7-05  Unclaimed give-away alert
+  M7-06  Trades: request, accept or decline, cancel
+  M7-07  Trade approval with re-validation
+  M7-08  Trade expiry and automatic cancellation
+
+M8 — News and push  (9 issues)
+  M8-01  News tab with text posts
+  M8-02  Stored files: one model, one validation path, short-lived links
+  M8-03  Photos on posts, re-encoded on the server
+  M8-04  Thumbs-up reactions
+  M8-05  Installable app with an offline allowlist
+  M8-06  Web push, end to end, with the iPhone install guide
+  M8-07  Notification bundling and preferences
+  M8-08  File access test suite and link leak checks
+  M8-09  Back up storage files and review payslip readiness
+
+M9 — Google and calendar feed  (4 issues)
+  M9-01  Sign in with Google
+  M9-02  Import availability from Google Calendar free/busy
+  M9-03  Subscribe to my shifts in any calendar app
+  M9-04  Submit the Google app for verification
+
+Backlog (no milestone)  (5 issues)
+  BL-01  Time-off requests with a written reason
+  BL-02  Payslips (epic)
+  BL-03  Swap in OR-Tools CP-SAT behind the generator interface
+  BL-04  Native app wrapper, if iPhone push proves insufficient
+  BL-05  Planned dependency majors: xUnit v4 and TypeScript 7
+
+--------------------------------------------------------------------------------
+16. OPEN QUESTIONS
+--------------------------------------------------------------------------------
+Q-01  How many level 3 baristas are there actually? The prototype assumes five
+      including Philippe. If the real number is two or three, the schedule gets
+      much tighter and the level 3 requirement becomes the binding constraint.
+      This changes what Philippe should expect from Generate.
+Q-02  What is the maximum number of consecutive days Philippe wants anyone to
+      work? The prototype uses 5. Needed before the generator is tuned.
+Q-03  Can Philippe export one month of Google Form availability responses plus
+      the matching Excel schedule, with names replaced? This is the golden test
+      and the best available evidence that the generator is good enough.
+Q-04  What are Philippe's unwritten scheduling rules beyond the ones captured
+      here? He confirmed there are no "these two should not work together"
+      pairs. Anything else he weighs by hand should be added to section 7.
+Q-05  Final product name and branding. Working name is Quart.
+Q-06  Which transactional email provider, and is its processing location
+      acceptable to Philippe (12.1)? Decide in M2-01, before M2-03 ships.
+Q-07  Retired 2026-09-21. With chat removed there is no real-time delivery to
+      decide (AD-031).
+Q-08  How many hours before a shift should the unclaimed-give-away alert fire
+      (FR-183)? Needs a default before M7-05.
+Q-09  Should recipe photos be viewable offline at the shop? Default is no, for
+      confidentiality (FR-239). Revisit if the shop's signal is poor.
+Q-10  Which payroll service does Philippe use, and does it already give
+      employees their own portal for pay stubs? If it does, the payslip feature
+      may duplicate it while adding the most sensitive data the app would hold.
+Q-11  How long should the app keep payslips, and how long do former employees
+      keep access to theirs? Proposal: 12 months, and 90 days after leaving.
+Q-12  Does Philippe want a confidentiality clause about recipes in his
+      employment terms? Not a software question, but the app can only restrict
+      access, not prevent copying (12.6).
+Q-13  HEIC photos (FR-232): can SkiaSharp decode HEIC inside the Linux
+      container? Skia's HEIC support depends on platform codecs. If it cannot,
+      choose between letting iOS convert photos to JPEG before upload (by
+      listing only JPEG, PNG and WebP as accepted types) and adding an
+      Apache-licensed decoder such as Magick.NET. Decide in M8-03.
+Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
+      Philippe like the desktop layout once it exists? Both are extrapolations
+      from a phone-sized, light-only design prototype. Review at M0-10.
+
+--------------------------------------------------------------------------------
+17. DECISION LOG
+--------------------------------------------------------------------------------
+2026-09-11  Roles belong to memberships, not accounts. Sign-up no longer asks
+            for Admin or Employee.  (AD-001)
+2026-09-11  Phone numbers dropped entirely. Nothing in the product needed them
+            and they would have created a privacy setting to manage.
+2026-09-11  Password minimum raised from 6 to 8 characters at the developer's
+            request after discussion.
+2026-09-11  Availability is expressed as shift blocks the shop actually runs,
+            not free-form time painting. This made the phone UI tap-only and
+            simplified the data model.
+2026-09-11  Availability locks when schedule building starts. The original
+            "employees update availability after publishing and the schedule
+            auto-adjusts" idea was removed because it conflicted with the
+            give-away rule and allowed people to drop shifts silently.
+            (FR-100, FR-102)
+2026-09-11  Time-off requests moved to the backlog, with a written reason field
+            when built.
+2026-09-11  Weekend fairness dropped; opening and closing fairness kept as two
+            independent settings.
+2026-09-11  Minimum-hours concept dropped. Desired hours is a single weekly
+            target with an optional maximum.
+2026-09-11  Hosting: Azure Container Apps chosen over Google Cloud Run on career
+            value, both being technically equivalent here. Vercel rejected on
+            licence terms, cron granularity and WebSocket limits.  (AD-051)
+2026-09-11  Database and storage pinned to Montreal (Supabase Canada Central)
+            to keep personal information in Quebec.  (AD-050, 12.1)
+2026-09-11  Container images on GitHub Container Registry, because Azure's
+            registry has no free tier. Repository made public.  (AD-060)
+2026-09-11  Barista levels are assigned by admins only, and are a property of
+            the membership.  (FR-035, 5.4)
+2026-09-11  Maximum consecutive days promoted from a weighted penalty to a hard
+            generator rule after the prototype produced a 28-shifts-in-a-row
+            schedule when level 3 staff were scarce.  (BR-005)
+2026-09-11  Join code format fixed to 10 characters from an alphabet with no
+            look-alikes. The seed code changed from PRESO-4K9TX to PRESTEA24X,
+            since the old one was 11 characters and contained the letter O.
+            (FR-033)
+2026-09-11  Template blocks carry their own set of days rather than repeating
+            on all seven. This is what makes "open weekdays only" expressible
+            and is required by FR-060.
+2026-09-11  Editing the template in the prototype rebuilds the period and
+            clears the draft. The real product restricts template edits to
+            future periods instead (FR-068) and resets only the answers for a
+            changed block (FR-069).
+2026-09-21  Chat removed entirely: group chat, direct messages, read receipts,
+            message reactions and media. Old FR-232..239 were rewritten for the
+            News tab; AD-014 and AD-032 retired.  (3.4)
+2026-09-21  No real-time connection in v1. Refetch on focus plus push
+            notifications instead. SignalR dropped from the stack; Q-07
+            retired.  (AD-031)
+2026-09-21  Uploads now pass through the API instead of going straight to
+            storage, since the only uploads left are small admin files. This is
+            what lets the server validate and re-encode everything.  (AD-034)
+2026-09-21  Announcements moved to their own News tab. Admins can attach up to 6
+            photos per post, mainly for recipes. Photos are re-encoded to strip
+            location data. Posts are kept until deleted. Members can react with
+            a thumbs-up but not reply.  (6.10)
+2026-09-21  Optional availability comment added, visible to admins only, never
+            read by the generator.  (FR-103, BR-035)
+2026-09-21  On phones, admin Settings moved behind a gear in the top bar so the
+            bottom bar keeps five tabs.  (NFR-016)
+2026-09-21  Payslips added to the backlog. v1 must include the security
+            foundation they depend on: named permissions, stored-file scopes,
+            two-factor, step-up confirmation, revocable sessions, validated
+            uploads, short-lived links, an offline cache allowlist, a
+            notification content rule, read-capable audit, security headers,
+            encrypted backups and an incident runbook.  (6.12, 12.4..12.8)
+2026-09-21  Milestones re-cut into vertical slices, each ending in something
+            visible on staging. The generator moved to M1 behind an internal
+            lab page. Going live moved to M6, directly after the core loop and
+            before the marketplace, News and Google work. Google sign-in moved
+            to M9 with the calendar work, so launch never waits on Google's app
+            verification.  (15, docs/decisions/0006)
+2026-09-21  A new workplace starts with a single-use owner invitation, so the
+            platform admin never owns it, even briefly.  (FR-042,
+            docs/decisions/0008)
+2026-09-21  The background-job module is called Jobs in code, not Scheduler.
+            (9.2, docs/decisions/0002)
+2026-09-21  The tick runs as a short Container Apps job with the app's own
+            image, not as an HTTP call that would keep the app awake. The outbox
+            also sends right after commit; the tick only retries.  (AD-029,
+            AD-030, docs/decisions/0009)
+2026-09-21  Shift and assignment time ranges are computed by the application,
+            since Postgres cannot generate them through a time zone conversion.
+            The exclusion constraint is on user_id so BR-002 holds across
+            workplaces.  (AD-011, 8.1)
+2026-09-21  Data Protection keys persisted in Postgres so scale-to-zero restarts
+            keep people signed in and emailed links valid.  (AD-045)
+2026-09-21  The owner's monthly schedule email is the one allowed exception to
+            "no attachments in email".  (FR-214, FR-216)
+2026-09-21  Property tests use CsCheck.  (10.1)
+2026-09-22  The look is set by a design prototype supplied by the owner of the
+            project: Quicksand and Titan One, pale periwinkle, pill buttons on
+            a hard 3 px edge, bottom sheets, and a bubble tea cup mascot. It is
+            written down in section 19 and docs/design, and implemented as
+            tokens rather than as one-off styles.  (19, AD-048, NFR-017,
+            docs/decisions/0010)
+2026-09-22  Dark mode is derived from the light palette rather than designed,
+            since the design prototype is light only. It stays in scope
+            (NFR-011) and must be reviewed on a phone before the pilot.  (Q-14)
+
+--------------------------------------------------------------------------------
+18. PROTOTYPE NOTES
+--------------------------------------------------------------------------------
+There are two prototypes, and they answer different questions.
+
+  docs/prototype/quart-prototype.jsx          behaviour: the rules, the flows
+  docs/prototype/quart-design-prototype.html  the look: the design language
+
+The design prototype is the visual reference for the product (section 19,
+docs/design). It covers Home, Schedule, Availability, Requests, News, the shift
+sheet and Settings, in both the employee and the owner view, at phone size. It
+is light mode only and has no desktop layout; both gaps are noted in 19.7.
+
+The rest of this section is about the behaviour prototype
+(docs/prototype/quart-prototype.jsx). It is a single React file with all state
+in memory and no backend. It resets on reload.
+
+What it implements faithfully and can be used as a reference for behaviour:
+  - The generator and evaluator sharing one rulebook (AD-002)
+  - Hard rules including max consecutive days (BR-001..005)
+  - Soft goal ordering and availability-proportional fairness (BR-010..015,
+    BR-020..022)
+  - Seeded regeneration and locked assignments (FR-122, FR-123)
+  - Availability locking on generate, and per-person reopen (FR-100, FR-101)
+  - Publishing, update with version bump, notifying only affected people
+  - Give away, claim with admin picking among competitors, one-for-one trades
+  - Admin-assigned levels affecting generation immediately
+  - Publish checks (block / confirm / show) per issue type
+  - French and English throughout, light and dark mode
+  - The News tab: admins post text and up to 6 photos; each photo is redrawn
+    on a canvas before posting, which strips its metadata as FR-233 requires;
+    type and size are checked; members react; admins delete
+  - The optional availability comment: saved with the submission, capped at
+    500 characters in the reducer itself, locked with availability, shown to
+    the admin in the team list and in the shift panel, hidden from coworkers
+
+  - Sign in, sign up with full validation, email verification, forgot and
+    reset password (FR-001..007)
+  - The workplace list as the landing screen after login, join by code, and the
+    three-step create-workplace wizard restricted to the platform admin
+    (FR-030..034)
+  - Template editing: times snapped to 15 minutes, per-block days, headcount,
+    required level, and a refusal to create a shift crossing midnight
+    (FR-060..067)
+
+What it deliberately fakes:
+  - Passwords are not checked; any 8+ characters signs you in as the account
+    matching the email. Three prototype accounts are offered as fill-in chips.
+  - Verification and reset emails are replaced by an "open the link" button
+  - Google Calendar import is simulated locally
+  - Notifications are in-app only
+  - Trade expiry is displayed but not enforced by a timer
+  - Photos are kept in memory as data URLs. There is no private storage, no
+    download link, and no server-side re-encoding; those exist only in the
+    real backend (AD-017, AD-034, AD-047).
+  - Only JPEG, PNG and WebP are accepted, because browsers cannot reliably
+    decode HEIC. The real backend converts HEIC on the server (FR-232).
+  - None of the payslip readiness items (12.7) can be shown in a single-file
+    prototype. They are backend work.
+  - Only Presotea holds live data. A workplace created through the wizard shows
+    its join code and the template you built, but has no members, so it cannot
+    collect availability or generate. Adding a second live workplace needs the
+    per-workplace data separation the real backend has by design.
+  - The Presotea template keeps exactly two blocks (opening and closing) so the
+    shift labels stay meaningful. The wizard allows any number of blocks.
+  - The "view as" dropdown stays in the top bar as a prototype tool for jumping
+    between people without signing out. It does not exist in the real product.
+
+Seed data mirrors the shop: 15 people, two shifts a day, two per shift, level 3
+required on every shift, five level 3s including Philippe, two people who have
+not submitted availability. Editing the PEOPLE array at the top of the file
+changes the scenario.
+
+--------------------------------------------------------------------------------
+19. VISUAL DESIGN (THE LOOK)
+--------------------------------------------------------------------------------
+19.1 Where the design lives
+The design prototype, docs/prototype/quart-design-prototype.html, is the
+visual reference. Open it in a browser: it is a phone-sized, clickable version
+of Home, Schedule, Availability, Requests, News, the shift sheet and Settings,
+in both the employee and the owner view. docs/design/README.md is the written
+version with every token; this section is the short form, so the spec stays
+readable on its own. The tokens are real code in src/web/src/styles/index.css
+(AD-048); no screen writes a colour, radius or shadow inline (NFR-017).
+
+19.2 The feel
+Friendly and physical, not corporate. Rounded type, a pale periwinkle
+background, white cards that float softly, and buttons that sit on a hard 3 px
+edge so they look pressable. Big headings, generous spacing, everything
+comfortably reachable with a thumb. It should look like a tool made for a
+bubble tea shop, not a payroll system. Colour always carries meaning, and
+never carries it alone (NFR-008).
+
+19.3 Colour
+  bg            #E9EEFD  the app background
+  surface       #FFFFFF  cards
+  surface-2     #FBFBFD  sheets and secondary panels
+  surface-3     #EEF0F7  rows and wells inside a card
+  line          #DCE3FA  hairlines, used sparingly
+  ink           #1B1B22  all primary text, and solid dark buttons
+  muted         #5E6380  subtitles, labels, secondary detail
+  link          #3F5FC4  links and the focus ring
+  primary       #7F9FF2  hero cards, the selected pill, the logo blob
+  accent        #F48DA0  badges and counts only, never a large area
+  on-primary    #1B1B22  text drawn on primary or accent, in both themes
+  success       #11643A on #DDF3E4   sent, covered, approved
+  danger        #8E1A33 on #FDE1E6   missing level 3, blocked, not available
+  warning       #6B4A00 on #FFF0C9   reopened, confirm before publishing
+  neutral       #4A4F66 on #ECEDF3   no answer yet
+  opening       #CDD35B  the opening shift's flavour
+  closing       #ADA8DA  the closing shift's flavour
+
+Every text-on-background pair above meets WCAG 2.2 AA at 4.5:1 (NFR-009). The
+single exception is white on primary, which appears only as the wordmark
+inside the logo blob: a logotype, which WCAG excludes, and never text.
+
+Dark mode (NFR-011) keeps every role and hue and darkens the surfaces. It is
+derived, not designed, because the prototype is light only (19.7). Primary and
+accent keep their light values there, which is why text on them uses
+on-primary and never ink: ink flips to near-white in dark mode and would drop
+to 2.2:1 on that blue.
+
+19.4 Type
+Quicksand carries the whole interface, mostly at 600 and 700; 400 is never
+used for interface text. Titan One appears in exactly two places: the Quart
+wordmark and the join code. Both are self-hosted through Fontsource, so no
+visitor's IP address reaches a font CDN (10.1, 12.2).
+  Screen title    700, 32 px, line-height 1.1, tracking -0.01em
+  Card title      700, 17-24 px
+  Body            600, 14-15 px, line-height 1.4-1.5
+  Group label     700, 12 px, uppercase, tracking 0.06-0.08em
+  Helper text     600, 12-15 px in muted
+
+19.5 Shape, elevation and motion
+Pills (99 px) for everything tappable: buttons, chips, filters, tabs, badges.
+Rounded rectangles for anything holding content: 28 px cards, 32 px hero
+cards, 20 px fields, 18 px chips, 36 px on a sheet's top corners. Circles for
+avatars, the settings button and the plus/minus steppers. The logo is a
+deliberately uneven blob, tilted -8 degrees, so it reads as drawn.
+
+Two shadows do the work of borders: a soft ambient shadow under cards, and a
+hard 3 px offset under anything tappable. A third, heavier shadow lifts the
+floating tab bar and open sheets.
+
+Sheets slide up in 0.28 s, backdrops fade in 0.2 s, toasts pop in 0.25 s.
+Nothing else animates, and everything stops under prefers-reduced-motion
+(NFR-010).
+
+19.6 Screen patterns
+  - Top row: the logo blob on the left; on the right the settings circle for
+    admins (NFR-016) and the person's initials in a white circle.
+  - Header: a muted context line, then the 32 px title ("Hi Sophie!").
+  - Home: one hero card in primary with a large translucent circle bleeding
+    off its corner, holding whatever matters most right now (the next shift
+    for an employee, the state of the next period for the owner), then smaller
+    cards below.
+  - Tab bar: a floating white pill above the bottom edge, at most five tabs,
+    the selected one filled with primary, counts in an accent badge.
+  - Detail opens in a bottom sheet, not a new page: the shift panel, publish
+    confirmation and settings all use one sheet component.
+  - Status chips pair a soft background with its strong colour and always
+    carry a word or a symbol.
+  - The mascot: a bubble tea cup drawn in CSS, with a flavour colour and a
+    mood (happy, sleepy, surprised). Opening shifts are lime, closing shifts
+    are lavender; the cup appears on the next-shift card, on empty states and
+    on the publish sheet. It is decoration and is hidden from screen readers;
+    it never carries information on its own.
+  - Tap targets are at least 44 px, usually 48 px.
+  - Tone of voice is part of the design: short, human, second person. Write
+    the French first where you can; it is the shop's working language.
+
+19.7 What the design prototype does not cover
+  - Dark mode. The prototype is light only; the dark palette is derived and
+    must be checked on a real phone before the pilot (Q-14).
+  - Desktop and iPad. The same components in a wider column with a sidebar
+    instead of the tab bar (NFR-003), not yet drawn.
+  - Sign-up, sign-in, the workplace list and the template editor, which the
+    behaviour prototype covers instead (section 18).
+  - Error, loading and offline states beyond the empty states shown.
+  - Longer French strings. French runs longer than English; every screen is
+    checked in French at 390 px before it is called done (NFR-013).
+
+================================================================================
+END OF DOCUMENT
+================================================================================

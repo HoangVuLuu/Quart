@@ -1,0 +1,39 @@
+{
+  "app": {
+    "name": "Quart",
+    "workplace": "Presotea Montmorency"
+  },
+  "language": {
+    "label": "Change language",
+    "switchTo": "Français"
+  },
+  "home": {
+    "eyebrow": "Walking skeleton",
+    "title": "Quart is up and running",
+    "subtitle": "This page proves the whole chain works: browser, web app and API.",
+    "status": {
+      "loading": "Checking the API…",
+      "ok": "API reachable",
+      "error": "The API did not answer"
+    },
+    "version": "Version",
+    "environment": "Environment",
+    "serverTime": "Server time",
+    "retry": "Try again"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "back": "Back to home"
+  },
+  "errors": {
+    "common": {
+      "not_found": "We could not find what you asked for.",
+      "validation": "Some information is missing or not valid.",
+      "unauthorized": "Please sign in again.",
+      "forbidden": "You do not have access to this.",
+      "conflict": "Someone changed this at the same time. Refresh and try again.",
+      "unexpected": "Something went wrong on our side. Try again in a moment.",
+      "network": "No connection to the server. Check your internet and try again."
+    }
+  }
+}

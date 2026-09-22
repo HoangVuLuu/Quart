@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The News tab: posts, photos and reactions. Built in M8.
+       A module owns its own database schema and exposes only what its public AnnouncementsModule class exposes.
+       It may reference Quart.SharedKernel, never another module (enforced by Quart.ArchitectureTests). -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Quart.SharedKernel\Quart.SharedKernel.csproj" />
+  </ItemGroup>
+</Project>

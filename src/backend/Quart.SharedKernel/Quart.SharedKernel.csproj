@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Types every module may use. Keep it small: if something here only serves one module, it belongs in that module. -->
+</Project>

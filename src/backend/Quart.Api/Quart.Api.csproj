@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- The single ASP.NET Core host (AD-020). It wires modules together, serves the API under /api,
+       and in production also serves the built React app from wwwroot (copied in by the Dockerfile). -->
+  <PropertyGroup>
+    <UserSecretsId>quart-api</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Quart.SharedKernel\Quart.SharedKernel.csproj" />
+    <ProjectReference Include="..\Modules\Quart.Modules.Identity\Quart.Modules.Identity.csproj" />
+    <ProjectReference Include="..\Modules\Quart.Modules.Workplaces\Quart.Modules.Workplaces.csproj" />
+    <ProjectReference Include="..\Modules\Quart.Modules.Scheduling\Quart.Modules.Scheduling.csproj" />
+    <ProjectReference Include="..\Modules\Quart.Modules.Marketplace\Quart.Modules.Marketplace.csproj" />
+    <ProjectReference Include="..\Modules\Quart.Modules.Announcements\Quart.Modules.Announcements.csproj" />
+    <ProjectReference Include="..\Modules\Quart.Modules.Files\Quart.Modules.Files.csproj" />
+    <ProjectReference Include="..\Modules\Quart.Modules.Notifications\Quart.Modules.Notifications.csproj" />
+    <ProjectReference Include="..\Modules\Quart.Modules.Jobs\Quart.Modules.Jobs.csproj" />
+  </ItemGroup>
+</Project>

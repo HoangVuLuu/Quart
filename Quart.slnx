@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/backend/Quart.Api/Quart.Api.csproj" />
+    <Project Path="src/backend/Quart.SharedKernel/Quart.SharedKernel.csproj" />
+    <Project Path="src/backend/Quart.Generator/Quart.Generator.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/">
+    <Project Path="src/backend/Modules/Quart.Modules.Identity/Quart.Modules.Identity.csproj" />
+    <Project Path="src/backend/Modules/Quart.Modules.Workplaces/Quart.Modules.Workplaces.csproj" />
+    <Project Path="src/backend/Modules/Quart.Modules.Scheduling/Quart.Modules.Scheduling.csproj" />
+    <Project Path="src/backend/Modules/Quart.Modules.Marketplace/Quart.Modules.Marketplace.csproj" />
+    <Project Path="src/backend/Modules/Quart.Modules.Announcements/Quart.Modules.Announcements.csproj" />
+    <Project Path="src/backend/Modules/Quart.Modules.Files/Quart.Modules.Files.csproj" />
+    <Project Path="src/backend/Modules/Quart.Modules.Notifications/Quart.Modules.Notifications.csproj" />
+    <Project Path="src/backend/Modules/Quart.Modules.Jobs/Quart.Modules.Jobs.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Quart.Api.Tests/Quart.Api.Tests.csproj" />
+    <Project Path="tests/Quart.ArchitectureTests/Quart.ArchitectureTests.csproj" />
+    <Project Path="tests/Quart.Generator.Tests/Quart.Generator.Tests.csproj" />
+  </Folder>
+</Solution>
