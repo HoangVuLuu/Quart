@@ -1,0 +1,33 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+*.trx
+
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Editors and operating systems
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Secrets and local configuration: never commit these
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+*.pfx
+*.key
+*.pem
+
+# Local state of scripts/github/create-issues.mjs
+scripts/github/.created-issues.json

@@ -1,0 +1,36 @@
+name: Feature slice
+description: A piece of the product, built front to back so it can be seen working.
+labels: ['type:feature', 'stack:full']
+body:
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: The problem this solves, in a sentence or two.
+    validations:
+      required: true
+  - type: input
+    id: spec
+    attributes:
+      label: Spec references
+      description: FR-, BR-, AD-, NFR- IDs from docs/quart-project-spec.txt
+      placeholder: FR-093, NFR-002
+  - type: textarea
+    id: see
+    attributes:
+      label: What you will see when it is done
+  - type: textarea
+    id: backend
+    attributes:
+      label: Backend
+  - type: textarea
+    id: frontend
+    attributes:
+      label: Frontend
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: Checkable acceptance criteria.
+    validations:
+      required: true
