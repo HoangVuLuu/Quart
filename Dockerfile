@@ -2,7 +2,7 @@
 # One image serves both the API and the built web app from the same origin (spec 9.1, AD-024).
 
 # ---- 1. Build the web app ----
-FROM node:22-alpine AS web
+FROM node:25-alpine AS web
 WORKDIR /web
 COPY src/web/package.json src/web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
