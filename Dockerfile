@@ -18,7 +18,7 @@ RUN dotnet restore src/backend/Quart.Api/Quart.Api.csproj
 # CI passes the commit SHA so the home page can show exactly what is deployed.
 ARG VERSION=0.0.0-local
 RUN dotnet publish src/backend/Quart.Api/Quart.Api.csproj --configuration Release --no-restore \
-    --output /app -p:InformationalVersion=${VERSION}
+    --output /app -p:Version=0.0.0 -p:InformationalVersion=${VERSION}
 
 # ---- 3. Runtime ----
 # "chiseled": no shell, no package manager, runs as a non-root user.
