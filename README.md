@@ -70,7 +70,7 @@ origin, exactly like production. Emails the app sends appear at <http://localhos
 
 ```bash
 dotnet build Quart.slnx && dotnet test Quart.slnx
-cd src/web && npm run typecheck && npm run lint && npm run format:check && npm run i18n:check && npm test && npm run build
+cd src/web && npm run typecheck && npm run lint && npm run format:check && npm run i18n:check && npm test && npm run build && npm run csp:check
 ```
 
 CI runs the same steps, and warnings fail the .NET build there. A missing French or English string

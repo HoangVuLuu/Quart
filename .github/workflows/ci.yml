@@ -51,6 +51,7 @@ jobs:
       - run: npm run i18n:check
       - run: npm test
       - run: npm run build
+      - run: npm run csp:check
 
   container:
     name: Container image
