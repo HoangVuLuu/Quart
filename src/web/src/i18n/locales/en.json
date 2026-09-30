@@ -38,6 +38,11 @@
       "conflict": "Someone changed this at the same time. Refresh and try again.",
       "unexpected": "Something went wrong on our side. Try again in a moment.",
       "network": "No connection to the server. Check your internet and try again."
+    },
+    "reference": "Reference: {{traceId}}",
+    "page": {
+      "title": "Something went wrong",
+      "home": "Back to home"
     }
   }
 }

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { errorKeyFor } from '../../i18n/errors';
+import { ErrorNotice } from '../../app/ErrorNotice';
 import { formatDateTime } from '../../i18n/format';
 import { useMeta } from './useMeta';
 
@@ -32,7 +32,9 @@ export function HomePage() {
               <span aria-hidden="true">✕</span>
               {t('home.status.error')}
             </p>
-            <p className="mt-3 text-sm text-muted">{t(errorKeyFor(meta.error))}</p>
+            <div className="mt-3">
+              <ErrorNotice error={meta.error} />
+            </div>
             <button
               type="button"
               onClick={() => void meta.refetch()}

@@ -60,12 +60,18 @@ describe('HomePage', () => {
     expect(screen.getByText('1.2.3')).toBeInTheDocument();
   });
 
-  it('translates the error code the API sends back', async () => {
-    answerWith(404, { status: 404, code: 'common.not_found' }, 'application/problem+json');
+  it('translates the error code the API sends back, with its trace ID', async () => {
+    answerWith(
+      404,
+      { status: 404, code: 'common.not_found', traceId: '4bf92f3577b34da6a3ce929d0e0e4736' },
+      'application/problem+json',
+    );
 
     renderPage();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(en.errors.common.not_found);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(en.errors.common.not_found);
+    expect(alert).toHaveTextContent('Reference: 4bf92f3577b34da6a3ce929d0e0e4736');
   });
 
   it('explains a missing connection instead of showing a raw error', async () => {

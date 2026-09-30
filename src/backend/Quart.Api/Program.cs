@@ -1,5 +1,6 @@
 using Npgsql;
 using Quart.Api.Endpoints;
+using Quart.Api.Logging;
 using Quart.Modules.Announcements;
 using Quart.Modules.Files;
 using Quart.Modules.Identity;
@@ -12,12 +13,16 @@ using Quart.SharedKernel;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Every error leaves the server as problem details carrying a machine-readable "code" (AD-023).
+builder.AddQuartLogging();
+
+// Every error leaves the server as problem details carrying a machine-readable "code" (AD-023),
+// and the trace ID of its log line, so a screenshot of the error is enough to find what happened.
 builder.Services.AddProblemDetails(options =>
 {
     options.CustomizeProblemDetails = context =>
     {
         context.ProblemDetails.Extensions.TryAdd("code", ErrorCodes.ForStatus(context.ProblemDetails.Status));
+        context.ProblemDetails.Extensions["traceId"] = QuartLogging.TraceIdOf(context.HttpContext);
     };
 });
 
@@ -53,6 +58,7 @@ if (app.Environment.IsDevelopment())
     }
 }
 
+app.UseQuartRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
@@ -63,6 +69,10 @@ app.UseStaticFiles();
 
 app.MapHealthChecks("/health");
 app.MapMetaEndpoints();
+if (!app.Environment.IsProduction())
+{
+    app.MapDiagnosticsEndpoints();
+}
 
 app.MapIdentityModule();
 app.MapWorkplacesModule();

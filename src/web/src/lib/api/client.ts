@@ -4,25 +4,36 @@
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  /** The ID on the server's log line for this request. Shown to the person so a screenshot can be traced. */
+  readonly traceId: string | undefined;
 
-  constructor(status: number, code: string) {
+  constructor(status: number, code: string, traceId?: string) {
     super(code);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.traceId = traceId;
   }
 }
 
 interface ProblemDetails {
   code?: string;
+  traceId?: string;
 }
 
 export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(path, {
-    credentials: 'same-origin',
-    headers: { Accept: 'application/json' },
-    signal,
-  });
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
+      signal,
+    });
+  } catch (error) {
+    // A cancelled request is not a failure; anything else means the server could not be reached.
+    if (signal?.aborted) throw error;
+    throw new ApiError(0, 'common.network');
+  }
   if (!response.ok) {
     throw await toApiError(response);
   }
@@ -33,7 +44,7 @@ async function toApiError(response: Response): Promise<ApiError> {
   if ((response.headers.get('content-type') ?? '').includes('json')) {
     try {
       const problem = (await response.json()) as ProblemDetails;
-      if (problem.code) return new ApiError(response.status, problem.code);
+      if (problem.code) return new ApiError(response.status, problem.code, problem.traceId);
     } catch {
       // Not valid JSON: fall through to a generic code.
     }

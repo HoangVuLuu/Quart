@@ -15,7 +15,12 @@ const errorKeys = {
 type ErrorKey = (typeof errorKeys)[keyof typeof errorKeys];
 
 export function errorKeyFor(error: unknown): ErrorKey {
-  // fetch throws a TypeError when the server cannot be reached at all.
-  const code = error instanceof ApiError ? error.code : 'common.network';
+  // Anything that is not an API error is a bug in the web app itself: "something went wrong".
+  const code = error instanceof ApiError ? error.code : 'common.unexpected';
   return (errorKeys as Record<string, ErrorKey>)[code] ?? errorKeys['common.unexpected'];
+}
+
+/** The server trace ID behind an error, when there is one (a lost connection has none). */
+export function traceIdOf(error: unknown): string | undefined {
+  return error instanceof ApiError ? error.traceId : undefined;
 }
