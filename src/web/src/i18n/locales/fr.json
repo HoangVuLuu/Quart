@@ -10,11 +10,15 @@
   "home": {
     "eyebrow": "Squelette de départ",
     "title": "Quart est en marche",
-    "subtitle": "Cette page prouve que toute la chaîne fonctionne : navigateur, application et API.",
+    "subtitle": "Cette page prouve que toute la chaîne fonctionne : navigateur, application, API et base de données.",
     "status": {
       "loading": "Vérification de l'API…",
       "ok": "API joignable",
       "error": "L'API n'a pas répondu"
+    },
+    "database": {
+      "ok": "Base de données : connectée",
+      "unavailable": "Base de données : indisponible"
     },
     "version": "Version",
     "environment": "Environnement",

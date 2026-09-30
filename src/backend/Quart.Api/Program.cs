@@ -1,3 +1,4 @@
+using Npgsql;
 using Quart.Api.Endpoints;
 using Quart.Modules.Announcements;
 using Quart.Modules.Files;
@@ -19,7 +20,12 @@ builder.Services.AddProblemDetails(options =>
         context.ProblemDetails.Extensions.TryAdd("code", ErrorCodes.ForStatus(context.ProblemDetails.Status));
     };
 });
-builder.Services.AddHealthChecks();
+
+// One data source for the whole app; every module's DbContext draws connections from it (AD-015).
+var connectionString = builder.Configuration.GetConnectionString("Quart")
+    ?? throw new InvalidOperationException("Connection string 'Quart' is missing. Set ConnectionStrings__Quart.");
+builder.Services.AddSingleton(new NpgsqlDataSourceBuilder(connectionString).UseNodaTime().Build());
+builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>(DatabaseHealthCheck.Name);
 
 builder.Services
     .AddIdentityModule()
@@ -32,6 +38,20 @@ builder.Services
     .AddJobsModule();
 
 var app = builder.Build();
+
+// Development only. Every other environment migrates through the explicit step from M0-08.
+if (app.Environment.IsDevelopment())
+{
+    try
+    {
+        await app.Services.MigrateJobsModuleAsync();
+    }
+    catch (Exception exception)
+    {
+        // The app must still start and say "Database: unavailable" when Postgres is not running.
+        app.Logger.LogWarning(exception, "Could not apply database migrations. Is `docker compose up -d` running?");
+    }
+}
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

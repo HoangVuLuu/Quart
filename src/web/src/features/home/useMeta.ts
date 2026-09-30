@@ -6,6 +6,7 @@ export interface Meta {
   version: string;
   environment: string;
   serverTimeUtc: string;
+  database: 'ok' | 'unavailable';
 }
 
 export function useMeta() {

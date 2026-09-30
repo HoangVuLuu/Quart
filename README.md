@@ -50,6 +50,10 @@ dotnet run --project src/backend/Quart.Api        # API on http://localhost:5080
 cd src/web && npm ci && npm run dev               # web app on http://localhost:5173
 ```
 
+The API applies its database migrations on startup in Development, and the home page shows
+"Database: connected" once Postgres is up. Database tests start their own Postgres container, so
+`dotnet test` needs Docker running but not `docker compose up`.
+
 Open <http://localhost:5173>. The Vite dev server proxies `/api` to the API, so the browser sees one
 origin, exactly like production. Emails the app sends appear at <http://localhost:8025>.
 
