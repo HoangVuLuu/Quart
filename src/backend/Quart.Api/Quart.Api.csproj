@@ -17,5 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
+    <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>
 </Project>

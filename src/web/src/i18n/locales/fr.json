@@ -38,6 +38,11 @@
       "conflict": "Quelqu'un a modifié ceci en même temps. Actualise et réessaie.",
       "unexpected": "Un problème est survenu de notre côté. Réessaie dans un instant.",
       "network": "Aucune connexion au serveur. Vérifie ton internet et réessaie."
+    },
+    "reference": "Référence : {{traceId}}",
+    "page": {
+      "title": "Un problème est survenu",
+      "home": "Retour à l'accueil"
     }
   }
 }

@@ -37,6 +37,10 @@ The look is set by `docs/prototype/quart-design-prototype.html` and written down
 Colours, radii, shadows and the two fonts live once, as tokens in `src/web/src/styles/index.css`;
 screens use token names and never literals (AD-048).
 
+Logs are compact JSON on stdout and never contain personal data: no URLs, bodies, names or emails,
+only IDs (decision 0012). Every error the API returns carries a `traceId` that the web app shows
+under its message and that finds the matching log line.
+
 Module rules are enforced by `tests/Quart.ArchitectureTests`: a module references only
 `Quart.SharedKernel`, and only Scheduling may use the generator.
 

@@ -26,6 +26,19 @@ public sealed class ApiSmokeTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Healthy_probes_are_not_logged()
+    {
+        using var client = factory.CreateClient();
+
+        using var health = await client.GetAsync("/health", TestContext.Current.CancellationToken);
+        using var meta = await client.GetAsync("/api/meta", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, health.StatusCode);
+        await factory.Logs.WaitForAsync(line => line.Contains("/api/meta", StringComparison.Ordinal));
+        Assert.DoesNotContain(factory.Logs.Lines, line => line.Contains("/health", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Meta_endpoint_describes_the_app_and_reports_the_database()
     {
         using var client = factory.CreateClient();
