@@ -3,6 +3,10 @@
        and in production also serves the built React app from wwwroot (copied in by the Dockerfile). -->
   <PropertyGroup>
     <UserSecretsId>quart-api</UserSecretsId>
+    <!-- Every build writes the OpenAPI description to src/web/openapi/quart.json (AD-021). The web app
+         generates its TypeScript types from it (AD-022), and CI fails if the committed copy is stale. -->
+    <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/../../web/openapi</OpenApiDocumentsDirectory>
+    <OpenApiGenerateDocumentsOptions>--file-name quart</OpenApiGenerateDocumentsOptions>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Quart.SharedKernel\Quart.SharedKernel.csproj" />
@@ -16,6 +20,11 @@
     <ProjectReference Include="..\Modules\Quart.Modules.Jobs\Quart.Modules.Jobs.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
     <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>

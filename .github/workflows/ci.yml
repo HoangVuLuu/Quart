@@ -24,6 +24,9 @@ jobs:
       # GitHub sets CI=true, so warnings fail the build here (Directory.Build.props).
       - run: dotnet restore Quart.slnx
       - run: dotnet build Quart.slnx --configuration Release --no-restore
+      # The build rewrites the OpenAPI document. A difference means an endpoint changed without it.
+      - name: OpenAPI document is up to date
+        run: git diff --exit-code src/web/openapi || (echo "::error::src/web/openapi/quart.json is stale. Build the API and commit it, then run 'npm run api:generate' in src/web." && exit 1)
       - run: dotnet test Quart.slnx --configuration Release --no-build
 
   frontend:
@@ -40,6 +43,8 @@ jobs:
           cache: npm
           cache-dependency-path: src/web/package-lock.json
       - run: npm ci
+      - name: TypeScript client matches the OpenAPI document
+        run: npm run api:generate && git diff --exit-code src/lib/api/schema.d.ts || (echo "::error::src/lib/api/schema.d.ts is stale. Run 'npm run api:generate' in src/web and commit it." && exit 1)
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format:check

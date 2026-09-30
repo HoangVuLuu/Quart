@@ -1,6 +1,8 @@
+using System.Text.Json.Serialization;
 using Npgsql;
 using Quart.Api.Endpoints;
 using Quart.Api.Logging;
+using Quart.Api.OpenApi;
 using Quart.Api.Security;
 using Quart.Modules.Announcements;
 using Quart.Modules.Files;
@@ -29,9 +31,14 @@ builder.Services.AddProblemDetails(options =>
 });
 
 // One data source for the whole app; every module's DbContext draws connections from it (AD-015).
+// The build runs the app without configuration to write the OpenAPI document; it never connects.
 var connectionString = builder.Configuration.GetConnectionString("Quart")
+    ?? (QuartOpenApi.IsGeneratingDocument ? "Host=localhost" : null)
     ?? throw new InvalidOperationException("Connection string 'Quart' is missing. Set ConnectionStrings__Quart.");
 builder.Services.AddSingleton(new NpgsqlDataSourceBuilder(connectionString).UseNodaTime().Build());
+// Numbers are numbers: no quoted "42" accepted, and the OpenAPI types say plain "integer".
+builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict);
+builder.Services.AddQuartOpenApi();
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>(DatabaseHealthCheck.Name);
 
 builder.Services
@@ -70,6 +77,10 @@ app.UseStatusCodePages();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi(); // /openapi/v1.json
+}
 app.MapHealthChecks("/health");
 app.MapMetaEndpoints();
 if (!app.Environment.IsProduction())

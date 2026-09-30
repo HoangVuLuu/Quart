@@ -1,0 +1,120 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Quart",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/meta": {
+      "get": {
+        "tags": [
+          "Quart.Api"
+        ],
+        "operationId": "GetMeta",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetaResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiProblem": {
+        "required": [
+          "code",
+          "traceId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "traceId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "MetaResponse": {
+        "required": [
+          "name",
+          "version",
+          "environment",
+          "serverTimeUtc",
+          "database"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string"
+          },
+          "serverTimeUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "database": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Quart.Api"
+    }
+  ]
+}

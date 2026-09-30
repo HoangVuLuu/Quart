@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiGet } from '../../lib/api/client';
+import { getUndocumented } from '../../lib/api/client';
 
 // /diagnostics/error asks the API to fail on purpose (outside Production only), and lets the error
 // reach the root error boundary. Used on staging to check an error shows a translated message and a
@@ -7,7 +7,7 @@ import { apiGet } from '../../lib/api/client';
 export function ForcedErrorPage() {
   useQuery({
     queryKey: ['diagnostics', 'exception'],
-    queryFn: ({ signal }) => apiGet<never>('/api/diagnostics/exception', signal),
+    queryFn: ({ signal }) => getUndocumented('/api/diagnostics/exception', signal),
     retry: false,
     throwOnError: true,
   });

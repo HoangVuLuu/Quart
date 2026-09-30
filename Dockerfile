@@ -17,8 +17,9 @@ COPY src/backend/ src/backend/
 RUN dotnet restore src/backend/Quart.Api/Quart.Api.csproj
 # CI passes the commit SHA so the home page can show exactly what is deployed.
 ARG VERSION=0.0.0-local
+# The OpenAPI document is written by CI's build and committed; the image does not need it.
 RUN dotnet publish src/backend/Quart.Api/Quart.Api.csproj --configuration Release --no-restore \
-    --output /app -p:Version=0.0.0 -p:InformationalVersion=${VERSION}
+    --output /app -p:Version=0.0.0 -p:InformationalVersion=${VERSION} -p:OpenApiGenerateDocuments=false
 
 # ---- 3. Runtime ----
 # "chiseled": no shell, no package manager, runs as a non-root user.
