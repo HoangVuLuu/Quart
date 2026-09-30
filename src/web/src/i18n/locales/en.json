@@ -10,11 +10,15 @@
   "home": {
     "eyebrow": "Walking skeleton",
     "title": "Quart is up and running",
-    "subtitle": "This page proves the whole chain works: browser, web app and API.",
+    "subtitle": "This page proves the whole chain works: browser, web app, API and database.",
     "status": {
       "loading": "Checking the API…",
       "ok": "API reachable",
       "error": "The API did not answer"
+    },
+    "database": {
+      "ok": "Database: connected",
+      "unavailable": "Database: unavailable"
     },
     "version": "Version",
     "environment": "Environment",

@@ -19,3 +19,4 @@ take the next number, and never edit an accepted record: supersede it with a new
 | 0008 | A new workplace starts with a single owner invitation  | Accepted |
 | 0009 | The background tick runs as a short job, not HTTP      | Accepted |
 | 0010 | The visual design comes from the design prototype      | Accepted |
+| 0011 | Each module owns one DbContext, schema and history     | Accepted |

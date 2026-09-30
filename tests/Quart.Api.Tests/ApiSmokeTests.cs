@@ -1,16 +1,19 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Quart.Api.Tests;
 
-/// <summary>
-/// End-to-end checks through the real HTTP pipeline, hosted in memory.
-/// Database-backed integration tests (Testcontainers, M0) join this project later.
-/// </summary>
-public sealed class ApiSmokeTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+/// <summary>End-to-end checks through the real HTTP pipeline, hosted in memory, against a real Postgres.</summary>
+[Collection(PostgresCollection.Name)]
+public sealed class ApiSmokeTests(PostgresFixture postgres) : IAsyncLifetime
 {
+    private QuartApiFactory factory = null!;
+
+    public async ValueTask InitializeAsync() => factory = new QuartApiFactory(await postgres.CreateDatabaseAsync());
+
+    public async ValueTask DisposeAsync() => await factory.DisposeAsync();
+
     [Fact]
     public async Task Health_endpoint_reports_healthy()
     {
@@ -23,7 +26,7 @@ public sealed class ApiSmokeTests(WebApplicationFactory<Program> factory) : ICla
     }
 
     [Fact]
-    public async Task Meta_endpoint_describes_the_app()
+    public async Task Meta_endpoint_describes_the_app_and_reports_the_database()
     {
         using var client = factory.CreateClient();
 
@@ -31,6 +34,7 @@ public sealed class ApiSmokeTests(WebApplicationFactory<Program> factory) : ICla
 
         Assert.Equal("Quart", meta.GetProperty("name").GetString());
         Assert.False(string.IsNullOrWhiteSpace(meta.GetProperty("version").GetString()));
+        Assert.Equal("ok", meta.GetProperty("database").GetString());
     }
 
     [Fact]

@@ -49,6 +49,20 @@ export function HomePage() {
               <span aria-hidden="true">✓</span>
               {t('home.status.ok')}
             </p>
+            {meta.data.database === 'ok' ? (
+              <p className="mt-2 inline-flex items-center gap-2 rounded-pill bg-success-soft px-3 py-1 font-bold text-success">
+                <span aria-hidden="true">✓</span>
+                {t('home.database.ok')}
+              </p>
+            ) : (
+              <p
+                role="alert"
+                className="mt-2 inline-flex items-center gap-2 rounded-pill bg-danger-soft px-3 py-1 font-bold text-danger"
+              >
+                <span aria-hidden="true">✕</span>
+                {t('home.database.unavailable')}
+              </p>
+            )}
             <dl className="mt-4 flex flex-col gap-2 text-sm">
               <div className="flex items-center justify-between gap-4 rounded-field bg-surface-3 px-4 py-3">
                 <dt className="text-muted">{t('home.version')}</dt>

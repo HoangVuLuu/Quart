@@ -34,12 +34,30 @@ describe('HomePage', () => {
       version: '1.2.3',
       environment: 'Development',
       serverTimeUtc: '2026-09-21T12:00:00Z',
+      database: 'ok',
     });
 
     renderPage();
 
     expect(await screen.findByText('1.2.3')).toBeInTheDocument();
     expect(screen.getByText(en.home.status.ok)).toBeInTheDocument();
+    expect(screen.getByText(en.home.database.ok)).toBeInTheDocument();
+  });
+
+  it('still renders when the database is unavailable, with an icon and text', async () => {
+    answerWith(200, {
+      name: 'Quart',
+      version: '1.2.3',
+      environment: 'Development',
+      serverTimeUtc: '2026-09-21T12:00:00Z',
+      database: 'unavailable',
+    });
+
+    renderPage();
+
+    expect(await screen.findByText(en.home.database.unavailable)).toBeInTheDocument();
+    expect(screen.getByText(en.home.status.ok)).toBeInTheDocument();
+    expect(screen.getByText('1.2.3')).toBeInTheDocument();
   });
 
   it('translates the error code the API sends back', async () => {
@@ -70,10 +88,12 @@ describe('HomePage', () => {
       version: '1.2.3',
       environment: 'Production',
       serverTimeUtc: '2026-09-21T12:00:00Z',
+      database: 'ok',
     });
 
     renderPage();
 
     expect(await screen.findByText('API joignable')).toBeInTheDocument();
+    expect(screen.getByText('Base de données : connectée')).toBeInTheDocument();
   });
 });

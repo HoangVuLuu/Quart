@@ -15,4 +15,7 @@
     <ProjectReference Include="..\Modules\Quart.Modules.Notifications\Quart.Modules.Notifications.csproj" />
     <ProjectReference Include="..\Modules\Quart.Modules.Jobs\Quart.Modules.Jobs.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
+  </ItemGroup>
 </Project>
