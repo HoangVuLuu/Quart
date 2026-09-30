@@ -7,8 +7,10 @@
   <ItemGroup Label="Testing">
     <!-- xunit.v3 is pinned to 3.x on purpose. 4.0 (Aug 2026) switched its default runner to
          Microsoft Testing Platform; move to it as a deliberate upgrade, not by accident. -->
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.12" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" Version="10.0.3" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />

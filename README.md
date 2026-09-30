@@ -41,6 +41,11 @@ Logs are compact JSON on stdout and never contain personal data: no URLs, bodies
 only IDs (decision 0012). Every error the API returns carries a `traceId` that the web app shows
 under its message and that finds the matching log line.
 
+The web app's API types are generated, never written by hand (AD-022). Building the API writes
+`src/web/openapi/quart.json`; then `npm run api:generate` in `src/web` rewrites
+`src/lib/api/schema.d.ts`. Commit both. CI fails if either is stale. In Development the live
+document is at <http://localhost:5080/openapi/v1.json>.
+
 Module rules are enforced by `tests/Quart.ArchitectureTests`: a module references only
 `Quart.SharedKernel`, and only Scheduling may use the generator.
 
