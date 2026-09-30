@@ -1,6 +1,7 @@
 using Npgsql;
 using Quart.Api.Endpoints;
 using Quart.Api.Logging;
+using Quart.Api.Security;
 using Quart.Modules.Announcements;
 using Quart.Modules.Files;
 using Quart.Modules.Identity;
@@ -14,6 +15,7 @@ using Quart.SharedKernel;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddQuartLogging();
+builder.AddQuartSecurity();
 
 // Every error leaves the server as problem details carrying a machine-readable "code" (AD-023),
 // and the trace ID of its log line, so a screenshot of the error is enough to find what happened.
@@ -58,6 +60,7 @@ if (app.Environment.IsDevelopment())
     }
 }
 
+app.UseQuartSecurity();
 app.UseQuartRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
