@@ -91,14 +91,23 @@ if [[ -z "$CLIENT_ID" ]]; then
   CLIENT_ID=$(az ad app create --display-name "$ENTRA_APP" --query appId -o tsv)
 fi
 az ad sp show --id "$CLIENT_ID" --output none 2>/dev/null || az ad sp create --id "$CLIENT_ID" --output none
+# The subject must match GitHub's token exactly. Newer repositories use an ID-based prefix
+# (repo:Owner@<id>/Repo@<id>), so ask GitHub for the prefix instead of assuming one.
+SUBJECT_PREFIX=$(gh api "repos/${REPO}/actions/oidc/customization/sub" --jq '.sub_claim_prefix // empty')
+SUBJECT="${SUBJECT_PREFIX:-repo:${REPO}}:environment:staging"
+CREDENTIAL="{
+  \"name\": \"github-staging\",
+  \"issuer\": \"https://token.actions.githubusercontent.com\",
+  \"subject\": \"${SUBJECT}\",
+  \"audiences\": [\"api://AzureADTokenExchange\"]
+}"
 if [[ -z "$(az ad app federated-credential list --id "$CLIENT_ID" --query "[?name=='github-staging'].name" -o tsv)" ]]; then
-  az ad app federated-credential create --id "$CLIENT_ID" --parameters "{
-    \"name\": \"github-staging\",
-    \"issuer\": \"https://token.actions.githubusercontent.com\",
-    \"subject\": \"repo:${REPO}:environment:staging\",
-    \"audiences\": [\"api://AzureADTokenExchange\"]
-  }" --output none
+  az ad app federated-credential create --id "$CLIENT_ID" --parameters "$CREDENTIAL" --output none
+else
+  az ad app federated-credential update --id "$CLIENT_ID" --federated-credential-id github-staging \
+    --parameters "$CREDENTIAL" --output none
 fi
+echo "Federated credential subject: ${SUBJECT}"
 PRINCIPAL_ID=$(az ad sp show --id "$CLIENT_ID" --query id -o tsv)
 # Contributor on the staging resource group only, never the whole subscription.
 az role assignment create --assignee-object-id "$PRINCIPAL_ID" --assignee-principal-type ServicePrincipal \
