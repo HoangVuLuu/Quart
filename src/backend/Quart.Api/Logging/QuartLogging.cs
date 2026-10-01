@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Diagnostics;
+using Quart.Api.Migrations;
 using Serilog;
 using Serilog.AspNetCore;
 using Serilog.Core;
@@ -32,6 +33,7 @@ public static class QuartLogging
                 // Whatever the configuration says: the request summary line always gets through, and
                 // ASP.NET Core's own request logs, which contain full URLs and query strings, never do.
                 .MinimumLevel.Override(RequestSummarySource, LogEventLevel.Information)
+                .MinimumLevel.Override(DatabaseMigrations.LogCategory, LogEventLevel.Information)
                 .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
                 .Enrich.With<DropRequestPath>()
                 // Extra sinks registered in DI (integration tests capture output this way).

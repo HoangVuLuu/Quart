@@ -1,5 +1,5 @@
 using Npgsql;
-using Quart.Modules.Jobs;
+using Quart.Api.Migrations;
 
 namespace Quart.Api.Tests;
 
@@ -16,7 +16,7 @@ public sealed class MigrationTests(PostgresFixture postgres)
         var connectionString = await postgres.CreateDatabaseAsync();
         await using var factory = new QuartApiFactory(connectionString);
 
-        await factory.Services.MigrateJobsModuleAsync(TestContext.Current.CancellationToken);
+        await factory.Services.MigrateAllModulesAsync(TestContext.Current.CancellationToken);
 
         var tables = await ListTablesAsync(connectionString);
         Assert.Contains("jobs.scheduled_job", tables);
@@ -30,9 +30,9 @@ public sealed class MigrationTests(PostgresFixture postgres)
         var connectionString = await postgres.CreateDatabaseAsync();
         await using var factory = new QuartApiFactory(connectionString);
 
-        await factory.Services.MigrateJobsModuleAsync(TestContext.Current.CancellationToken);
+        await factory.Services.MigrateAllModulesAsync(TestContext.Current.CancellationToken);
         var once = await ListTablesAsync(connectionString);
-        await factory.Services.MigrateJobsModuleAsync(TestContext.Current.CancellationToken);
+        await factory.Services.MigrateAllModulesAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(once, await ListTablesAsync(connectionString));
     }
