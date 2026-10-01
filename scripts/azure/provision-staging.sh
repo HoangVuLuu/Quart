@@ -15,6 +15,7 @@ RESOURCE_GROUP="rg-quart-staging"
 WORKSPACE="log-quart-staging"
 ENVIRONMENT="cae-quart-staging"
 APP="quart-staging"
+MIGRATE_JOB="quart-staging-migrate"
 ENTRA_APP="github-quart-staging"
 # Placeholder until M0-09 deploys the real image. Listens on 8080, like ours.
 PLACEHOLDER_IMAGE="mcr.microsoft.com/dotnet/samples:aspnetapp"
@@ -66,6 +67,20 @@ if ! az containerapp show -g "$RESOURCE_GROUP" -n "$APP" --output none 2>/dev/nu
     --output none
 else
   az containerapp secret set -g "$RESOURCE_GROUP" -n "$APP" --secrets "db-connection=${CONNECTION_STRING}" --output none
+fi
+
+step "6b. Container Apps job ${MIGRATE_JOB}: the same image with the 'migrate' argument, started by hand or by the deploy"
+# Runs `dotnet Quart.Api.dll migrate` and exits (docs/runbooks/migrations.md). No retries: a failed
+# migration stops the deploy instead of being attempted again. M0-09's deploy sets the real image.
+if ! az containerapp job show -g "$RESOURCE_GROUP" -n "$MIGRATE_JOB" --output none 2>/dev/null; then
+  az containerapp job create --resource-group "$RESOURCE_GROUP" --name "$MIGRATE_JOB" --environment "$ENVIRONMENT" \
+    --trigger-type Manual --replica-timeout 600 --replica-retry-limit 0 --parallelism 1 --replica-completion-count 1 \
+    --image "$PLACEHOLDER_IMAGE" --args "migrate" --cpu 0.25 --memory 0.5Gi \
+    --secrets "db-connection=${CONNECTION_STRING}" \
+    --env-vars "ConnectionStrings__Quart=secretref:db-connection" "ASPNETCORE_ENVIRONMENT=Staging" \
+    --output none
+else
+  az containerapp job secret set -g "$RESOURCE_GROUP" -n "$MIGRATE_JOB" --secrets "db-connection=${CONNECTION_STRING}" --output none
 fi
 unset DB_PASSWORD CONNECTION_STRING
 FQDN=$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP" --query properties.configuration.ingress.fqdn -o tsv)

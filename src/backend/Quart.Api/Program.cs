@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Npgsql;
 using Quart.Api.Endpoints;
 using Quart.Api.Logging;
+using Quart.Api.Migrations;
 using Quart.Api.OpenApi;
 using Quart.Api.Security;
 using Quart.Modules.Announcements;
@@ -14,7 +15,9 @@ using Quart.Modules.Scheduling;
 using Quart.Modules.Workplaces;
 using Quart.SharedKernel;
 
-var builder = WebApplication.CreateBuilder(args);
+// `dotnet Quart.Api.dll migrate` applies database migrations and exits; no argument starts the web server.
+var isMigrateCommand = args is [DatabaseMigrations.Command];
+var builder = WebApplication.CreateBuilder(isMigrateCommand ? [] : args);
 
 builder.AddQuartLogging();
 builder.AddQuartSecurity();
@@ -53,12 +56,19 @@ builder.Services
 
 var app = builder.Build();
 
-// Development only. Every other environment migrates through the explicit step from M0-08.
+if (isMigrateCommand)
+{
+    Environment.ExitCode = await DatabaseMigrations.RunCommandAsync(app.Services);
+    return;
+}
+
+// Development only. Every other environment migrates through the separate migrate step, before the
+// new version takes traffic (docs/runbooks/migrations.md).
 if (app.Environment.IsDevelopment())
 {
     try
     {
-        await app.Services.MigrateJobsModuleAsync();
+        await app.Services.MigrateAllModulesAsync();
     }
     catch (Exception exception)
     {
