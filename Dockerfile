@@ -26,6 +26,8 @@ RUN dotnet publish src/backend/Quart.Api/Quart.Api.csproj --configuration Releas
 # "-extra": includes ICU and time zone data. Without ICU, .NET falls back to invariant culture and
 # French dates in emails (fr-CA, FR-262) would silently come out wrong.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra AS runtime
+# Links the package on GitHub Container Registry to this repository.
+LABEL org.opencontainers.image.source=https://github.com/HoangVuLuu/Quart
 WORKDIR /app
 COPY --from=api /app ./
 COPY --from=web /web/dist ./wwwroot

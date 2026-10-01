@@ -1,0 +1,112 @@
+name: Deploy staging
+
+# Every merge to main goes to staging once CI is green (spec 11.3, AD-061): build and push the image,
+# migrate the database with it, then switch the app to it and check that it answers.
+# Signs in to Azure with a federated credential: no cloud password is stored in GitHub.
+# How it fits together: docs/runbooks/staging.md.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  # Redeploy main by hand: Actions > Deploy staging > Run workflow.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write # push to GitHub Container Registry
+  id-token: write # federated sign-in to Azure
+
+# One deploy at a time, and never cancel one halfway through.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to staging
+    # Only after a successful CI run on a push to main, not on a pull request.
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://quart-staging.blackdune-c9d0ed85.canadaeast.azurecontainerapps.io
+    env:
+      IMAGE: ghcr.io/hoangvuluu/quart # registry names must be lowercase
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      RESOURCE_GROUP: rg-quart-staging
+      APP: quart-staging
+      MIGRATE_JOB: quart-staging-migrate
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SHA }}
+
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push the image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ env.SHA }}
+            ${{ env.IMAGE }}:staging
+          build-args: VERSION=${{ env.SHA }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Install the Container Apps CLI extension
+        run: az extension add --name containerapp --upgrade --only-show-errors
+
+      # The same image, run with `migrate`, before the app changes (docs/runbooks/migrations.md).
+      # A failure stops the workflow here, and staging keeps running the previous version.
+      - name: Migrate the database
+        run: |
+          az containerapp job update -g "$RESOURCE_GROUP" -n "$MIGRATE_JOB" --image "$IMAGE:$SHA" --output none
+          execution=$(az containerapp job start -g "$RESOURCE_GROUP" -n "$MIGRATE_JOB" --query name -o tsv)
+          echo "Started $execution"
+          for _ in $(seq 1 60); do
+            status=$(az containerapp job execution show -g "$RESOURCE_GROUP" -n "$MIGRATE_JOB" \
+              --job-execution-name "$execution" --query properties.status -o tsv)
+            echo "Migration: $status"
+            case "$status" in
+              Succeeded) exit 0 ;;
+              Failed|Stopped|Degraded)
+                echo "::error::The migration failed, so the app was not updated. Its log is in Log Analytics (log-quart-staging), category Quart.Api.Migrations."
+                exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "::error::The migration did not finish within 10 minutes."
+          exit 1
+
+      - name: Switch the app to the new image
+        run: az containerapp update -g "$RESOURCE_GROUP" -n "$APP" --image "$IMAGE:$SHA" --output none
+
+      # The app sleeps at zero replicas, so the first answer can take a while.
+      - name: Smoke test
+        run: |
+          fqdn=$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP" --query properties.configuration.ingress.fqdn -o tsv)
+          for _ in $(seq 1 30); do
+            health=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "https://$fqdn/health" || true)
+            version=$(curl -s --max-time 30 "https://$fqdn/api/meta" | jq -r '.version // empty' || true)
+            echo "health=$health version=$version"
+            if [ "$health" = "200" ] && [ "$version" = "$SHA" ]; then
+              echo "Staging is healthy and runs $SHA: https://$fqdn"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Staging did not become healthy on $SHA within 5 minutes."
+          exit 1
