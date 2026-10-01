@@ -1,7 +1,6 @@
 {
   "app": {
-    "name": "Quart",
-    "workplace": "Presotea Montmorency"
+    "name": "Quart"
   },
   "language": {
     "label": "Change language",
@@ -44,5 +43,42 @@
       "title": "Something went wrong",
       "home": "Back to home"
     }
+  },
+  "shell": {
+    "skipToContent": "Skip to content",
+    "account": "Your account"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "home": "Home",
+    "schedule": "Schedule",
+    "availability": "Availability",
+    "requests": "Requests",
+    "news": "News",
+    "count": "{{count}} waiting"
+  },
+  "schedule": {
+    "context": "Your shifts",
+    "title": "Schedule",
+    "emptyTitle": "No schedule yet",
+    "emptyText": "Your shifts show up here as soon as the schedule is published."
+  },
+  "availability": {
+    "context": "When can you work?",
+    "title": "Availability",
+    "emptyTitle": "Nothing to fill in yet",
+    "emptyText": "When Philippe asks for your availability, you fill it in here."
+  },
+  "requests": {
+    "context": "Trades and give-aways",
+    "title": "Requests",
+    "emptyTitle": "No requests",
+    "emptyText": "Shifts to give away, trade or pick up show up here."
+  },
+  "news": {
+    "context": "From the shop",
+    "title": "News",
+    "emptyTitle": "No news",
+    "emptyText": "Announcements and the team’s recipes show up here."
   }
 }

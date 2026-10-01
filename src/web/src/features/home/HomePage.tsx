@@ -68,7 +68,7 @@ export function HomePage() {
             <dl className="mt-4 flex flex-col gap-2 text-sm">
               <div className="flex items-center justify-between gap-4 rounded-field bg-surface-3 px-4 py-3">
                 <dt className="text-muted">{t('home.version')}</dt>
-                <dd className="font-bold">{meta.data.version}</dd>
+                <dd className="min-w-0 font-bold break-all">{meta.data.version}</dd>
               </div>
               <div className="flex items-center justify-between gap-4 rounded-field bg-surface-3 px-4 py-3">
                 <dt className="text-muted">{t('home.environment')}</dt>

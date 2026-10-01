@@ -1,0 +1,15 @@
+import { useTranslation } from 'react-i18next';
+import { EmptyState } from '../../components/EmptyState';
+import { PageHeader } from '../../components/PageHeader';
+
+// Placeholder until this screen is built; the tab and its route are real.
+export function AvailabilityPage() {
+  const { t } = useTranslation();
+
+  return (
+    <section className="mx-auto max-w-2xl px-5 md:px-0">
+      <PageHeader context={t('availability.context')} title={t('availability.title')} />
+      <EmptyState title={t('availability.emptyTitle')}>{t('availability.emptyText')}</EmptyState>
+    </section>
+  );
+}
