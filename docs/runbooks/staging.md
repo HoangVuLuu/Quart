@@ -76,6 +76,26 @@ rebuilt environment gets a new random part and this line must be updated.
   replicas; the placeholder page is Microsoft's ASP.NET sample.
 - After 48 hours, Azure **Cost Management** → **Cost analysis** for `rg-quart-staging` shows **$0**.
 
+## 4. Deploys (automatic)
+
+Every merge to `main` deploys itself once CI is green, with `.github/workflows/deploy-staging.yml`:
+
+1. Build the image and push it to GitHub Container Registry as `ghcr.io/hoangvuluu/quart:<commit>`
+   and `:staging`, with the commit as the version the home page shows.
+2. Sign in to Azure with the federated credential (no stored password).
+3. Run the job `quart-staging-migrate` with the new image and wait. **If it fails, stop here**:
+   staging keeps the previous version ([migrations.md](migrations.md)).
+4. Switch the app `quart-staging` to the new image.
+5. Smoke test: wait until `/health` answers 200 and `/api/meta` reports the new commit.
+
+Follow a deploy in GitHub: **Actions** → **Deploy staging**. Redeploy `main` by hand with **Run
+workflow** on the same page.
+
+**Once only, after the very first deploy:** packages start private, and Azure pulls anonymously. In
+GitHub, open your profile → **Packages** → `quart` → **Package settings** → **Change visibility** →
+**Public**. Then re-run the failed deploy (**Re-run failed jobs**). The repository is public
+(AD-060), so the image holds nothing that is not already published.
+
 ## Changing things later
 
 - **New database password:** reset it in Supabase, then run the script again; it updates the secret.
