@@ -1,7 +1,6 @@
 {
   "app": {
-    "name": "Quart",
-    "workplace": "Presotea Montmorency"
+    "name": "Quart"
   },
   "language": {
     "label": "Changer de langue",
@@ -44,5 +43,42 @@
       "title": "Un problème est survenu",
       "home": "Retour à l'accueil"
     }
+  },
+  "shell": {
+    "skipToContent": "Aller au contenu",
+    "account": "Ton compte"
+  },
+  "nav": {
+    "label": "Navigation principale",
+    "home": "Accueil",
+    "schedule": "Horaire",
+    "availability": "Dispos",
+    "requests": "Demandes",
+    "news": "Nouvelles",
+    "count": "{{count}} en attente"
+  },
+  "schedule": {
+    "context": "Ton horaire",
+    "title": "Horaire",
+    "emptyTitle": "Pas encore d’horaire",
+    "emptyText": "Tes quarts apparaîtront ici dès que l’horaire sera publié."
+  },
+  "availability": {
+    "context": "Quand peux-tu travailler?",
+    "title": "Disponibilités",
+    "emptyTitle": "Rien à remplir pour l’instant",
+    "emptyText": "Quand Philippe demandera tes disponibilités, tu les rempliras ici."
+  },
+  "requests": {
+    "context": "Échanges et quarts à donner",
+    "title": "Demandes",
+    "emptyTitle": "Aucune demande",
+    "emptyText": "Les quarts à donner, à échanger ou à prendre apparaîtront ici."
+  },
+  "news": {
+    "context": "De la boutique",
+    "title": "Nouvelles",
+    "emptyTitle": "Pas de nouvelles",
+    "emptyText": "Les annonces et les recettes de l’équipe apparaîtront ici."
   }
 }
