@@ -112,17 +112,17 @@ spec: FR-144, FR-160, FR-165, AD-012, FR-215
 ## M5-06 · My schedule, team schedule and the home cards
 labels: type:feature, stack:full, area:scheduling, size:M
 depends: M5-05
-spec: FR-040, FR-230, NFR-003, NFR-006
+spec: FR-040, FR-230, NFR-003, NFR-006, NFR-016
 
 **Goal.** What staff open the app for.
 
-**You will see.** Home: next shift, hours this week against target, open shifts. Schedule tab: "Mine" and "Team" views of the current published version, a week view on desktop and a day or 3-day view on phones.
+**You will see.** Home: next shift (hidden when none), hours this week against target (always shown, 0 when empty), Up for grabs (hidden when empty; Hours then fills the row), the availability prompt and the latest news. Schedule tab: "My shifts" (Upcoming and Completed) and "Whole team" (a day-by-day table grouped by week, your rows highlighted) for the current period, and a Fill availability button. A week view on desktop.
 
 **Backend**
 - [ ] Endpoints read only the current published version; drafts are never visible to employees (AD-012).
 
 **Frontend**
-- [ ] Dates and times in fr-CA or en-CA (FR-262). Open shifts link to the Requests tab, which comes in M7.
+- [ ] Dates and times in fr-CA or en-CA (FR-262). Up for grabs links to the Trade tab, which comes in M7. When the period ends, the tab shows the next published period, or an empty state. Table columns come from the template's shift blocks, not a hard-coded opening and closing.
 
 **Tests**
 - [ ] An employee request never returns draft assignments.

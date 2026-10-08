@@ -85,7 +85,7 @@ Two shadows, and no borders where a shadow will do.
 
 - **Phone first.** The prototype is 390 × 844. Desktop keeps the same components in a wider column
   with a sidebar instead of the tab bar (NFR-003).
-- **Top row:** logo blob on the left; on the right, the settings circle for admins and the person's
+- **Top row:** logo blob on the left; on the right, the team icon (opens the team page), the settings circle for admins and the person's
   initials in a white circle.
 - **Screen header:** muted date or context line, then the 32 px title.
 - **Home:** a hero card in `primary` with a large translucent circle bleeding off the corner, then

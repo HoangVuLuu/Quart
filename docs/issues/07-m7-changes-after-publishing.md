@@ -7,14 +7,14 @@ description: >-
   other is told it was just taken.
 ---
 
-## M7-01 · Requests tab and inbox
+## M7-01 · Trade tab and inbox
 labels: type:feature, stack:full, area:marketplace, size:M
 depends: M6-12
 spec: FR-230, FR-215, AD-031
 
 **Goal.** One place for everything waiting on someone: open shifts, offers, claims and trades.
 
-**You will see.** The Requests tab with "Open shifts", "Waiting on me" and "My requests" sections, and a "pending requests" card on Home. Empty states until the next issues fill them.
+**You will see.** The Trade tab with "Open shifts", "Waiting on me" and "My requests" sections, and the "Up for grabs" card on Home linking to it. Empty states until the next issues fill them.
 
 **Backend**
 - [ ] One endpoint aggregating open slots (FR-165) now, with the marketplace items added as they land. Screens refetch on focus and on a modest interval (AD-031).
