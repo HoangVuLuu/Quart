@@ -1,6 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { ErrorNotice } from '../../app/ErrorNotice';
 import { formatDateTime } from '../../i18n/format';
+import { Button } from '../../ui/Button';
+import { Card } from '../../ui/Card';
+import { HeroCard } from '../../ui/HeroCard';
+import { StatusChip } from '../../ui/StatusChip';
 import { useMeta } from './useMeta';
 
 // The first screen in the app's own visual language (spec section 19): a hero card in the brand
@@ -12,14 +16,11 @@ export function HomePage() {
 
   return (
     <section className="mx-auto flex max-w-2xl flex-col gap-4 px-5 pb-10">
-      <div className="relative overflow-hidden rounded-hero bg-primary p-6 text-on-primary">
-        <div aria-hidden="true" className="absolute -top-12 -right-10 size-48 rounded-full bg-white/20" />
-        <p className="relative text-xs font-bold tracking-[0.06em] uppercase">{t('home.eyebrow')}</p>
-        <h1 className="relative mt-1 text-3xl leading-tight">{t('home.title')}</h1>
-        <p className="relative mt-2 max-w-sm text-sm">{t('home.subtitle')}</p>
-      </div>
+      <HeroCard eyebrow={t('home.eyebrow')} title={t('home.title')} headingLevel={1}>
+        {t('home.subtitle')}
+      </HeroCard>
 
-      <div className="rounded-card bg-surface p-5 shadow-card">
+      <Card>
         {meta.isPending && (
           <p role="status" className="text-muted">
             {t('home.status.loading')}
@@ -28,43 +29,28 @@ export function HomePage() {
 
         {meta.isError && (
           <div role="alert">
-            <p className="inline-flex items-center gap-2 rounded-pill bg-danger-soft px-3 py-1 font-bold text-danger">
-              <span aria-hidden="true">✕</span>
-              {t('home.status.error')}
-            </p>
+            <StatusChip tone="danger">{t('home.status.error')}</StatusChip>
             <div className="mt-3">
               <ErrorNotice error={meta.error} />
             </div>
-            <button
-              type="button"
-              onClick={() => void meta.refetch()}
-              className="mt-4 min-h-11 rounded-pill bg-ink px-5 font-bold text-bg shadow-press"
-            >
+            <Button onClick={() => void meta.refetch()} className="mt-4">
               {t('home.retry')}
-            </button>
+            </Button>
           </div>
         )}
 
         {meta.isSuccess && (
           <>
-            <p className="inline-flex items-center gap-2 rounded-pill bg-success-soft px-3 py-1 font-bold text-success">
-              <span aria-hidden="true">✓</span>
-              {t('home.status.ok')}
-            </p>
-            {meta.data.database === 'ok' ? (
-              <p className="mt-2 inline-flex items-center gap-2 rounded-pill bg-success-soft px-3 py-1 font-bold text-success">
-                <span aria-hidden="true">✓</span>
-                {t('home.database.ok')}
-              </p>
-            ) : (
-              <p
-                role="alert"
-                className="mt-2 inline-flex items-center gap-2 rounded-pill bg-danger-soft px-3 py-1 font-bold text-danger"
-              >
-                <span aria-hidden="true">✕</span>
-                {t('home.database.unavailable')}
-              </p>
-            )}
+            <StatusChip tone="success">{t('home.status.ok')}</StatusChip>
+            <div className="mt-2">
+              {meta.data.database === 'ok' ? (
+                <StatusChip tone="success">{t('home.database.ok')}</StatusChip>
+              ) : (
+                <div role="alert">
+                  <StatusChip tone="danger">{t('home.database.unavailable')}</StatusChip>
+                </div>
+              )}
+            </div>
             <dl className="mt-4 flex flex-col gap-2 text-sm">
               <div className="flex items-center justify-between gap-4 rounded-field bg-surface-3 px-4 py-3">
                 <dt className="text-muted">{t('home.version')}</dt>
@@ -81,7 +67,7 @@ export function HomePage() {
             </dl>
           </>
         )}
-      </div>
+      </Card>
     </section>
   );
 }

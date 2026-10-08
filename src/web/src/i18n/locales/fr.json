@@ -80,5 +80,79 @@
     "title": "Nouvelles",
     "emptyTitle": "Pas de nouvelles",
     "emptyText": "Les annonces et les recettes de l’équipe apparaîtront ici."
+  },
+  "ui": {
+    "close": "Fermer",
+    "showPassword": "Afficher",
+    "hidePassword": "Masquer",
+    "decrease": "Diminuer",
+    "increase": "Augmenter",
+    "notification": "Notifications"
+  },
+  "gallery": {
+    "context": "Pour l’équipe de dev",
+    "title": "Galerie de composants",
+    "theme": {
+      "label": "Thème",
+      "device": "Appareil",
+      "light": "Clair",
+      "dark": "Sombre"
+    },
+    "buttons": {
+      "title": "Boutons",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "saving": "Enregistrement…",
+      "unavailable": "Indisponible"
+    },
+    "fields": {
+      "title": "Champs",
+      "name": "Prénom",
+      "nameHint": "Comme tes collègues te connaissent.",
+      "email": "Courriel",
+      "emailError": "Ce courriel n’est pas valide.",
+      "password": "Mot de passe",
+      "shift": "Quart",
+      "shiftAll": "Tous les quarts",
+      "shiftOpening": "Ouvertures",
+      "shiftClosing": "Fermetures"
+    },
+    "controls": {
+      "title": "Interrupteurs et compteurs",
+      "claims": "Approuver les réclamations",
+      "claimsHint": "Sinon, la première demande gagne",
+      "days": "Jours de suite maximum",
+      "daysHint": "Le générateur ne dépasse jamais ce nombre"
+    },
+    "cards": {
+      "title": "Cartes",
+      "card": "Une carte",
+      "cardText": "Les rangées s’y logent.",
+      "heroEyebrow": "Prochain quart",
+      "heroTitle": "Demain, ouverture",
+      "heroText": "10 h–16 h · avec Amélie",
+      "loading": "Chargement de l’horaire…",
+      "emptyTitle": "Rien ici pour l’instant",
+      "emptyText": "Reviens quand l’horaire sera publié."
+    },
+    "chips": {
+      "title": "Pastilles d’état et badges",
+      "sent": "Envoyé",
+      "blocked": "Il manque 1 niveau 3",
+      "reopened": "Rouvert",
+      "noAnswer": "Pas encore de réponse"
+    },
+    "overlays": {
+      "title": "Feuille, boîte de dialogue et message",
+      "openSheet": "Ouvrir la feuille",
+      "sheetTitle": "Détails du quart",
+      "sheetText": "Les détails s’ouvrent dans une feuille, pas sur une nouvelle page.",
+      "openDialog": "Ouvrir la boîte de dialogue",
+      "dialogTitle": "Supprimer cette publication?",
+      "dialogText": "La publication et ses photos seront supprimées pour tout le monde.",
+      "showToast": "Afficher un message",
+      "toastText": "Demande envoyée à Philippe"
+    }
   }
 }

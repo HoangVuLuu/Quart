@@ -57,7 +57,10 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:${{ env.SHA }}
             ${{ env.IMAGE }}:staging
-          build-args: VERSION=${{ env.SHA }}
+          # Staging shows the component gallery at /dev/ui for review; a production build would not.
+          build-args: |
+            VERSION=${{ env.SHA }}
+            VITE_SHOW_DEV_PAGES=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
