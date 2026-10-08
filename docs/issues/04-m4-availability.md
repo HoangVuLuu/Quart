@@ -50,22 +50,23 @@ spec: FR-093, FR-098, FR-099, NFR-002, NFR-003, NFR-008
 **Done when**
 - [ ] An employee fills a 2-week period on an iPhone in under a minute.
 
-## M4-03 · Optional availability comment, admins only
+## M4-03 · Optional availability notes, admins only
 labels: type:feature, stack:full, area:availability, area:privacy, size:S
 depends: M4-02
-spec: FR-103, BR-035, FR-040, AD-027, 12.4
+spec: FR-103, FR-215, FR-216, BR-035, FR-040, AD-027, 12.4
 
-**Goal.** People can explain their availability ("exams week 2") to the admin and nobody else.
+**Goal.** People can explain their availability ("exams week 2") to the admin and nobody else, including after the availability has locked.
 
 **Backend**
-- [ ] `availability.comment`: plain text, at most 500 characters, **enforced on the server**. It locks and reopens with the availability (FR-100, FR-101).
+- [ ] `availability_note` (availability, body, created_at): plain text, at most 500 characters each, **enforced on the server**, with a server-side cap on notes per period. Several notes are allowed, and adding one is allowed after the lock (FR-100, FR-103); the availability blocks themselves stay locked.
+- [ ] Notify admins when a note is added or availability is sent or updated (FR-215), bundled (FR-213). The notification carries no note text.
 - [ ] Readable only by its author and holders of ViewAvailabilityComments. Never included in notification parameters (FR-216). The generator never receives it (BR-035).
 
 **Frontend**
-- [ ] A text box with a character counter. Always rendered as text, never as HTML.
+- [ ] A text box with a character counter that stays enabled when the grid is locked, and the person's earlier notes listed above it. Always rendered as text, never as HTML.
 
 **Tests**
-- [ ] 501 characters are refused by the API even when the UI is bypassed; a coworker's request never contains the field (added to the M2-10 suite).
+- [ ] 501 characters are refused by the API even when the UI is bypassed; a note can be added after the lock while block changes are refused; a coworker's request never contains the field (added to the M2-10 suite).
 
 **Done when**
 - [ ] A comment typed by an employee is visible to Philippe and invisible to every other test account.
@@ -126,7 +127,7 @@ spec: FR-100, FR-101, FR-102
 
 **Goal.** Availability stops moving once Philippe starts building, and one latecomer can be let back in.
 
-**You will see.** A "Start building" action on the period (Generate joins it in M5-01). Afterwards, employee screens are read-only with a clear "locked" message. In the progress list, admins get "Reopen for this person", and that person is notified.
+**You will see.** A "Start building" action on the period (Generate joins it in M5-01). Afterwards, the availability grid is read-only with a clear "locked" message; only adding notes (M4-03) remains possible. In the progress list, admins get "Reopen for this person", and that person is notified.
 
 **Backend**
 - [ ] `period.locked_at`; every availability write checks it. A reopen marks one availability `reopened_at` and allows that person's writes until they send again.

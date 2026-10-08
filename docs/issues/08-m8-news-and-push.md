@@ -2,19 +2,19 @@
 milestone: M8 — News and push
 description: >-
   Demo: Philippe posts a recipe with three photos from his phone. Staff get a push notification
-  on their home-screen app, open the News tab, view the photos full screen and thumbs-up the post.
+  on their home-screen app, open the News page, view the photos full screen and thumbs-up the post.
   A removed member's old photo link no longer works. This milestone also completes the file and
   offline foundations payslips will need.
 ---
 
-## M8-01 · News tab with text posts
+## M8-01 · News page with text posts
 labels: type:feature, stack:full, area:news, size:M
 depends: M6-12
 spec: FR-230, FR-231, FR-235, FR-238, AD-046
 
 **Goal.** Philippe's announcements have their own home.
 
-**You will see.** A News tab listing posts, newest first. Admins get a composer; posts can be edited (marked "edited") and deleted. The Home card previews the latest post.
+**You will see.** A News page, opened from the latest-news card on Home, listing posts newest first. Admins get a composer; posts can be edited (marked "edited") and deleted. The Home card previews the latest post.
 
 **Backend**
 - [ ] Announcements module, `announcements` schema: `announcement` (workplace, author, body, edited_at, deleted_at). Posting needs PostAnnouncements.
@@ -107,7 +107,7 @@ spec: FR-210, FR-212, FR-216, NFR-012
 
 **Goal.** Notifications reach the lock screen.
 
-**You will see.** On first sign-in on an iPhone in Safari: a short guide (Share → Add to Home Screen → open from the icon → Turn on notifications). On other devices: a "Turn on notifications" prompt after the first meaningful action, never on first load.
+**You will see.** On first sign-in on an iPhone in Safari: a short guide (Share → Add to Home Screen → open from the icon → Turn on notifications). On Android: the browser's install prompt, then the notifications prompt. On other devices: a "Turn on notifications" prompt after the first meaningful action, never on first load.
 
 **Backend**
 - [ ] VAPID keys as secrets; `push_subscription` per device; a push sender (for example the MIT-licensed `Lib.Net.Http.WebPush`) delivering through the outbox. Expired subscriptions (HTTP 404 or 410) are deleted.

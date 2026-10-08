@@ -162,8 +162,8 @@ without touching logic. Final brand name: see section 16.
   Issue            Anything the evaluator flags about a schedule.
   Evaluator        The single component that scores a schedule and produces
                    the issue list. Shared by the generator and the dashboard.
-  Availability     An optional note an employee attaches to their availability
-  comment          for a period. Admins only (FR-103).
+  Availability     Optional notes an employee adds about their availability for
+  note             a period, also after the lock. Admins only (FR-103).
   Announcement     A post by an admin in the News tab: text, photos, or both.
   Stored file      Any uploaded file. Has a scope that decides who may read it
                    (AD-017). Announcement photos now, payslips later.
@@ -245,8 +245,10 @@ rules scattered through the code.
 --------------------------------------------------------------------------------
 
 6.1 ACCOUNTS AND AUTHENTICATION
-FR-001  Sign up with first name, last name, email, password, confirm password.
-        All fields mandatory. No phone number is collected anywhere in the app.
+FR-001  Sign up with full name (one field), email, password, confirm password.
+        All fields mandatory. The app derives a short display name (first
+        name plus last initial, "Jasmine K.") from the full name and the user
+        can correct it in their profile (FR-008). No other field is required. No phone number is collected anywhere in the app.
 FR-002  Names accept accents, hyphens and apostrophes (Marc-Olivier, Côté,
         O'Connor). Do not restrict to ASCII letters.
 FR-003  Password minimum length 8 characters. No forced symbol/digit/case
@@ -260,9 +262,12 @@ FR-005  Forgot password sends an email containing a link to a reset page on the
         site with new password and confirm password fields. The token expires in
         30-60 minutes, works exactly once, and successful reset signs out all
         other sessions.
-FR-006  Sign in with Google is offered alongside email and password. Google
-        OAuth is needed anyway for Calendar import, so the login integration is
-        nearly free. Matching is by verified email address.
+FR-006  Sign in and sign up with Google are offered alongside email and
+        password, on both screens, from v1 (moved from M9 on 2026-10-08).
+        Matching is by verified email address. A new account created through
+        Google must confirm its full name before continuing, since Google's
+        profile name may be missing or not what the person goes by. Calendar
+        import (FR-097) later reuses this sign-in.
 FR-007  Login is rate limited and the account locks temporarily after repeated
         failures. Rate limits also apply to password reset requests and to join
         code attempts.
@@ -297,8 +302,12 @@ FR-038  A member can leave a workplace. An admin can remove a member. In both
         cases every future shift held by that person becomes an open slot and
         the admins are notified. Past shifts are left intact.
 FR-039  One user can be a member of several workplaces at once.
-FR-040  Members can see each other's name, level, contact email, and the full
-        team schedule. No other personal information is exposed. Availability
+FR-040  Members can see each other's name, role, level, contact email, and the
+        full team schedule on a read-only team page opened from the icon at
+        the top right of Home. A member may optionally add Instagram and
+        Facebook links to their own profile and choose whether teammates see
+        them; nothing is shown unless they opt in. No other personal
+        information is exposed. Availability
         comments are never shown to coworkers.
 FR-041  Ownership can be transferred to another admin of the same workplace.
         The transfer requires confirmation from the current owner.
@@ -371,23 +380,29 @@ FR-099  Anyone who has not submitted has the status "not sent". They are never
         (FR-121).
 FR-100  Availability locks the moment the admin starts building the schedule,
         whether by clicking Generate or by starting a manual build. Both paths
-        behave identically.
+        behave identically. After the lock the availability grid is read-only
+        but people can still add notes (FR-103).
 FR-101  After the lock, an admin can reopen availability for one specific person
         without reopening it for everyone. That person is notified.
 FR-102  Because availability locks, there is no "my availability changed after
         publishing" flow. After the lock, the only way out of a shift is to give
         it away (6.7). This is a deliberate simplification of the original idea
         and removes the auto-removal race it created.
-FR-103  An employee may add one optional comment about their overall
-        availability for the period: plain text, up to 500 characters,
-        enforced on the server and not only in the text box. It is sent with
-        the availability, locks with it (FR-100) and reopens with it (FR-101).
-        Admins see it beside that person in the team availability view and, in
+FR-103  An employee may add optional notes about their availability for the
+        period (e.g. "Exams Oct 12-16, evenings only that week"). Each note is
+        plain text, up to 500 characters, enforced on the server. A person can
+        add several notes, also after availability has locked (FR-100) and
+        after they already added one; notes are never edited into the
+        availability itself and never change the schedule. A sensible cap on
+        the number of notes per period is enforced on the server. Admins see
+        the notes beside that person in the team availability view and, in
         short form, in the "add someone" list of the shift panel (FR-141).
-        Coworkers never see it. People may explain their availability with
-        health or family reasons, so it is treated as personal information
-        (12.4, class B) and follows raw availability retention (section 13).
-        It is rendered as text, never as HTML.
+        Coworkers never see them. Because people may explain their
+        availability with health or family reasons, notes are personal
+        information (12.4, class B) and follow raw availability retention
+        (section 13). They are rendered as text, never as HTML. Admins are
+        notified when a note is added or when availability is sent or
+        updated (FR-215); the notification never contains the note text.
 
 6.5 SCHEDULE GENERATION
 FR-120  The admin clicks Generate and receives a complete draft schedule.
@@ -501,6 +516,8 @@ FR-215  Notification events: availability requested; availability reminder;
         a trade awaiting approval (to admins); an offered shift is still
         unclaimed (to admins); a member left or was removed (to admins);
         a new announcement (to all members, bundled per FR-213);
+        availability sent or updated, and an availability note added
+        (both to admins, bundled per FR-213, never with the note text);
         (backlog) a new payslip is available (to that employee only).
 FR-216  Notification and email text never carries sensitive content: no
         availability comments, no announcement photos, and (backlog) never pay
@@ -510,10 +527,19 @@ FR-216  Notification and email text never carries sensitive content: no
         which goes only to the owner and attaches the schedule as PDF and CSV.
 
 6.10 ANNOUNCEMENTS (THE NEWS TAB)
-FR-230  The landing page shows fixed cards: next shift, hours this week against
-        target, open shifts, pending requests, and a preview of the latest
-        announcement that opens the News tab.
-FR-231  Announcements have their own tab, "News", for every member. Only
+FR-230  Home shows cards in this order: next shift, hours this week against
+        target, "Up for grabs" (open shifts plus trades offered to you), the
+        availability prompt for the current cycle with its due date, and a
+        preview of the latest announcement that opens the News page.
+        Next shift is hidden when the person has none. Hours this week is
+        always shown, with 0 when there are no shifts. Up for grabs is hidden
+        when there is nothing open and no trade offered to the person; when
+        hidden, Hours this week fills the full row at the height of the
+        availability card. The icon at the top right opens the team page
+        (FR-040).
+FR-231  Announcements have their own page, "News", for every member, opened
+        from the latest-news card on Home (it is not one of the five tabs,
+        NFR-016). Only
         holders of PostAnnouncements (owner and admins) can post. This is where
         Philippe posts recipes.
 FR-232  A post is text, photos, or both. Up to 6 photos per post. Accepted:
@@ -646,7 +672,7 @@ BR-033  Under/over hours is reported when the total deviates from the target by
         more than 2 hours over the period.
 BR-034  Opening and closing are identified automatically as the first and last
         shift block of each day. An admin can override the classification.
-BR-035  Availability comments (FR-103) inform the admin's judgment only. The
+BR-035  Availability notes (FR-103) inform the admin's judgment only. The
         generator never reads them.
 
 7.7 Algorithm (AD-004)
@@ -682,7 +708,8 @@ in week one, not after the screens are done.
 8.1 Entities (fields abbreviated; every table has id, created_at, updated_at)
 
   User                  email (unique, citext), email_verified, password_hash,
-                        first_name, last_name, language, is_platform_admin,
+                        full_name, display_name, language, instagram_url,
+                        facebook_url, share_social (opt-in), is_platform_admin,
                         deleted_at
   Workplace             name, address, time_zone, join_code, require_approval,
                         owner_membership_id, settings (jsonb)
@@ -701,7 +728,9 @@ in week one, not after the screens are done.
                         source_block_id, time_range (tstzrange, see AD-011)
   ShiftRequirement      shift_id, level, min_count      (copied from template)
   Availability          period_id, membership_id, status, submitted_at,
-                        reopened_at, comment (text, max 500, nullable)
+                        reopened_at
+  AvailabilityNote      availability_id, body (text, max 500), created_at
+                        (many per availability; added also after the lock)
   AvailabilityBlock     availability_id, shift_id
   ScheduleVersion       period_id, version, published_at, published_by
   Assignment            shift_id, membership_id, user_id, schedule_version_id
@@ -1252,7 +1281,12 @@ NFR-001  Works on desktop, iPad and iPhone. iOS Safari is a first-class target,
 NFR-002  Phone and iPad interfaces are tap-only. No drag interaction is ever
          required to complete a task. Drag exists on desktop as an accelerator
          for building the template, never as the only way.
-NFR-003  Week view on desktop and iPad; a 1-day or 3-day view on phones.
+NFR-003  Week view on desktop and iPad. On phones the Schedule tab lists the
+         whole current period: "My shifts" (upcoming and completed) or "Whole
+         team" (a table by day, grouped by week). It shows the period that is
+         running; when that period ends it shows the next published one, or
+         an empty state if none is published yet. The Fill availability
+         button sits beside the My shifts / Whole team switch.
 NFR-004  Generating a 4-week schedule completes in under 2 seconds.
 NFR-005  Normal screens respond in under 500 ms once the app is warm.
 NFR-006  The app scales to zero when idle; a cold start may take a few seconds.
@@ -1265,7 +1299,10 @@ NFR-008  Colour is never the only carrier of meaning. Availability states use
 NFR-009  Contrast meets WCAG 2.2 AA. Tap targets at least 44x44 px.
 NFR-010  prefers-reduced-motion is respected.
 NFR-011  Light and dark mode, following the device setting.
-NFR-012  Push notifications on iPhone require the site to be added to the Home
+NFR-012  The app targets desktop browsers, iPhone via Add to Home Screen, and
+         Android via the browser's install prompt. No App Store or Play Store
+         app is planned.
+         Push notifications on iPhone require the site to be added to the Home
          Screen. First login on an iPhone walks the person through: Share ->
          Add to Home Screen -> open from the icon -> enable notifications.
          People who skip it still receive in-app and email notifications. A
@@ -1280,9 +1317,12 @@ NFR-015  Every file endpoint has automated tests for: a member of another
          workplace, a removed member, an employee asking for another member's
          file, an expired link, a disguised file type, and an SVG upload. All
          must be refused.
-NFR-016  The Settings screen for admins sits behind a gear in the top bar on
-         phones, so the bottom bar never exceeds five tabs. It is a regular
-         sidebar entry on wider screens.
+NFR-016  The five bottom tabs are Home, Schedule, Trade, Notifications and
+         Profile (changed 2026-10-08). Availability is opened from the
+         Schedule tab's button and from the Home card; News from the Home
+         card. The Settings screen for admins sits behind a gear in the top
+         row, next to the team icon, so the bar never exceeds five tabs. It
+         is a regular sidebar entry on wider screens.
 NFR-017  Every screen follows the design language in section 19 and uses the
          shared tokens and components (AD-048). A new colour, radius or shadow
          is added as a token with its contrast checked, never written inline.
@@ -1366,6 +1406,8 @@ M2 — Accounts and workplaces  (16 issues)
   M2-14  In-app notifications inbox
   M2-15  Leave a workplace or remove a member
   M2-16  Delete my account
+  M2-17  Sign in and sign up with Google
+  M2-18  Team page, with optional social links
 
 M3 — Shift template  (5 issues)
   M3-01  Template editor, tap path
@@ -1413,7 +1455,7 @@ M6 — Go live  (12 issues)
   M6-12  Pilot: one real cycle alongside Excel
 
 M7 — Give away, claim, trade  (8 issues)
-  M7-01  Requests tab and inbox
+  M7-01  Trade tab and inbox
   M7-02  Give away a shift
   M7-03  Claim an open or offered shift
   M7-04  Approval settings and choosing among claimants
@@ -1423,7 +1465,7 @@ M7 — Give away, claim, trade  (8 issues)
   M7-08  Trade expiry and automatic cancellation
 
 M8 — News and push  (9 issues)
-  M8-01  News tab with text posts
+  M8-01  News page with text posts
   M8-02  Stored files: one model, one validation path, short-lived links
   M8-03  Photos on posts, re-encoded on the server
   M8-04  Thumbs-up reactions
@@ -1434,7 +1476,7 @@ M8 — News and push  (9 issues)
   M8-09  Back up storage files and review payslip readiness
 
 M9 — Google and calendar feed  (4 issues)
-  M9-01  Sign in with Google
+  M9-01  Add the Calendar permission to the Google sign-in
   M9-02  Import availability from Google Calendar free/busy
   M9-03  Subscribe to my shifts in any calendar app
   M9-04  Submit the Google app for verification
@@ -1589,6 +1631,17 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
 2026-09-22  Dark mode is derived from the light palette rather than designed,
             since the design prototype is light only. It stays in scope
             (NFR-011) and must be reviewed on a phone before the pilot.  (Q-14)
+2026-10-08  Requirement changes with new mockups. Bottom tabs are Home,
+            Schedule, Trade, Notifications, Profile; News and Availability
+            are opened from cards and buttons. Sign-up uses one full-name
+            field with an editable short name. Google sign-in and sign-up
+            move from M9 to M2 (M2-17). Home cards are conditional. The
+            Schedule tab shows the whole current period and rolls over to
+            the next. Availability notes are many and still allowed after the
+            lock; admins are notified of availability changes and notes.
+            Optional, opt-in Instagram and Facebook links on the team page.
+            Android install added. (FR-001, FR-006, FR-040, FR-100, FR-103,
+            FR-215, FR-230, FR-231, NFR-003, NFR-012, NFR-016)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES
@@ -1739,7 +1792,8 @@ Nothing else animates, and everything stops under prefers-reduced-motion
 (NFR-010).
 
 19.6 Screen patterns
-  - Top row: the logo blob on the left; on the right the settings circle for
+  - Top row: the logo blob on the left; on the right the team icon (opens the
+    team page) and the settings circle for
     admins (NFR-016) and the person's initials in a white circle.
   - Header: a muted context line, then the 32 px title ("Hi Sophie!").
   - Home: one hero card in primary with a large translucent circle bleeding
