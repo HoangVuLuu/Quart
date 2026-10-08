@@ -1,26 +1,24 @@
 ---
 milestone: M9 — Google and calendar feed
 description: >-
-  Demo: an employee signs in with Google, presses "Import from Google Calendar", chooses which
+  Demo: an employee presses "Import from Google Calendar", chooses which
   calendars count, reviews the proposed availability and sends it. Another subscribes to their
   shifts in Apple Calendar. After launch on purpose: Google's app verification can take weeks, and
   launch never waits on it.
 ---
 
-## M9-01 · Sign in with Google
+## M9-01 · Add the Calendar permission to the Google sign-in
 labels: type:feature, stack:full, area:auth, size:M
-depends: M6-02
-spec: FR-006, AD-024
+depends: M6-02, M2-17
+spec: FR-006, FR-097, AD-024
 
-**Goal.** One-tap sign-in for people who prefer it.
+**Goal.** Reuse the Google sign-in from M2-17 and request the Calendar free/busy permission only when someone presses import.
 
 **Backend**
-- [ ] A Google Cloud project, an OAuth consent screen (app name, privacy policy link from M6-03, the domain from M6-02), and `Microsoft.AspNetCore.Authentication.Google`.
-- [ ] Match an existing account only by an email Google reports as verified; otherwise create an account that is already verified. Linking an existing password account needs that account's password or a signed-in session.
-- [ ] The Google sign-in result becomes the same server-side session as a password sign-in; two-factor still applies if enrolled.
+- [ ] Add the incremental Calendar scopes to the consent screen from M2-17 (the part that needs Google's review, M9-04). Basic sign-in is unaffected.
 
 **Done when**
-- [ ] A test account signs in with Google on staging and lands on the same account as its password sign-in.
+- [ ] An existing Google-signed-in account can grant the Calendar permission without losing its session.
 
 ## M9-02 · Import availability from Google Calendar free/busy
 labels: type:feature, stack:full, area:availability, area:calendar, area:privacy, size:L

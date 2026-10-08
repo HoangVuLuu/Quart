@@ -35,6 +35,7 @@ spec: AD-062, 11.4
 - [ ] SPF, DKIM and DMARC for the email provider. Send a test to Gmail and Outlook and confirm it lands in the inbox.
 
 **Done when**
+- [ ] The Google consent screen from M2-17 is switched to production with this domain, so every staff member can sign in with Google.
 - [ ] Both environments serve over HTTPS on the domain, and a password-reset email passes SPF, DKIM and DMARC.
 
 ## M6-03 · Privacy policy and retention statement in the app

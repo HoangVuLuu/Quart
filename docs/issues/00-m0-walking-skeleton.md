@@ -196,7 +196,7 @@ spec: NFR-001, NFR-002, NFR-003, NFR-007, NFR-009, NFR-011, NFR-016, NFR-017, 19
 
 **Goal.** The frame every screen lives in, built to match `docs/prototype/quart-design-prototype.html`. Open that prototype first; spec section 19 and `docs/design/README.md` are its written form, and the tokens are already in `src/web/src/styles/index.css`.
 
-**You will see.** The top row (logo blob, settings circle for admins, initials avatar) and the floating white tab bar from the design prototype: Home, Schedule, Availability, Requests and News, each opening a translated placeholder page with an empty state.
+**You will see.** The top row (logo blob, team icon, settings circle for admins) and the floating white tab bar from the design prototype: Home, Schedule, Trade, Notifications and Profile, each opening a translated placeholder page with an empty state.
 
 **Frontend**
 - [ ] Layout route in React Router: top row, content area, the floating tab-bar pill on phones (never more than five tabs, selected tab filled with `primary`, counts in an `accent` badge), sidebar from the `md` breakpoint up.

@@ -29,10 +29,10 @@ spec: FR-001, FR-002, FR-003, AD-024, AD-025, AD-045, NFR-013
 
 **Goal.** Anyone can create an account safely. Foundations for every authenticated feature land here.
 
-**You will see.** A sign-up page (first name, last name, email, password, confirm password) that validates as you type, in both languages, then a "check your email" page.
+**You will see.** A sign-up page (full name, email, password, confirm password) that validates as you type, in both languages, then a "check your email" page.
 
 **Backend**
-- [ ] ASP.NET Core Identity via `AddIdentityCore`, with stores in the `identity` schema: `QuartUser : IdentityUser<Guid>` plus first name, last name, language, `IsPlatformAdmin`, `DeletedAt`. Use custom endpoints, not `MapIdentityApi` (which is designed for bearer tokens).
+- [ ] ASP.NET Core Identity via `AddIdentityCore`, with stores in the `identity` schema: `QuartUser : IdentityUser<Guid>` plus full name, display name (derived as first name plus last initial, editable), language, `IsPlatformAdmin`, `DeletedAt`. Use custom endpoints, not `MapIdentityApi` (which is designed for bearer tokens).
 - [ ] Cookie authentication with **server-side sessions** (AD-045): an `ITicketStore` backed by an `identity.sessions` table, so the cookie holds only a session key. HttpOnly, Secure outside Development, SameSite=Lax.
 - [ ] **Persist Data Protection keys to Postgres.** Container Apps scales to zero; without persisted keys, every cold start would invalidate cookies, antiforgery tokens and emailed links.
 - [ ] Antiforgery (AD-025): an endpoint filter on the `/api` group validates the `X-XSRF-TOKEN` header on every unsafe method, since minimal APIs only auto-validate form posts.
@@ -145,7 +145,7 @@ spec: FR-008, FR-261, FR-262, AD-044
 
 **Goal.** People control their name, language and email.
 
-**You will see.** A profile screen. Changing the language switches the interface immediately and is remembered on every device.
+**You will see.** A profile screen (the Profile tab) where people can correct their short name and optionally add Instagram and Facebook links, with a switch for whether teammates see them. Changing the language switches the interface immediately and is remembered on every device.
 
 **Backend**
 - [ ] Update the name and language. The language chooses the email templates and push text from now on (FR-261).
@@ -297,7 +297,7 @@ spec: FR-210, FR-215, FR-216, FR-261, FR-263, 12.7
 
 **Goal.** One place where every notification lands, with the rule against sensitive content enforced in one spot.
 
-**You will see.** A bell with an unread count in the top bar, a list, and "mark all read". The first notification types: a join request awaiting approval (to admins) and a member joined.
+**You will see.** The Notifications tab with an unread count badge, a list, and "mark all read". The first notification types: a join request awaiting approval (to admins) and a member joined.
 
 **Backend**
 - [ ] `INotifier` contract in `Quart.SharedKernel`; the Notifications module stores rows (membership, type, parameters, read_at).
@@ -312,6 +312,47 @@ spec: FR-210, FR-215, FR-216, FR-261, FR-263, 12.7
 
 **Done when**
 - [ ] Approving a join request on staging notifies both sides.
+
+## M2-17 · Sign in and sign up with Google
+labels: type:feature, stack:full, area:auth, size:M
+depends: M2-04
+spec: FR-006, AD-024
+
+**Goal.** One-tap sign-in and sign-up, as on the mockups' login and create-account screens.
+
+**You will see.** A "Continue with Google" button on both screens. A first-time Google user lands on a short "confirm your full name" step before reaching Home.
+
+**Backend**
+- [ ] A Google Cloud project and OAuth consent screen asking only for the basic sign-in scopes, and `Microsoft.AspNetCore.Authentication.Google`. While the consent screen is in testing mode only listed test users can sign in; switching it to production happens with the domain and privacy policy (M6-02, M6-03).
+- [ ] Match an existing account only by an email Google reports as verified; otherwise create an account that is already verified but marked "name not confirmed". Linking an existing password account needs that account's password or a signed-in session.
+- [ ] The Google result becomes the same server-side session as a password sign-in; two-factor still applies if enrolled.
+
+**Frontend**
+- [ ] The full-name confirmation step, with the same validation as sign-up (FR-002). The short name is derived as in M2-02.
+
+**Tests**
+- [ ] An unverified Google email never matches an existing account; a user with an unconfirmed name cannot reach other screens.
+
+**Done when**
+- [ ] A test user signs up with Google on staging, confirms their name and lands on Home; the same user signing in again reaches the same account.
+
+## M2-18 · Team page, with optional social links
+labels: type:feature, stack:full, area:workplace, area:privacy, size:S
+depends: M2-12, M2-07
+spec: FR-040, 12.2
+
+**Goal.** Everyone can see their team, as on the "Whole team" mockup.
+
+**You will see.** The icon at the top right of Home opens a read-only list: avatar, short name ("you" marked), role ("Manager" or "Barista · Level 2") and the workplace name with member count. Instagram and Facebook icons appear only for members who chose to share them.
+
+**Backend**
+- [ ] An endpoint returning name, role, level and contact email, plus the social links only where the member opted in (FR-040). Never returned for members who did not opt in.
+
+**Tests**
+- [ ] A coworker's response contains no social link unless they opted in; no other workplace's members are visible.
+
+**Done when**
+- [ ] Two staff test accounts see each other correctly, and turning the sharing switch off hides the links immediately.
 
 ## M2-15 · Leave a workplace or remove a member
 labels: type:feature, stack:full, area:workplace, size:S
