@@ -9,7 +9,9 @@ export function RequestsPage() {
   return (
     <section className="mx-auto max-w-2xl px-5 md:px-0">
       <PageHeader context={t('requests.context')} title={t('requests.title')} />
-      <EmptyState title={t('requests.emptyTitle')}>{t('requests.emptyText')}</EmptyState>
+      <EmptyState title={t('requests.emptyTitle')} flavour="closing" mood="sleepy">
+        {t('requests.emptyText')}
+      </EmptyState>
     </section>
   );
 }

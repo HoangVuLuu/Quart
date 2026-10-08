@@ -155,6 +155,15 @@
       "dialogText": "The post and its photos are deleted for everyone.",
       "showToast": "Show a message",
       "toastText": "Claim sent to Philippe"
+    },
+    "cups": {
+      "title": "The cup",
+      "opening": "Opening",
+      "closing": "Closing",
+      "blocked": "Blocked",
+      "happy": "happy",
+      "sleepy": "sleepy",
+      "wow": "wow"
     }
   }
 }

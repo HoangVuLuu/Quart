@@ -9,7 +9,9 @@ export function NewsPage() {
   return (
     <section className="mx-auto max-w-2xl px-5 md:px-0">
       <PageHeader context={t('news.context')} title={t('news.title')} />
-      <EmptyState title={t('news.emptyTitle')}>{t('news.emptyText')}</EmptyState>
+      <EmptyState title={t('news.emptyTitle')} flavour="opening" mood="happy">
+        {t('news.emptyText')}
+      </EmptyState>
     </section>
   );
 }

@@ -155,6 +155,15 @@
       "dialogText": "La publication et ses photos seront supprimées pour tout le monde.",
       "showToast": "Afficher un message",
       "toastText": "Demande envoyée à Philippe"
+    },
+    "cups": {
+      "title": "La tasse",
+      "opening": "Ouverture",
+      "closing": "Fermeture",
+      "blocked": "Bloquée",
+      "happy": "contente",
+      "sleepy": "endormie",
+      "wow": "surprise"
     }
   }
 }
