@@ -1,7 +1,8 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../../../i18n';
+import en from '../../../i18n/locales/en.json';
 import { accessibilityProblems } from '../../../test/axe';
 import { ScheduleGrid, type GridShift } from './ScheduleGrid';
 
@@ -76,5 +77,38 @@ describe('ScheduleGrid', () => {
     const { container } = render(<ScheduleGrid shifts={twoWeeks} />);
 
     expect(await accessibilityProblems(container)).toEqual([]);
+  });
+
+  it('points at the shifts of a highlight, turning to their week', () => {
+    const { rerender } = render(<ScheduleGrid shifts={twoWeeks} />);
+    expect(screen.queryByText(en.scheduling.grid.highlighted)).not.toBeInTheDocument();
+
+    rerender(<ScheduleGrid shifts={twoWeeks} highlight={{ shiftIds: ['next-mon-open'], memberIds: [] }} />);
+
+    expect(screen.getByRole('tab', { name: 'Week 2' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getAllByText(en.scheduling.grid.highlighted)).toHaveLength(1);
+  });
+
+  it('points at every shift of a person when the highlight names only people', () => {
+    render(<ScheduleGrid shifts={twoWeeks} highlight={{ shiftIds: [], memberIds: ['mon-open-1'] }} />);
+
+    // mon-open-1 is Camille F., on Monday's opening only.
+    const monday = screen.getByRole('region', { name: 'Monday · Oct 5' });
+    expect(within(monday).getAllByText(en.scheduling.grid.highlighted)).toHaveLength(1);
+    expect(within(monday).getByText('Camille F.').closest('li')).toHaveClass('underline');
+    expect(within(monday).getByText('Marc-Olivier R.').closest('li')).not.toHaveClass('underline');
+  });
+
+  it('brings the first highlighted card into view', () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    const { rerender } = render(<ScheduleGrid shifts={twoWeeks} />);
+
+    rerender(<ScheduleGrid shifts={twoWeeks} highlight={{ shiftIds: ['mon-close'], memberIds: [] }} />);
+
+    expect(scrollIntoView).toHaveBeenCalledOnce();
+    expect(scrollIntoView.mock.contexts[0]).toHaveTextContent('Closing');
+    // jsdom has no scrollIntoView of its own; take the fake away again.
+    delete (Element.prototype as Partial<Element>).scrollIntoView;
   });
 });

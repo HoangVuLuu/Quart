@@ -98,13 +98,18 @@ public sealed class NaiveGeneratorTests
     }
 
     [Fact]
-    public void Leaves_issues_and_score_to_the_evaluator()
+    public void Reports_what_the_evaluator_finds_in_its_schedule()
     {
-        // M1-02 adds the evaluator; until then the generator reports nothing rather than a second rulebook (AD-002).
-        var result = generator.Generate(Input(TwoDays, ThreePeople, []));
+        // One rulebook (AD-002): the result carries the evaluator's own verdict, not a second set of checks.
+        var input = Input(TwoDays, ThreePeople, [Available("ana", "mon-open", "mon-close")]);
 
-        Assert.Empty(result.Issues);
-        Assert.Equal(0, result.Score);
+        var result = generator.Generate(input);
+        var evaluation = Evaluator.Evaluate(input, result.Assignments);
+
+        Assert.Equal(evaluation.Score, result.Score);
+        Assert.Equal(evaluation.Issues.Select(issue => issue.Code), result.Issues.Select(issue => issue.Code));
+        Assert.Contains(result.Issues, issue => issue.Code == IssueCodes.BelowHeadcount);
+        Assert.True(result.Score < 0);
     }
 
     [Fact]
