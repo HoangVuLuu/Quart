@@ -70,7 +70,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # Docker Hub limits anonymous pulls per address and GitHub's runners share addresses, so a pull of
+      # node:22-alpine can fail with "429 Too Many Requests". Pull Docker Hub images through Google's
+      # mirror of the same official images instead; the Dockerfile itself still names Docker Hub.
       - uses: docker/setup-buildx-action@v4
+        with:
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["mirror.gcr.io"]
       # Checks the image builds. Deploy staging (deploy-staging.yml) builds, pushes and deploys it after CI passes on main.
       - uses: docker/build-push-action@v7
         with:
