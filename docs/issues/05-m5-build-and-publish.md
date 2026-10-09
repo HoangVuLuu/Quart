@@ -17,7 +17,7 @@ spec: FR-120, FR-122, FR-125, FR-100, AD-003, AD-011, 8.1
 **You will see.** On a period, Generate locks availability (after a confirmation) and fills the draft grid within a couple of seconds. "Generate again" gives a different valid schedule.
 
 **Backend**
-- [ ] Map the period's shifts, members (level, desired and maximum hours), sent availability, locks and workplace rules to `GeneratorInput`, and NodaTime values to BCL types at this boundary only.
+- [ ] Map the period's shifts, members (level, desired and maximum hours), sent availability, locks, conflict pairs (BR-036) and workplace rules (from the Edit Generator page settings) to `GeneratorInput`, and NodaTime values to BCL types at this boundary only.
 - [ ] `scheduling.assignment` (shift, membership, user_id, `schedule_version_id` null for the draft, is_locked, source, instant range). An **exclusion constraint** on `(user_id, time_range)` over current published rows only, using the `btree_gist` extension, makes double-booking impossible for live schedules (AD-011). The evaluator checks drafts.
 - [ ] `generation_run` stores the seed, a settings snapshot, the score and who ran it (FR-122).
 - [ ] Generating replaces unlocked draft assignments only.

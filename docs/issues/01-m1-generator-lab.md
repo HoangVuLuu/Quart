@@ -17,7 +17,7 @@ spec: AD-003, AD-002, 7.2
 **You will see.** `/lab` renders the Presotea sample (15 people, two shifts a day, two per shift, two weeks) as a week grid. Generate fills it, badly: first available person wins.
 
 **Backend**
-- [ ] In `Quart.Generator` (no dependencies, enforced by the architecture test): `GeneratorInput` (shifts with date, start, end, headcount, level requirements; members with level, desired and max weekly hours; availability as member × shift; locked assignments; rules; seed) and `GeneratorResult` (assignments, issues, score, seed). BCL types only: `DateOnly`, `TimeOnly`. NodaTime conversion happens later, in the Scheduling module.
+- [ ] In `Quart.Generator` (no dependencies, enforced by the architecture test): `GeneratorInput` (shifts with date, start, end, headcount, level requirements; members with level, desired and max weekly hours; availability as member × shift; locked assignments; conflict pairs per shift block (BR-036); rules; seed) and `GeneratorResult` (assignments, issues, score, seed). BCL types only: `DateOnly`, `TimeOnly`. NodaTime conversion happens later, in the Scheduling module.
 - [ ] `IScheduleGenerator` with a `NaiveGenerator` implementation.
 - [ ] The Presotea sample scenario as a JSON fixture, ported from the `PEOPLE` array in `docs/prototype/quart-prototype.jsx`.
 - [ ] Lab endpoints in the Scheduling module (the only module allowed to use the generator): `GET /api/lab/scenarios/presotea`, `POST /api/lab/generate`.
@@ -44,7 +44,7 @@ spec: AD-002, FR-143, BR-031, BR-033, BR-034
 **You will see.** An issues panel under the grid, grouped by type with counts, and a score. Tapping an issue highlights the shifts or person it concerns.
 
 **Backend**
-- [ ] `Evaluator.Evaluate(input, assignments)` returns the score and the issues, with these types: below headcount; missing required level; assigned while unavailable; assigned without submitting; under desired hours; over desired hours; more consecutive days than allowed; both shifts in one day.
+- [ ] `Evaluator.Evaluate(input, assignments)` returns the score and the issues, with these types: below headcount; missing required level; assigned while unavailable; assigned without submitting; under desired hours; over desired hours; more consecutive shifts than allowed (BR-005); both shifts in one day; incompatible pair assigned to the same shift (BR-036).
 - [ ] Hours count the full shift length (BR-031). Under or over is reported beyond 2 hours over the period (BR-033). Opening and closing are the first and last block of each day (BR-034).
 - [ ] Score weights follow the priority order in 7.4, documented beside the constants.
 - [ ] Issue codes are stable strings (for example `issue.below_headcount`) plus parameters. The frontend translates them (FR-263).
@@ -53,7 +53,7 @@ spec: AD-002, FR-143, BR-031, BR-033, BR-034
 - [ ] Issues panel with icon, text and count per type (NFR-008); selecting one highlights the affected cards.
 
 **Tests**
-- [ ] One focused test per issue type, including the consecutive-days boundary and the double-shift case.
+- [ ] One focused test per issue type, including the consecutive-shifts boundary (BR-005), the double-shift case, and the incompatible-pair case (BR-036).
 
 **Done when**
 - [ ] The naive schedule from M1-01 shows its many issues, and every issue type can be triggered from a hand-built test input.
@@ -61,18 +61,18 @@ spec: AD-002, FR-143, BR-031, BR-033, BR-034
 ## M1-03 · Hard rules the generator never breaks, proven by property tests
 labels: type:feature, stack:full, area:generator, size:M
 depends: M1-02
-spec: BR-001, BR-002, BR-003, BR-004, BR-005, FR-125, AD-005, NFR-014
+spec: BR-001, BR-002, BR-003, BR-004, BR-005, BR-036, FR-125, AD-005, NFR-014
 
 **Goal.** No schedule the generator produces can ever break a hard rule. A gap is reported instead (FR-125).
 
 **You will see.** A "Hard rules: 0 violations" badge in the lab, and empty slots shown as open rather than filled illegally.
 
 **Backend**
-- [ ] One candidate filter used by every phase of the algorithm: available for that exact shift (BR-001); no time overlap with another assignment, including external busy intervals from other workplaces (BR-002); never above headcount (BR-003); locks untouched (BR-004); never beyond max consecutive days (BR-005). BR-005 is hard everywhere, including local search: the prototype put the owner on 28 straight shifts when it was a penalty.
+- [ ] One candidate filter used by every phase of the algorithm: available for that exact shift (BR-001); no time overlap with another assignment, including external busy intervals from other workplaces (BR-002); never above headcount (BR-003); locks untouched (BR-004); never beyond max consecutive shifts (BR-005, counting each shift as one unit, reset on a day with no shifts); never placing both members of a conflict pair on the same shift (BR-036, unless a lock forces it). BR-005 is hard everywhere, including local search: the prototype put the owner on 28 straight shifts when it was a penalty.
 - [ ] Add CsCheck to the test project for property tests.
 
 **Tests**
-- [ ] Property tests over thousands of random inputs (people 1–30, 1–4 weeks, random availability, levels, locks): no hard rule is ever broken, no shift is overfilled, and every lock survives.
+- [ ] Property tests over thousands of random inputs (people 1–30, 1–4 weeks, random availability, levels, locks, conflict pairs): no hard rule is ever broken, no shift is overfilled, every lock survives, and no conflict pair shares a shift (unless both are locked).
 - [ ] Shrunk counterexamples are printed as JSON you can paste into the lab.
 
 **Done when**
@@ -123,11 +123,11 @@ spec: AD-004, BR-013, BR-014, BR-015, BR-020, BR-021, BR-022, BR-023
 ## M1-06 · Scenario editor in the lab
 labels: type:feature, stack:full, area:generator, size:M
 depends: M1-04
-spec: FR-035, FR-037, FR-093, BR-005, BR-020, 7.2
+spec: FR-035, FR-037, FR-093, BR-005, BR-020, BR-036, 7.2
 
 **Goal.** Try "what if" questions before they reach Philippe: two level 3s instead of five, someone who only works weekends.
 
-**You will see.** Editable people (name, level, desired and maximum hours), tap-to-toggle availability per person and shift, rule settings (maximum consecutive days, fairness switches), and JSON import and export.
+**You will see.** Editable people (name, level, desired and maximum hours), tap-to-toggle availability per person and shift, rule settings (maximum consecutive shifts, fairness switches, conflict pairs), and JSON import and export.
 
 **Backend**
 - [ ] Validate scenario input with translated error codes and field paths.
