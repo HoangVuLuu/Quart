@@ -58,18 +58,22 @@ shows on Home and in the News section of Alerts.
 | 1j2 | Home, all collected | Same card turns green: "Availability collected · Ready to build schedule" | M4-04 |
 | 1x | Whole team (admin) | As 1w plus an Edit button on each person | M2-12, M2-18 |
 | 1z | Edit level sheet | Level 1, 2, 3 choice and Save level | M2-12 |
-| 1k | Schedule, before generating | "Ready to build?" with Generate schedule and By hand, list of people who have not sent | M4-07, M5-01 |
+| 1k | Schedule, before generating | "Ready to build?" with Generate schedule and By hand, Edit Generator button, list of people who have not sent | M4-07, M5-01 |
 | 1k2 | Schedule, all collected | Green card, everyone has sent | M5-01 |
+| 1k3 | Edit Generator, General | Period length, max consecutive shifts, opening/closing fairness toggles. Back arrow, Save at bottom, no bottom menu bar | M3-01 |
+| 1k4 | Edit Generator, Per Day | Weekly grid with shift blocks per day, headcount, level requirements. Tap a block to see rules | M3-02, M3-05 |
+| 1k5 | Edit Generator, day rules | Bottom sheet for one block: headcount stepper, "at least N of level L" rules, "cannot work together" pairs, Apply to all | M3-02, M3-03 |
+| 1k6 | Leave without saving | Confirmation popup when navigating away with unsaved changes | M3-06 |
 | 1l | Schedule, draft | Generate again, "N issues", Publish, a seed hint, Week 1 / Week 2, shift cards with fill count, levels, KEPT for locked people, red card with "No level 3" | M5-01, M5-03, M5-04, M5-05 |
 | 1p | Shift editor sheet | Blocking issue banner, "On this shift" with Keep and Remove, "Add someone" with level, availability status, hours counter and Add | M5-02 |
 | 1q | Issues sheet | List with severity tags (Blocks, Asks, Info). The source image is clipped at the right edge | M5-04 |
 | 1m | Team availability | Progress bar, "Fill in my availability", a row per person with Sent / Not sent, hours wanted, notes in a highlighted box, Remind | M4-04, M4-05 |
 | 1m2 | My availability | Same as 1e for the owner | M4-02 |
 | 1n | Alerts (admin) | Availability reminders with Remind and "Remind everyone who is missing", Open shifts with "Give it to <person>", Trades with Approve and Decline plus the validation line | M4-05, M7-04, M7-07 |
-| 1o | Profile (admin) | "I work shifts too", join code with copy, Members and levels, Weekly shift template, Scheduling rules, then the same notification, preference and account rows as 1g | M2-09, M2-12, M3-05 |
-| 1o2 | Weekly shift template | Day list with each block's people count and rules, pencil to edit, note that edits apply to the next schedule only | M3-01, M3-02 |
-| 1o3 | Edit shifts, Monday | Per block: People needed stepper, "Requires at least N of level X" rules with remove and Add rule, Save changes | M3-01, M3-02 |
-| 1y | Scheduling rules sheet | Approve claims, Approve trades, Spread openings fairly, Spread closings fairly, Most days in a row stepper | M3-05, M7-04 |
+| 1o | Profile (admin) | "I work shifts too", join code with copy, Members and levels, then the same notification, preference and account rows as 1g. Template and scheduling rules moved to the Edit Generator page (1k3–1k6) | M2-09, M2-12 |
+| 1o2 | ~~Weekly shift template~~ | **Superseded by 1k4** (Edit Generator, Per Day tab) | — |
+| 1o3 | ~~Edit shifts, Monday~~ | **Superseded by 1k5** (Edit Generator, day rules bottom sheet) | — |
+| 1y | ~~Scheduling rules sheet~~ | **Superseded by 1k3** (Edit Generator, General tab). Approve claims and Approve trades remain in a future settings location (M7-04) | — |
 
 ## Known conflicts and open points
 

@@ -2,9 +2,9 @@
 QUART — SHIFT SCHEDULING FOR PRESOTEA MONTMORENCY
 PROJECT SPECIFICATION AND ARCHITECTURE BASE FILE
 ================================================================================
-Version:        1.3
-Date:           2026-09-22  (v1.2: 2026-09-21, v1.1: 2026-09-21,
-                             v1.0: 2026-09-11)
+Version:        1.4
+Date:           2026-10-09  (v1.3: 2026-09-22, v1.2: 2026-09-21,
+                             v1.1: 2026-09-21, v1.0: 2026-09-11)
 Owner:          Hoang Vu Luu (sole developer)
 Client:         Philippe, owner of Presotea Montmorency (Montreal, Quebec)
 Status:         Planning complete. Prototype built. Repository scaffolded;
@@ -317,9 +317,10 @@ FR-042  Creating a workplace produces a single-use owner invitation link, valid
         becomes a member, and can revoke and reissue the link while it is
         unused. Until it is accepted the workplace has no members.
 
-6.3 SHIFT TEMPLATE
-FR-060  The template is a weekly grid, Monday to Sunday. Each shift block has a
-        day, a start time, an end time, a headcount and its level requirements.
+6.3 SHIFT TEMPLATE (EDIT GENERATOR PAGE)
+FR-060  The template is a weekly grid, Monday to Sunday, edited on the Edit
+        Generator page (mockups 1k3, 1k4, 1k5). Each shift block has a day, a
+        start time, an end time, a headcount and its level requirements.
 FR-061  Times snap to 15 minutes.
 FR-062  No shift may cross midnight. End time must be after start time on the
         same day. Reject anything else at validation time.
@@ -335,21 +336,39 @@ FR-065  Each shift block can require a minimum quantity of a given level, for
 FR-066  Because levels are a ladder, a requirement for level N is satisfied by
         anyone at level N or above.
 FR-067  Desktop and iPad support drag-to-create on a week grid, the way Google
-        Calendar creates events. Phone and iPad also support a tap-only path:
-        tap an empty slot, enter start and end time, choose which days it
-        repeats on. The tap path must be able to do everything the drag path
-        can do. Presotea's whole template is created by entering 10:00-16:00
-        once and applying it to all seven days, then 16:00-23:00 likewise.
+        Calendar creates events. Phones support tap-to-create-and-extend: tap
+        an empty slot to create a block, then extend it by tapping. Choose
+        which days it repeats on. The tap path must be able to do everything
+        the drag path can do. Presotea's whole template is created by entering
+        10:00-16:00 once and applying it to all seven days, then 16:00-23:00
+        likewise.
 FR-068  Editing the template affects future, unpublished periods only. It never
         rewrites a published schedule.
 FR-069  If a shift block is changed after availability has been collected for a
         period that uses it, every answer for that block resets to unanswered
         and the affected employees are notified.
+FR-070  The Edit Generator page (mockups 1k3–1k6) replaces the standalone
+        template editor and the scheduling-rules section of workplace settings.
+        It is accessed from the schedule page via an "Edit Generator" button,
+        has no bottom menu bar (back arrow only), and a Save button at the
+        bottom. Navigation: 1k → 1k3.
+FR-071  Each shift block can have "cannot work together" pairs: employees the
+        generator must never assign to the same shift. Pairs are configured per
+        block with an "Apply to all" option to copy them to every block
+        (mockup 1k5). The UI is part of the per-day rules bottom sheet.
+FR-072  Unsaved changes on the Edit Generator page trigger a confirmation popup
+        (mockup 1k6) when the user navigates away.
+FR-073  The Edit Generator page has two tabs: General (period length, maximum
+        consecutive shifts, opening and closing fairness toggles) and Per Day
+        (the weekly shift grid with blocks, headcount, level requirements and
+        conflict pairs per block) (mockups 1k3, 1k4).
 
 6.4 AVAILABILITY CYCLES
-FR-090  The admin sets a period length of 1, 2, 3 or 4 weeks. "Monthly" means
-        4-week blocks, not calendar months, so that weeks and hours targets
-        stay aligned.
+FR-090  The admin sets a period length of 1, 2, 3 or 4 weeks per period.
+        "Monthly" means 4-week blocks, not calendar months, so that weeks and
+        hours targets stay aligned. The setting is on the Edit Generator page's
+        General tab (mockup 1k3). Changing the period length mid-period adds
+        weeks with no submitted availability.
 FR-091  The admin sets how many days before the period starts the availability
         request goes out, and a submission deadline. Automatic reminders are
         sent to anyone who has not submitted.
@@ -437,8 +456,9 @@ FR-143  The issues dashboard lists everything the evaluator found. Issue types:
           - person assigned who never submitted availability
           - person under their desired hours
           - person over their desired hours
-          - person working more consecutive days than allowed
+          - person working more consecutive shifts than allowed
           - person working both shifts in one day
+          - incompatible pair assigned to the same shift (BR-036)
         Employees see the subset that concerns them, plus open shifts.
 FR-144  Each issue type has an admin setting controlling what happens at publish
         time: block publishing, ask for confirmation, or just display.
@@ -632,12 +652,15 @@ BR-002  Nobody is assigned to two shifts that overlap in time, in this workplace
         or in another one.
 BR-003  Never more people on a shift than its headcount.
 BR-004  Locked assignments are preserved exactly.
-BR-005  Nobody exceeds the workplace's maximum consecutive working days.
-        This is a hard rule in every phase of the algorithm, including local
-        search. (Learned the hard way in the prototype: when this was only a
-        weighted penalty, a scarcity of level 3s made the optimiser put the
-        owner on 28 straight shifts because covering a shift scored higher than
-        the rest-day penalty. An absurd schedule is worse than a reported gap.)
+BR-005  Nobody exceeds the workplace's maximum consecutive shifts. A shift
+        counts as one unit regardless of which day it falls on: someone who
+        works Opening and Closing on Monday then Opening on Tuesday has worked
+        3 consecutive shifts. A calendar day with no shifts resets the count
+        to 0. Options: 1, 2, 3, 4 or no limit. This is a hard rule in every
+        phase of the algorithm, including local search. (Learned the hard way
+        in the prototype: when this was only a weighted penalty, a scarcity of
+        level 3s made the optimiser put the owner on 28 straight shifts
+        because covering a shift scored higher than the rest-day penalty.)
 
 7.4 Soft goals — optimised in this priority order
 BR-010  Fill every slot.                                  (weight: highest)
@@ -674,6 +697,12 @@ BR-034  Opening and closing are identified automatically as the first and last
         shift block of each day. An admin can override the classification.
 BR-035  Availability notes (FR-103) inform the admin's judgment only. The
         generator never reads them.
+BR-036  "Cannot work together" pairs. Two employees marked as a conflict pair
+        on a shift block are never assigned by the generator to the same shift
+        instance of that block. If a lock (BR-004) forces both onto the shift,
+        the lock wins and the evaluator flags an incompatible-pair issue.
+        Pairs are configured per shift block; an "Apply to all" button copies
+        them to every block (FR-071).
 
 7.7 Algorithm (AD-004)
 Randomized greedy construction followed by local search:
@@ -722,6 +751,8 @@ in week one, not after the screens are done.
                         end_time, headcount, is_opening_override,
                         is_closing_override
   ShiftBlockRequirement shift_block_id, level, min_count
+  ShiftBlockConflict   shift_block_id, membership_a_id, membership_b_id
+                        (unordered pair; a < b enforced by constraint)
   Period                workplace_id, start_date, weeks, status, locked_at,
                         request_sent_at, deadline_at
   Shift                 period_id, date, start_time, end_time, headcount,
@@ -1495,14 +1526,15 @@ Q-01  How many level 3 baristas are there actually? The prototype assumes five
       including Philippe. If the real number is two or three, the schedule gets
       much tighter and the level 3 requirement becomes the binding constraint.
       This changes what Philippe should expect from Generate.
-Q-02  What is the maximum number of consecutive days Philippe wants anyone to
-      work? The prototype uses 5. Needed before the generator is tuned.
+Q-02  ANSWERED 2026-10-09. Maximum consecutive shifts: Philippe chose options
+      1, 2, 3, 4 or no limit (replacing the earlier "consecutive days"
+      definition). See BR-005.
 Q-03  Can Philippe export one month of Google Form availability responses plus
       the matching Excel schedule, with names replaced? This is the golden test
       and the best available evidence that the generator is good enough.
-Q-04  What are Philippe's unwritten scheduling rules beyond the ones captured
-      here? He confirmed there are no "these two should not work together"
-      pairs. Anything else he weighs by hand should be added to section 7.
+Q-04  ANSWERED 2026-10-09. Philippe reversed his earlier answer: he does need
+      "cannot work together" pairs per shift block. Added as BR-036 and
+      FR-071. No other unwritten rules surfaced.
 Q-05  Final product name and branding. Working name is Quart.
 Q-06  Which transactional email provider, and is its processing location
       acceptable to Philippe (12.1)? Decide in M2-01, before M2-03 ships.
@@ -1642,6 +1674,28 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             Optional, opt-in Instagram and Facebook links on the team page.
             Android install added. (FR-001, FR-006, FR-040, FR-100, FR-103,
             FR-215, FR-230, FR-231, NFR-003, NFR-012, NFR-016)
+2026-10-09  BR-005 rewritten: "maximum consecutive working days" changed to
+            "maximum consecutive shifts." A shift is one unit; someone working
+            Opening and Closing on the same day then Opening the next day has
+            3 consecutive shifts. A day with no shifts resets the count.
+            Options are 1, 2, 3, 4 or no limit. Q-02 answered.  (BR-005,
+            Q-02)
+2026-10-09  "Cannot work together" pairs added as BR-036 and FR-071. Philippe
+            reversed his earlier answer (Q-04 originally said no such pairs
+            needed). Pairs are per shift block with an "Apply to all" option.
+            A lock wins over a pair conflict; the evaluator flags it.
+            (BR-036, FR-071, Q-04)
+2026-10-09  The standalone template editor and the scheduling-rules section of
+            workplace settings are replaced by a single Edit Generator page
+            accessed from the schedule page (mockups 1k3–1k6). The page has
+            General (period length, max consecutive shifts, fairness) and
+            Per Day (shift blocks, headcount, level requirements, conflict
+            pairs) tabs. Save at the bottom; unsaved changes trigger a
+            confirmation popup. Template changes still affect future periods
+            only (FR-068).  (FR-070, FR-071, FR-072, FR-073)
+2026-10-09  Period length remains per-period (FR-090) but is now set on the
+            Edit Generator page's General tab instead of a separate setting.
+            Changing it mid-period adds weeks with no submitted availability.
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES
