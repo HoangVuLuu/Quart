@@ -12,6 +12,7 @@ public static class ErrorCodes
     public const string Unauthorized = "common.unauthorized";
     public const string Forbidden = "common.forbidden";
     public const string Conflict = "common.conflict";
+    public const string TooManyRequests = "common.too_many_requests";
     public const string Unexpected = "common.unexpected";
 
     /// <summary>Maps an HTTP status to the generic code used when an endpoint did not set its own.</summary>
@@ -22,6 +23,7 @@ public static class ErrorCodes
         403 => Forbidden,
         404 => NotFound,
         409 => Conflict,
+        429 => TooManyRequests,
         _ => Unexpected,
     };
 }

@@ -70,6 +70,10 @@ Background jobs do not run on their own locally. `curl -X POST http://localhost:
 runs one tick, and the home page's "Last background run" updates
 ([docs/runbooks/background-jobs.md](docs/runbooks/background-jobs.md)).
 
+The generator lab is at <http://localhost:5173/lab>: the Presotea sample as a schedule grid, and a
+Generate button. It needs no database. The API serves it only when `Features:Lab` is true, which
+`appsettings.Development.json` and `appsettings.Staging.json` set; it is never served in Production.
+
 ## Before you push
 
 ```bash

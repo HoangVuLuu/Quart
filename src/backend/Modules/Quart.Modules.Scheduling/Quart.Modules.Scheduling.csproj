@@ -9,4 +9,8 @@
     <ProjectReference Include="..\..\Quart.SharedKernel\Quart.SharedKernel.csproj" />
     <ProjectReference Include="..\..\Quart.Generator\Quart.Generator.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The generator lab's sample scenarios (M1-01), read with LabScenarios.Load. -->
+    <EmbeddedResource Include="Lab\Scenarios\*.json" LogicalName="Lab.Scenarios.%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

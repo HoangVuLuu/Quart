@@ -37,6 +37,7 @@
       "unauthorized": "Reconnecte-toi, s'il te plaît.",
       "forbidden": "Tu n'as pas accès à ceci.",
       "conflict": "Quelqu'un a modifié ceci en même temps. Actualise et réessaie.",
+      "too_many_requests": "Trop d’essais en peu de temps. Attends une minute et réessaie.",
       "unexpected": "Un problème est survenu de notre côté. Réessaie dans un instant.",
       "network": "Aucune connexion au serveur. Vérifie ton internet et réessaie."
     },
@@ -165,5 +166,38 @@
       "sleepy": "endormie",
       "wow": "surprise"
     }
+  },
+  "scheduling": {
+    "kind": {
+      "opening": "Ouverture",
+      "mid": "Milieu",
+      "closing": "Fermeture"
+    },
+    "level": "Niveau {{level}}",
+    "levelShort": "N{{level}}",
+    "grid": {
+      "weeks": "Semaines de la période",
+      "week": "Semaine {{number}}",
+      "noShifts": "Aucun quart",
+      "fill": "{{filled}} sur {{headcount}} personnes"
+    }
+  },
+  "lab": {
+    "context": "Labo du générateur · données de test seulement",
+    "title": "Labo",
+    "loading": "Chargement de l’exemple…",
+    "retry": "Réessayer",
+    "offTitle": "Le labo est fermé ici",
+    "offText": "Le labo du générateur fonctionne seulement sur les serveurs de développement et de préproduction.",
+    "people_one": "{{count}} personne",
+    "people_other": "{{count}} personnes",
+    "shifts_one": "{{count}} quart",
+    "shifts_other": "{{count}} quarts",
+    "notSent": "Pas encore envoyé",
+    "generate": "Générer",
+    "generating": "Génération…",
+    "naiveHint": "Pour l’instant, le générateur est naïf : la première personne disponible gagne.",
+    "filled": "{{filled}} places remplies sur {{slots}}",
+    "seed": "Graine nº {{seed}}"
   }
 }

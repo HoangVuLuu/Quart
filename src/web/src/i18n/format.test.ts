@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatRelativeTime } from './format';
+import { formatDateRange, formatDayHeading, formatDayShort, formatRelativeTime } from './format';
 
 const now = '2026-10-08T12:00:00Z';
 
@@ -28,5 +28,21 @@ describe('formatRelativeTime', () => {
   it('speaks Quebec French', () => {
     expect(formatRelativeTime(ago(3 * 60), now, 'fr')).toBe('il y a 3 minutes');
     expect(formatRelativeTime(now, now, 'fr')).toBe('maintenant');
+  });
+});
+
+describe('calendar dates', () => {
+  it('heads a day as in the mockups, in both languages', () => {
+    expect(formatDayHeading('2026-10-05', 'en')).toBe('Monday · Oct 5');
+    expect(formatDayHeading('2026-10-05', 'fr')).toBe('Lundi · 5 oct.');
+    expect(formatDayShort('2026-10-05', 'en')).toBe('Mon 5');
+    expect(formatDayShort('2026-10-05', 'fr')).toBe('Lun. 5');
+  });
+
+  it('writes a period as one range', () => {
+    // Intl puts thin and no-break spaces around the dash; compare as plain spaces.
+    const plain = (text: string) => text.replace(/\s/g, ' ');
+    expect(plain(formatDateRange('2026-10-05', '2026-10-18', 'en'))).toBe('Oct 5–18');
+    expect(plain(formatDateRange('2026-10-26', '2026-11-08', 'fr'))).toBe('26 oct. – 8 nov.');
   });
 });

@@ -65,4 +65,11 @@ public sealed class ApiProblem
     public string? Detail { get; init; }
 
     public string? Instance { get; init; }
+
+    /// <summary>On a validation problem: each thing wrong with the request and where it is.</summary>
+    public IReadOnlyList<ApiProblemError>? Errors { get; init; }
 }
+
+/// <param name="Code">Machine-readable and stable, for example <c>generator.unknown_member</c>.</param>
+/// <param name="Path">Where in the request body, for example <c>lockedAssignments[0].memberId</c>.</param>
+public sealed record ApiProblemError(string Code, string Path);

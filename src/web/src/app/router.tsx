@@ -16,6 +16,10 @@ const showDevPages = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_PAGES 
 const UiGalleryPage = showDevPages
   ? lazy(() => import('../features/dev/UiGalleryPage').then((m) => ({ default: m.UiGalleryPage })))
   : null;
+// The generator lab (M1-01) follows the same rule; the API also serves it only where Features:Lab is on.
+const LabPage = showDevPages
+  ? lazy(() => import('../features/lab/LabPage').then((m) => ({ default: m.LabPage })))
+  : null;
 
 export const routes: RouteObject[] = [
   {
@@ -41,6 +45,18 @@ export const routes: RouteObject[] = [
                   element: (
                     <Suspense fallback={null}>
                       <UiGalleryPage />
+                    </Suspense>
+                  ),
+                },
+              ]
+            : []),
+          ...(LabPage
+            ? [
+                {
+                  path: 'lab',
+                  element: (
+                    <Suspense fallback={null}>
+                      <LabPage />
                     </Suspense>
                   ),
                 },

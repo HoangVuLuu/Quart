@@ -1,0 +1,374 @@
+{
+  "name": "Presotea Montmorency",
+  "people": [
+    { "id": "p1", "name": "Philippe Nguyen" },
+    { "id": "p2", "name": "Amélie Tremblay" },
+    { "id": "p3", "name": "Jasmine Khalil" },
+    { "id": "p4", "name": "Marc-Olivier Roy" },
+    { "id": "p5", "name": "Kevin Tran" },
+    { "id": "p6", "name": "Sophie Lapointe" },
+    { "id": "p7", "name": "Rahul Mehta" },
+    { "id": "p8", "name": "Léa Bouchard" },
+    { "id": "p9", "name": "Camille Fortin" },
+    { "id": "p10", "name": "Noah Bergeron" },
+    { "id": "p11", "name": "Yuki Tanaka" },
+    { "id": "p12", "name": "Sarah Gagnon" },
+    { "id": "p13", "name": "Diego Alvarez" },
+    { "id": "p14", "name": "Emma Côté" },
+    { "id": "p15", "name": "Liam O'Connor" }
+  ],
+  "input": {
+    "shifts": [
+      {
+        "id": "2026-10-05-opening",
+        "blockId": "opening",
+        "date": "2026-10-05",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-05-closing",
+        "blockId": "closing",
+        "date": "2026-10-05",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-06-opening",
+        "blockId": "opening",
+        "date": "2026-10-06",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-06-closing",
+        "blockId": "closing",
+        "date": "2026-10-06",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-07-opening",
+        "blockId": "opening",
+        "date": "2026-10-07",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-07-closing",
+        "blockId": "closing",
+        "date": "2026-10-07",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-08-opening",
+        "blockId": "opening",
+        "date": "2026-10-08",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-08-closing",
+        "blockId": "closing",
+        "date": "2026-10-08",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-09-opening",
+        "blockId": "opening",
+        "date": "2026-10-09",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-09-closing",
+        "blockId": "closing",
+        "date": "2026-10-09",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-10-opening",
+        "blockId": "opening",
+        "date": "2026-10-10",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-10-closing",
+        "blockId": "closing",
+        "date": "2026-10-10",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-11-opening",
+        "blockId": "opening",
+        "date": "2026-10-11",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-11-closing",
+        "blockId": "closing",
+        "date": "2026-10-11",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-12-opening",
+        "blockId": "opening",
+        "date": "2026-10-12",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-12-closing",
+        "blockId": "closing",
+        "date": "2026-10-12",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-13-opening",
+        "blockId": "opening",
+        "date": "2026-10-13",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-13-closing",
+        "blockId": "closing",
+        "date": "2026-10-13",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-14-opening",
+        "blockId": "opening",
+        "date": "2026-10-14",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-14-closing",
+        "blockId": "closing",
+        "date": "2026-10-14",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-15-opening",
+        "blockId": "opening",
+        "date": "2026-10-15",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-15-closing",
+        "blockId": "closing",
+        "date": "2026-10-15",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-16-opening",
+        "blockId": "opening",
+        "date": "2026-10-16",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-16-closing",
+        "blockId": "closing",
+        "date": "2026-10-16",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-17-opening",
+        "blockId": "opening",
+        "date": "2026-10-17",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-17-closing",
+        "blockId": "closing",
+        "date": "2026-10-17",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-18-opening",
+        "blockId": "opening",
+        "date": "2026-10-18",
+        "start": "10:00:00",
+        "end": "16:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      },
+      {
+        "id": "2026-10-18-closing",
+        "blockId": "closing",
+        "date": "2026-10-18",
+        "start": "16:00:00",
+        "end": "23:00:00",
+        "headcount": 2,
+        "levelRequirements": [{ "level": 3, "minCount": 1 }]
+      }
+    ],
+    "members": [
+      { "id": "p1", "level": 3, "desiredWeeklyHours": 20, "maxWeeklyHours": null },
+      { "id": "p2", "level": 3, "desiredWeeklyHours": 20, "maxWeeklyHours": null },
+      { "id": "p3", "level": 3, "desiredWeeklyHours": 18, "maxWeeklyHours": null },
+      { "id": "p4", "level": 3, "desiredWeeklyHours": 18, "maxWeeklyHours": null },
+      { "id": "p5", "level": 3, "desiredWeeklyHours": 20, "maxWeeklyHours": null },
+      { "id": "p6", "level": 2, "desiredWeeklyHours": 10, "maxWeeklyHours": null },
+      { "id": "p7", "level": 2, "desiredWeeklyHours": 9, "maxWeeklyHours": null },
+      { "id": "p8", "level": 2, "desiredWeeklyHours": 8, "maxWeeklyHours": null },
+      { "id": "p9", "level": 2, "desiredWeeklyHours": 8, "maxWeeklyHours": null },
+      { "id": "p10", "level": 1, "desiredWeeklyHours": 8, "maxWeeklyHours": null },
+      { "id": "p11", "level": 1, "desiredWeeklyHours": 6, "maxWeeklyHours": null },
+      { "id": "p12", "level": 1, "desiredWeeklyHours": 10, "maxWeeklyHours": null },
+      { "id": "p13", "level": 1, "desiredWeeklyHours": 8, "maxWeeklyHours": null },
+      { "id": "p14", "level": 1, "desiredWeeklyHours": 6, "maxWeeklyHours": null },
+      { "id": "p15", "level": 1, "desiredWeeklyHours": 9, "maxWeeklyHours": null }
+    ],
+    "availability": [
+      {
+        "memberId": "p1",
+        "submitted": true,
+        "shiftIds": ["2026-10-05-opening", "2026-10-05-closing", "2026-10-06-opening", "2026-10-06-closing", "2026-10-07-opening", "2026-10-07-closing", "2026-10-08-opening", "2026-10-08-closing", "2026-10-09-opening", "2026-10-09-closing", "2026-10-10-opening", "2026-10-10-closing", "2026-10-11-opening", "2026-10-11-closing", "2026-10-12-opening", "2026-10-12-closing", "2026-10-13-opening", "2026-10-13-closing", "2026-10-14-opening", "2026-10-14-closing", "2026-10-15-opening", "2026-10-15-closing", "2026-10-16-opening", "2026-10-16-closing", "2026-10-17-opening", "2026-10-17-closing", "2026-10-18-opening", "2026-10-18-closing"]
+      },
+      {
+        "memberId": "p2",
+        "submitted": true,
+        "shiftIds": ["2026-10-05-opening", "2026-10-05-closing", "2026-10-06-closing", "2026-10-07-opening", "2026-10-07-closing", "2026-10-08-closing", "2026-10-09-closing", "2026-10-10-opening", "2026-10-10-closing", "2026-10-11-closing", "2026-10-12-closing", "2026-10-13-closing", "2026-10-14-closing", "2026-10-15-closing", "2026-10-16-opening", "2026-10-16-closing", "2026-10-17-closing", "2026-10-18-closing"]
+      },
+      {
+        "memberId": "p3",
+        "submitted": true,
+        "shiftIds": ["2026-10-05-opening", "2026-10-05-closing", "2026-10-06-opening", "2026-10-06-closing", "2026-10-07-closing", "2026-10-08-opening", "2026-10-08-closing", "2026-10-09-opening", "2026-10-10-opening", "2026-10-10-closing", "2026-10-11-opening", "2026-10-11-closing", "2026-10-12-opening", "2026-10-12-closing", "2026-10-13-closing", "2026-10-14-opening", "2026-10-14-closing", "2026-10-15-opening", "2026-10-16-opening", "2026-10-16-closing", "2026-10-17-closing", "2026-10-18-opening"]
+      },
+      {
+        "memberId": "p4",
+        "submitted": true,
+        "shiftIds": ["2026-10-05-opening", "2026-10-05-closing", "2026-10-06-opening", "2026-10-07-opening", "2026-10-08-opening", "2026-10-09-opening", "2026-10-10-opening", "2026-10-11-opening", "2026-10-12-opening", "2026-10-13-opening", "2026-10-14-opening", "2026-10-15-opening", "2026-10-15-closing", "2026-10-16-opening", "2026-10-16-closing", "2026-10-17-closing", "2026-10-18-opening", "2026-10-18-closing"]
+      },
+      {
+        "memberId": "p5",
+        "submitted": true,
+        "shiftIds": ["2026-10-05-closing", "2026-10-06-opening", "2026-10-06-closing", "2026-10-07-closing", "2026-10-08-closing", "2026-10-09-closing", "2026-10-10-opening", "2026-10-10-closing", "2026-10-11-opening", "2026-10-11-closing", "2026-10-12-closing", "2026-10-13-opening", "2026-10-13-closing", "2026-10-14-opening", "2026-10-14-closing", "2026-10-15-opening", "2026-10-15-closing", "2026-10-16-closing", "2026-10-17-opening", "2026-10-17-closing", "2026-10-18-closing"]
+      },
+      {
+        "memberId": "p6",
+        "submitted": true,
+        "shiftIds": ["2026-10-05-closing", "2026-10-06-closing", "2026-10-08-closing", "2026-10-09-closing", "2026-10-10-closing", "2026-10-11-closing", "2026-10-12-opening", "2026-10-12-closing", "2026-10-13-closing", "2026-10-14-opening", "2026-10-16-opening", "2026-10-16-closing", "2026-10-17-closing", "2026-10-18-closing"]
+      },
+      {
+        "memberId": "p7",
+        "submitted": true,
+        "shiftIds": ["2026-10-06-closing", "2026-10-07-opening", "2026-10-07-closing", "2026-10-08-closing", "2026-10-09-opening", "2026-10-09-closing", "2026-10-10-closing", "2026-10-11-opening", "2026-10-11-closing", "2026-10-14-opening", "2026-10-15-opening", "2026-10-16-opening", "2026-10-17-opening", "2026-10-17-closing"]
+      },
+      {
+        "memberId": "p8",
+        "submitted": true,
+        "shiftIds": ["2026-10-06-closing", "2026-10-09-opening", "2026-10-10-opening", "2026-10-10-closing", "2026-10-11-opening", "2026-10-11-closing", "2026-10-13-closing", "2026-10-15-closing", "2026-10-16-opening", "2026-10-17-opening", "2026-10-18-opening", "2026-10-18-closing"]
+      },
+      {
+        "memberId": "p9",
+        "submitted": true,
+        "shiftIds": ["2026-10-05-opening", "2026-10-05-closing", "2026-10-06-opening", "2026-10-07-opening", "2026-10-08-opening", "2026-10-09-opening", "2026-10-10-opening", "2026-10-12-opening", "2026-10-12-closing", "2026-10-13-opening", "2026-10-14-opening", "2026-10-15-opening", "2026-10-16-opening", "2026-10-17-opening"]
+      },
+      {
+        "memberId": "p10",
+        "submitted": true,
+        "shiftIds": ["2026-10-05-opening", "2026-10-05-closing", "2026-10-06-closing", "2026-10-08-opening", "2026-10-10-opening", "2026-10-11-opening", "2026-10-11-closing", "2026-10-13-opening", "2026-10-13-closing", "2026-10-17-opening", "2026-10-17-closing", "2026-10-18-opening", "2026-10-18-closing"]
+      },
+      {
+        "memberId": "p11",
+        "submitted": true,
+        "shiftIds": ["2026-10-05-opening", "2026-10-06-opening", "2026-10-06-closing", "2026-10-07-opening", "2026-10-08-opening", "2026-10-08-closing", "2026-10-09-opening", "2026-10-10-closing", "2026-10-11-opening", "2026-10-13-opening", "2026-10-14-opening", "2026-10-14-closing", "2026-10-15-opening", "2026-10-16-opening"]
+      },
+      {
+        "memberId": "p12",
+        "submitted": true,
+        "shiftIds": ["2026-10-05-closing", "2026-10-06-opening", "2026-10-06-closing", "2026-10-07-closing", "2026-10-08-closing", "2026-10-09-closing", "2026-10-10-closing", "2026-10-12-closing", "2026-10-13-closing", "2026-10-14-closing", "2026-10-15-closing", "2026-10-16-closing", "2026-10-17-closing", "2026-10-18-closing"]
+      },
+      {
+        "memberId": "p13",
+        "submitted": false,
+        "shiftIds": []
+      },
+      {
+        "memberId": "p14",
+        "submitted": false,
+        "shiftIds": []
+      },
+      {
+        "memberId": "p15",
+        "submitted": true,
+        "shiftIds": ["2026-10-05-closing", "2026-10-06-closing", "2026-10-07-closing", "2026-10-08-opening", "2026-10-08-closing", "2026-10-09-closing", "2026-10-11-closing", "2026-10-13-closing", "2026-10-14-closing", "2026-10-15-opening", "2026-10-15-closing", "2026-10-16-closing", "2026-10-17-closing", "2026-10-18-closing"]
+      }
+    ],
+    "lockedAssignments": [],
+    "conflictPairs": [],
+    "rules": { "maxConsecutiveShifts": 3, "openingFairness": true, "closingFairness": true },
+    "seed": 1
+  }
+}

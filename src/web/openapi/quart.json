@@ -34,6 +34,76 @@
           }
         }
       }
+    },
+    "/api/lab/scenarios/presotea": {
+      "get": {
+        "tags": [
+          "Quart.Api"
+        ],
+        "operationId": "GetLabPresoteaScenario",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabScenario"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lab/generate": {
+      "post": {
+        "tags": [
+          "Quart.Api"
+        ],
+        "operationId": "GenerateLabSchedule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeneratorInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneratorResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -79,6 +149,345 @@
               "null",
               "string"
             ]
+          },
+          "errors": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "required": [
+                "code",
+                "path"
+              ],
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Assignment": {
+        "required": [
+          "shiftId",
+          "memberId"
+        ],
+        "type": "object",
+        "properties": {
+          "shiftId": {
+            "type": "string"
+          },
+          "memberId": {
+            "type": "string"
+          }
+        }
+      },
+      "ConflictPair": {
+        "required": [
+          "blockId",
+          "memberA",
+          "memberB"
+        ],
+        "type": "object",
+        "properties": {
+          "blockId": {
+            "type": "string"
+          },
+          "memberA": {
+            "type": "string"
+          },
+          "memberB": {
+            "type": "string"
+          }
+        }
+      },
+      "GeneratorInput": {
+        "required": [
+          "shifts",
+          "members",
+          "availability",
+          "lockedAssignments",
+          "conflictPairs",
+          "rules",
+          "seed"
+        ],
+        "type": "object",
+        "properties": {
+          "shifts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GeneratorShift"
+            }
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GeneratorMember"
+            }
+          },
+          "availability": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberAvailability"
+            }
+          },
+          "lockedAssignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Assignment"
+            }
+          },
+          "conflictPairs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConflictPair"
+            }
+          },
+          "rules": {
+            "$ref": "#/components/schemas/GeneratorRules"
+          },
+          "seed": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "GeneratorIssue": {
+        "required": [
+          "code",
+          "shiftIds",
+          "memberIds",
+          "parameters"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "shiftIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "memberIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "GeneratorMember": {
+        "required": [
+          "id",
+          "level",
+          "desiredWeeklyHours",
+          "maxWeeklyHours"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "desiredWeeklyHours": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxWeeklyHours": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "GeneratorResult": {
+        "required": [
+          "assignments",
+          "issues",
+          "score",
+          "seed"
+        ],
+        "type": "object",
+        "properties": {
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Assignment"
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GeneratorIssue"
+            }
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "seed": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "GeneratorRules": {
+        "required": [
+          "maxConsecutiveShifts",
+          "openingFairness",
+          "closingFairness"
+        ],
+        "type": "object",
+        "properties": {
+          "maxConsecutiveShifts": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "openingFairness": {
+            "type": "boolean"
+          },
+          "closingFairness": {
+            "type": "boolean"
+          }
+        }
+      },
+      "GeneratorShift": {
+        "required": [
+          "id",
+          "blockId",
+          "date",
+          "start",
+          "end",
+          "headcount",
+          "levelRequirements"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "blockId": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "start": {
+            "type": "string",
+            "format": "time"
+          },
+          "end": {
+            "type": "string",
+            "format": "time"
+          },
+          "headcount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "levelRequirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelRequirement"
+            }
+          }
+        }
+      },
+      "LabPerson": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "LabScenario": {
+        "required": [
+          "name",
+          "people",
+          "input"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabPerson"
+            }
+          },
+          "input": {
+            "$ref": "#/components/schemas/GeneratorInput"
+          }
+        }
+      },
+      "LevelRequirement": {
+        "required": [
+          "level",
+          "minCount"
+        ],
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MemberAvailability": {
+        "required": [
+          "memberId",
+          "submitted",
+          "shiftIds"
+        ],
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string"
+          },
+          "submitted": {
+            "type": "boolean"
+          },
+          "shiftIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

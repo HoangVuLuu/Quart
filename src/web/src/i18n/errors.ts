@@ -8,6 +8,7 @@ const errorKeys = {
   'common.unauthorized': 'errors.common.unauthorized',
   'common.forbidden': 'errors.common.forbidden',
   'common.conflict': 'errors.common.conflict',
+  'common.too_many_requests': 'errors.common.too_many_requests',
   'common.unexpected': 'errors.common.unexpected',
   'common.network': 'errors.common.network',
 } as const;

@@ -37,6 +37,7 @@
       "unauthorized": "Please sign in again.",
       "forbidden": "You do not have access to this.",
       "conflict": "Someone changed this at the same time. Refresh and try again.",
+      "too_many_requests": "Too many tries in a short time. Wait a minute and try again.",
       "unexpected": "Something went wrong on our side. Try again in a moment.",
       "network": "No connection to the server. Check your internet and try again."
     },
@@ -165,5 +166,38 @@
       "sleepy": "sleepy",
       "wow": "wow"
     }
+  },
+  "scheduling": {
+    "kind": {
+      "opening": "Opening",
+      "mid": "Mid",
+      "closing": "Closing"
+    },
+    "level": "Level {{level}}",
+    "levelShort": "L{{level}}",
+    "grid": {
+      "weeks": "Weeks of the period",
+      "week": "Week {{number}}",
+      "noShifts": "No shifts",
+      "fill": "{{filled}} of {{headcount}} people"
+    }
+  },
+  "lab": {
+    "context": "Generator lab · test data only",
+    "title": "Lab",
+    "loading": "Loading the sample…",
+    "retry": "Try again",
+    "offTitle": "The lab is off here",
+    "offText": "The generator lab only runs on development and staging servers.",
+    "people_one": "{{count}} person",
+    "people_other": "{{count}} people",
+    "shifts_one": "{{count}} shift",
+    "shifts_other": "{{count}} shifts",
+    "notSent": "Not sent yet",
+    "generate": "Generate",
+    "generating": "Generating…",
+    "naiveHint": "For now the generator is naive: the first available person wins.",
+    "filled": "{{filled}} of {{slots}} places filled",
+    "seed": "Seed #{{seed}}"
   }
 }

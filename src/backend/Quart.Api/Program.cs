@@ -45,6 +45,12 @@ builder.Services.AddSingleton(new NpgsqlDataSourceBuilder(connectionString).UseN
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict);
 builder.Services.AddQuartOpenApi();
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>(DatabaseHealthCheck.Name);
+// A request the server could not read (malformed JSON, a body too large) keeps its 4xx status. Development
+// throws these so they are easy to see; without this they would leave as a 500.
+builder.Services.Configure<ExceptionHandlerOptions>(options => options.StatusCodeSelector = exception =>
+    exception is BadHttpRequestException bad ? bad.StatusCode : StatusCodes.Status500InternalServerError);
+// Modules add their own policies; a refused request is a 429 problem with a code, like every error.
+builder.Services.AddRateLimiter(options => options.RejectionStatusCode = StatusCodes.Status429TooManyRequests);
 
 builder.Services
     .AddIdentityModule()
@@ -85,6 +91,7 @@ app.UseQuartSecurity();
 app.UseQuartRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseRateLimiter();
 
 // Production only: the React build is copied into wwwroot by the Dockerfile.
 // During development the Vite dev server serves the web app and proxies /api here.
@@ -105,7 +112,11 @@ if (!app.Environment.IsProduction())
 
 app.MapIdentityModule();
 app.MapWorkplacesModule();
-app.MapSchedulingModule();
+// The generator lab (M1-01) is for Development and staging, never Production, whatever the setting says.
+// The build maps it too, so the lab's endpoints are in the OpenAPI document the web app is typed from.
+var labEnabled = QuartOpenApi.IsGeneratingDocument
+    || (app.Configuration.GetValue<bool>("Features:Lab") && !app.Environment.IsProduction());
+app.MapSchedulingModule(includeLab: labEnabled);
 app.MapMarketplaceModule();
 app.MapAnnouncementsModule();
 app.MapFilesModule();
