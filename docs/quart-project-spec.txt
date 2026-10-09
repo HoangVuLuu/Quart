@@ -1672,7 +1672,7 @@ What it implements faithfully and can be used as a reference for behaviour:
   - Admin-assigned levels affecting generation immediately
   - Publish checks (block / confirm / show) per issue type
   - French and English throughout, light and dark mode
-  - The News tab: admins post text and up to 6 photos; each photo is redrawn
+  - The News tab (now a section; see docs/design/mockups): admins post text and up to 6 photos; each photo is redrawn
     on a canvas before posting, which strips its metadata as FR-233 requires;
     type and size are checked; members react; admins delete
   - The optional availability comment: saved with the submission, capped at

@@ -13,7 +13,8 @@ Closes #
 - [ ] Tests cover the change. The generator, the evaluator and every permission boundary always need tests (NFR-014).
 - [ ] Every new user-facing string exists in French and English (NFR-013).
 - [ ] Works on a phone-sized screen with taps only (NFR-002).
-- [ ] Looks like the design prototype: shared tokens and components, no literal colour, radius or shadow (section 19, AD-048, NFR-017).
+- [ ] Matches the mockup screen(s) in `docs/design/mockups/README.md` (name the screen IDs in "What and why") and any conflict listed there is handled as written.
+- [ ] Uses the design tokens and components: shared tokens and components, no literal colour, radius or shadow (section 19, AD-048, NFR-017).
 - [ ] Keyboard and screen reader friendly: visible focus, labelled controls, colour never the only signal (NFR-007, NFR-008).
 - [ ] No secret, real personal data or production configuration committed.
 - [ ] No sensitive content in notification or email text (FR-216).
