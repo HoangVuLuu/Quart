@@ -97,13 +97,14 @@ jobs:
 
       # The tick runs every 5 minutes with the same code as the app, so it moves to the new image too
       # (docs/runbooks/background-jobs.md). After the migration: the new code expects the new schema.
+      # The argument is set here, with the image: the provisioning script's placeholder cannot take it.
       - name: Point the tick job at the new image
         run: |
           if ! az containerapp job show -g "$RESOURCE_GROUP" -n "$TICK_JOB" --output none 2>/dev/null; then
             echo "::error::The job $TICK_JOB does not exist, so the app was not updated. Run ./scripts/azure/provision-staging.sh once (step 6c), then re-run this deploy."
             exit 1
           fi
-          az containerapp job update -g "$RESOURCE_GROUP" -n "$TICK_JOB" --image "$IMAGE:$SHA" --output none
+          az containerapp job update -g "$RESOURCE_GROUP" -n "$TICK_JOB" --image "$IMAGE:$SHA" --args tick --output none
 
       - name: Switch the app to the new image
         run: az containerapp update -g "$RESOURCE_GROUP" -n "$APP" --image "$IMAGE:$SHA" --output none
