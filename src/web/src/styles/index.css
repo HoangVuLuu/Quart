@@ -54,6 +54,15 @@
   /* Shift flavours: opening is bright, closing is dusk */
   --color-opening: #cdd35b;
   --color-closing: #ada8da;
+  /* The drink in a blocked-publish cup (spec 19.8) */
+  --color-milk-tea: #c9a07a;
+
+  /* The mascot is a physical object, so these do not change with the theme: a white cup with dark
+     features and pink cheeks looks right on the pale background and on the dark one. */
+  --color-cup-wall: #ffffff;
+  --color-cup-line: #1b1b22;
+  --color-cup-cheek: #f79aae;
+  --color-cup-shine: rgb(255 255 255 / 0.5);
 
   /* Shape: pills for anything tappable, generous rounding for anything holding content */
   --radius-pill: 99px;
@@ -68,6 +77,7 @@
   --shadow-card: 0 8px 24px rgba(60, 80, 160, 0.08);
   --shadow-press: 0 3px 0 rgba(40, 50, 110, 0.12);
   --shadow-float: 0 10px 30px rgba(60, 80, 160, 0.18);
+  --shadow-cup-rim: 0 1px 2px rgba(40, 50, 110, 0.12);
 
   /* Motion: one curve and duration for sheets; everything else is faster. Spec 19.5: sheets slide
      up over 0.28 s, backdrops fade in 0.2 s, toasts pop in 0.25 s, and nothing else animates.
@@ -215,5 +225,165 @@
   .quart-blob > * {
     display: block;
     transform: rotate(6deg);
+  }
+
+  /* The cup mascot (spec 19.8), drawn in CSS exactly as in the design prototype: no image files, so
+     it scales and takes its colours from the tokens. Every measure is a percentage of the cup's own
+     width (cqw) or height (cqh), so one cup looks the same at 24 px and at 92 px. Size it by giving
+     it a width; the height follows (3:4). It never animates (19.5). */
+  .quart-cup {
+    --cup-flavour: var(--color-opening);
+    position: relative;
+    aspect-ratio: 3 / 4;
+    container-type: size;
+    flex: none;
+  }
+  .quart-cup[data-flavour='closing'] {
+    --cup-flavour: var(--color-closing);
+  }
+  .quart-cup[data-flavour='milk-tea'] {
+    --cup-flavour: var(--color-milk-tea);
+  }
+
+  .quart-cup-part {
+    position: absolute;
+    display: block;
+  }
+
+  .quart-cup-straw {
+    left: 54%;
+    top: 0;
+    width: 13cqw;
+    height: 46cqh;
+    background: var(--color-accent);
+    border-radius: 99px;
+  }
+
+  .quart-cup-rim {
+    left: 3cqw;
+    right: 3cqw;
+    top: 25cqh;
+    height: 9cqh;
+    background: var(--color-cup-wall);
+    border-radius: 5cqw;
+    box-shadow: var(--shadow-cup-rim);
+  }
+
+  .quart-cup-body {
+    left: 9cqw;
+    right: 9cqw;
+    top: 33cqh;
+    bottom: 0;
+    background: var(--cup-flavour);
+    border: 3.5cqw solid var(--color-cup-wall);
+    border-top: none;
+    border-radius: 0 0 18cqw 18cqw;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .quart-cup-shine {
+    display: block;
+    height: 9cqh;
+    background: var(--color-cup-shine);
+    border-radius: 0 0 40% 40%;
+  }
+
+  .quart-cup-eye {
+    top: 22cqh;
+    width: 17cqw;
+    height: 17cqw;
+    border-radius: 50%;
+    background: var(--color-cup-line);
+  }
+  .quart-cup-eye::after {
+    content: '';
+    position: absolute;
+    top: 3cqw;
+    left: 3.5cqw;
+    width: 6cqw;
+    height: 6cqw;
+    border-radius: 50%;
+    background: var(--color-cup-wall);
+  }
+
+  .quart-cup-lid {
+    top: 27cqh;
+    width: 15cqw;
+    height: 7cqw;
+    border: 2.8cqw solid var(--color-cup-line);
+    border-bottom: none;
+    border-radius: 99px 99px 0 0;
+  }
+
+  .quart-cup-left {
+    left: 14cqw;
+  }
+  .quart-cup-right {
+    right: 14cqw;
+  }
+  .quart-cup-lid.quart-cup-left {
+    left: 15cqw;
+  }
+  .quart-cup-lid.quart-cup-right {
+    right: 15cqw;
+  }
+
+  .quart-cup-cheek {
+    top: 36cqh;
+    width: 12cqw;
+    height: 6cqw;
+    border-radius: 50%;
+    background: var(--color-cup-cheek);
+    opacity: 0.85;
+  }
+  .quart-cup-cheek.quart-cup-left {
+    left: 8cqw;
+  }
+  .quart-cup-cheek.quart-cup-right {
+    right: 8cqw;
+  }
+
+  .quart-cup-smile {
+    top: 35cqh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16cqw;
+    height: 7cqw;
+    border: 2.6cqw solid var(--color-cup-line);
+    border-top: none;
+    border-radius: 0 0 99px 99px;
+  }
+
+  .quart-cup-gasp {
+    top: 37cqh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8cqw;
+    height: 9cqw;
+    border: 2.6cqw solid var(--color-cup-line);
+    border-radius: 50%;
+  }
+
+  .quart-cup-pearls {
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+  }
+  .quart-cup-pearls i {
+    display: block;
+    width: 12cqw;
+    height: 12cqw;
+    border-radius: 50%;
+    background: var(--color-cup-line);
+  }
+  .quart-cup-pearls-low {
+    bottom: 5cqh;
+    gap: 3cqw;
+  }
+  .quart-cup-pearls-high {
+    bottom: 14cqh;
+    gap: 5cqw;
   }
 }

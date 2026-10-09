@@ -9,7 +9,9 @@ export function SchedulePage() {
   return (
     <section className="mx-auto max-w-2xl px-5 md:px-0">
       <PageHeader context={t('schedule.context')} title={t('schedule.title')} />
-      <EmptyState title={t('schedule.emptyTitle')}>{t('schedule.emptyText')}</EmptyState>
+      <EmptyState title={t('schedule.emptyTitle')} flavour="closing" mood="sleepy">
+        {t('schedule.emptyText')}
+      </EmptyState>
     </section>
   );
 }

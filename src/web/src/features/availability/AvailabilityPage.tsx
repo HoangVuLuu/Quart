@@ -9,7 +9,9 @@ export function AvailabilityPage() {
   return (
     <section className="mx-auto max-w-2xl px-5 md:px-0">
       <PageHeader context={t('availability.context')} title={t('availability.title')} />
-      <EmptyState title={t('availability.emptyTitle')}>{t('availability.emptyText')}</EmptyState>
+      <EmptyState title={t('availability.emptyTitle')} flavour="opening" mood="happy">
+        {t('availability.emptyText')}
+      </EmptyState>
     </section>
   );
 }

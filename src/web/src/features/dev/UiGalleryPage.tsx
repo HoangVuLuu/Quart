@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
+import { Cup, type CupFlavour, type CupMood } from '../../ui/Cup';
 import { Dialog } from '../../ui/Dialog';
 import { EmptyState } from '../../ui/EmptyState';
 import { HeroCard } from '../../ui/HeroCard';
@@ -18,6 +19,9 @@ import { useToast } from '../../ui/toast-context';
 
 type Theme = 'device' | 'light' | 'dark';
 const themes: Theme[] = ['device', 'light', 'dark'];
+const flavours: CupFlavour[] = ['opening', 'closing', 'milk-tea'];
+const moods: CupMood[] = ['happy', 'sleepy', 'wow'];
+const flavourKey = { opening: 'opening', closing: 'closing', 'milk-tea': 'blocked' } as const;
 
 // Lets a reviewer see both themes without changing the device setting: the choice is written on the
 // <html> element (data-theme), which the token file reads, and removed again when the page closes.
@@ -136,6 +140,21 @@ export function UiGalleryPage() {
           <Skeleton className="h-12 w-2/3" />
         </Card>
         <EmptyState title={t('gallery.cards.emptyTitle')}>{t('gallery.cards.emptyText')}</EmptyState>
+      </Section>
+
+      <Section title={t('gallery.cups.title')}>
+        <Card className="grid grid-cols-3 gap-x-2 gap-y-5">
+          {flavours.flatMap((flavour) =>
+            moods.map((mood) => (
+              <figure key={`${flavour}-${mood}`} className="flex flex-col items-center gap-2">
+                <Cup flavour={flavour} mood={mood} className="w-16" />
+                <figcaption className="text-center text-xs text-muted">
+                  {t(`gallery.cups.${flavourKey[flavour]}`)} · {t(`gallery.cups.${mood}`)}
+                </figcaption>
+              </figure>
+            )),
+          )}
+        </Card>
       </Section>
 
       <Section title={t('gallery.chips.title')}>
