@@ -1,6 +1,6 @@
 # The Quart look
 
-The design is set by `docs/prototype/quart-design-prototype.html`. Open it in a browser: it is a
+**Screens come from `docs/design/mockups/` (read its README first); the look below comes from the prototype.** The design is set by `docs/prototype/quart-design-prototype.html`. Open it in a browser: it is a
 working phone-sized prototype of Home, Schedule, Availability, Requests, News, the shift sheet and
 Settings, in both the employee and the owner view. `design-prototype-source.jsx` in this folder is
 its source, extracted from the bundle, if you need to see how a screen was built.
