@@ -24,6 +24,24 @@ namespace Quart.Modules.Jobs.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Quart.Modules.Jobs.Persistence.Heartbeat", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<Instant>("LastTickAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_tick_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("heartbeat", "jobs", t =>
+                        {
+                            t.HasCheckConstraint("ck_heartbeat_single_row", "id = 1");
+                        });
+                });
+
             modelBuilder.Entity("Quart.Modules.Jobs.Persistence.ScheduledJob", b =>
                 {
                     b.Property<Guid>("Id")
@@ -34,6 +52,10 @@ namespace Quart.Modules.Jobs.Persistence.Migrations
                     b.Property<int>("Attempts")
                         .HasColumnType("integer")
                         .HasColumnName("attempts");
+
+                    b.Property<string>("DedupeKey")
+                        .HasColumnType("text")
+                        .HasColumnName("dedupe_key");
 
                     b.Property<Instant?>("LockedUntil")
                         .HasColumnType("timestamp with time zone")
@@ -63,6 +85,10 @@ namespace Quart.Modules.Jobs.Persistence.Migrations
                         .HasColumnName("workplace_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DedupeKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_scheduled_job_dedupe_key");
 
                     b.HasIndex("Status", "RunAt")
                         .HasDatabaseName("ix_scheduled_job_status_run_at");

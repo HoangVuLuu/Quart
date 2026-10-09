@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Diagnostics;
 using Quart.Api.Migrations;
+using Quart.Modules.Jobs;
 using Serilog;
 using Serilog.AspNetCore;
 using Serilog.Core;
@@ -34,6 +35,8 @@ public static class QuartLogging
                 // ASP.NET Core's own request logs, which contain full URLs and query strings, never do.
                 .MinimumLevel.Override(RequestSummarySource, LogEventLevel.Information)
                 .MinimumLevel.Override(DatabaseMigrations.LogCategory, LogEventLevel.Information)
+                // One summary line per tick, so staging's log shows the job ran every 5 minutes.
+                .MinimumLevel.Override(JobsModule.LogCategory, LogEventLevel.Information)
                 .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
                 .Enrich.With<DropRequestPath>()
                 // Extra sinks registered in DI (integration tests capture output this way).

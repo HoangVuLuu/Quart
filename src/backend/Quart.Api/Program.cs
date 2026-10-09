@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Npgsql;
 using Quart.Api.Endpoints;
+using Quart.Api.Jobs;
 using Quart.Api.Logging;
 using Quart.Api.Migrations;
 using Quart.Api.OpenApi;
@@ -15,9 +16,10 @@ using Quart.Modules.Scheduling;
 using Quart.Modules.Workplaces;
 using Quart.SharedKernel;
 
-// `dotnet Quart.Api.dll migrate` applies database migrations and exits; no argument starts the web server.
-var isMigrateCommand = args is [DatabaseMigrations.Command];
-var builder = WebApplication.CreateBuilder(isMigrateCommand ? [] : args);
+// `dotnet Quart.Api.dll migrate` applies database migrations and exits; `tick` runs the background jobs
+// that are due and exits (decision 0009). No argument starts the web server.
+var command = args is [var only and (DatabaseMigrations.Command or TickCommand.Command)] ? only : null;
+var builder = WebApplication.CreateBuilder(command is null ? args : []);
 
 builder.AddQuartLogging();
 builder.AddQuartSecurity();
@@ -56,9 +58,11 @@ builder.Services
 
 var app = builder.Build();
 
-if (isMigrateCommand)
+if (command is not null)
 {
-    Environment.ExitCode = await DatabaseMigrations.RunCommandAsync(app.Services);
+    Environment.ExitCode = command == TickCommand.Command
+        ? await TickCommand.RunCommandAsync(app.Services)
+        : await DatabaseMigrations.RunCommandAsync(app.Services);
     return;
 }
 
@@ -90,6 +94,7 @@ app.UseStaticFiles();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi(); // /openapi/v1.json
+    app.MapDevelopmentTickEndpoint(); // POST /internal/tick
 }
 app.MapHealthChecks("/health");
 app.MapMetaEndpoints();

@@ -47,6 +47,10 @@
   --color-neutral: #4a4f66;
   --color-neutral-soft: #ecedf3;
 
+  /* The dimmed backdrop behind a sheet or dialog, and the pale circle bleeding off a hero card */
+  --color-scrim: rgb(27 27 34 / 0.38);
+  --color-glow: rgb(255 255 255 / 0.2);
+
   /* Shift flavours: opening is bright, closing is dusk */
   --color-opening: #cdd35b;
   --color-closing: #ada8da;
@@ -65,14 +69,52 @@
   --shadow-press: 0 3px 0 rgba(40, 50, 110, 0.12);
   --shadow-float: 0 10px 30px rgba(60, 80, 160, 0.18);
 
-  /* Motion: one curve and duration for sheets; everything else is faster. */
+  /* Motion: one curve and duration for sheets; everything else is faster. Spec 19.5: sheets slide
+     up over 0.28 s, backdrops fade in 0.2 s, toasts pop in 0.25 s, and nothing else animates.
+     The reduced-motion rule below switches all of it off (NFR-010). */
   --ease-sheet: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-sheet-in: sheet-in 0.28s var(--ease-sheet);
+  --animate-sheet-out: sheet-out 0.2s ease-in;
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-fade-out: fade-out 0.2s ease-in;
+  --animate-toast-in: toast-in 0.25s ease-out;
+  --animate-toast-out: fade-out 0.2s ease-in;
+
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes sheet-out {
+    to {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+  }
 }
 
 /* Dark mode follows the device (NFR-011). The design prototype is light only, so these are
-   derived: same hues, same roles, darker surfaces. Check them on a real phone before the pilot. */
+   derived: same hues, same roles, darker surfaces. Check them on a real phone before the pilot.
+   The values are written twice on purpose: once for the device setting, once for the
+   data-theme="dark" attribute that the /dev/ui gallery sets so a reviewer can see both themes
+   without changing the phone's or the computer's setting. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --color-bg: #121523;
     --color-surface: #1b2032;
     --color-surface-2: #242a42;
@@ -92,7 +134,31 @@
     --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);
     --shadow-press: 0 3px 0 rgba(0, 0, 0, 0.45);
     --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
+    --color-scrim: rgb(0 0 0 / 0.6);
   }
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #121523;
+  --color-surface: #1b2032;
+  --color-surface-2: #242a42;
+  --color-surface-3: #262b3f;
+  --color-line: #39406a;
+  --color-ink: #eceef7;
+  --color-muted: #a8b0ce;
+  --color-link: #9db4f8;
+  --color-success: #8fe3b4;
+  --color-success-soft: #123524;
+  --color-danger: #ffb3bf;
+  --color-danger-soft: #3a1520;
+  --color-warning: #f3d08a;
+  --color-warning-soft: #33280e;
+  --color-neutral: #c4cae2;
+  --color-neutral-soft: #262b3f;
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-press: 0 3px 0 rgba(0, 0, 0, 0.45);
+  --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --color-scrim: rgb(0 0 0 / 0.6);
 }
 
 @layer base {

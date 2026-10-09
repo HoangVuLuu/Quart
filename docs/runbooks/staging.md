@@ -12,6 +12,7 @@ Staging is where Philippe tries the app, with fake data only (spec 11.2). Everyt
 | Container Apps env | `cae-quart-staging`                        | same resource group             |
 | The app            | Container app `quart-staging`              | same resource group             |
 | Migrations         | Container Apps job `quart-staging-migrate` | same resource group             |
+| Background jobs    | Container Apps job `quart-staging-tick`    | same resource group             |
 | Deploy identity    | Entra app `github-quart-staging`           | Contributor on the group only   |
 | GitHub side        | Environment `staging`                      | repository settings             |
 
@@ -63,6 +64,7 @@ does, step by step:
 | 6    | App `quart-staging`: external ingress on **8080**, **0–1 replica**, 0.25 vCPU / 0.5 GiB, placeholder image                                                                                                                                                               | Sleeps when nobody uses it; M0-09 replaces the image                                       |
 | 6    | Secret `db-connection` → `ConnectionStrings__Quart`; `ASPNETCORE_ENVIRONMENT=Staging`                                                                                                                                                                                    | The connection string lives only in Azure                                                  |
 | 6b   | Job `quart-staging-migrate`: manual trigger, same image with the `migrate` argument, no retries, same secret                                                                                                                                                             | Migrations run once, before the new version takes traffic ([migrations.md](migrations.md)) |
+| 6c   | Job `quart-staging-tick`: every 5 minutes (cron `*/5 * * * *`), 300 s timeout, no retries, same secret; the deploy sets the image and the `tick` argument                                                                                                                | Background jobs run without waking the app ([background-jobs.md](background-jobs.md))      |
 | 7    | Entra app `github-quart-staging` with a federated credential for the subject GitHub issues for the `staging` environment (today `repo:HoangVuLuu@155392982/Quart@1382425877:environment:staging`; the script asks GitHub for it), Contributor on the resource group only | GitHub deploys without any stored password (AD-061)                                        |
 | 8    | GitHub environment `staging` with secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`                                                                                                                                                                  | What the deploy workflow (M0-09) signs in with                                             |
 
@@ -75,6 +77,8 @@ rebuilt environment gets a new random part and this line must be updated.
 - Open the printed address. The first request takes up to ~20 seconds while the app wakes from zero
   replicas; the placeholder page is Microsoft's ASP.NET sample.
 - After 48 hours, Azure **Cost Management** → **Cost analysis** for `rg-quart-staging` shows **$0**.
+- After a deploy, the home page shows "Last background run" a few minutes ago at most, and the app
+  still drops to zero replicas when nobody uses it ([background-jobs.md](background-jobs.md#on-staging)).
 
 ## 4. Deploys (automatic)
 
@@ -85,8 +89,9 @@ Every merge to `main` deploys itself once CI is green, with `.github/workflows/d
 2. Sign in to Azure with the federated credential (no stored password).
 3. Run the job `quart-staging-migrate` with the new image and wait. **If it fails, stop here**:
    staging keeps the previous version ([migrations.md](migrations.md)).
-4. Switch the app `quart-staging` to the new image.
-5. Smoke test: wait until `/health` answers 200 and `/api/meta` reports the new commit.
+4. Point the job `quart-staging-tick` at the new image, so background jobs run the new code.
+5. Switch the app `quart-staging` to the new image.
+6. Smoke test: wait until `/health` answers 200 and `/api/meta` reports the new commit.
 
 Follow a deploy in GitHub: **Actions** → **Deploy staging**. Redeploy `main` by hand with **Run
 workflow** on the same page.

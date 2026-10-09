@@ -130,6 +130,8 @@ reverse.
 ## When you add a screen
 
 1. Find the closest screen in the prototype and reuse its structure.
-2. Use tokens and existing components. If you need a new colour, add a token here and in the spec,
+2. Use tokens and the components in `src/web/src/ui/` (buttons, fields, switch, stepper, cards, sheet,
+   dialog, toast, chips, badge, skeleton, empty state). Every one of them is on the `/dev/ui` gallery
+   page, which exists in development and on staging, in both themes and both languages. If you need a new colour, add a token here and in the spec,
    with its contrast checked, rather than inventing one inline.
 3. Check it at 390 px wide, in dark mode, at 200% zoom, and with a keyboard.

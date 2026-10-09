@@ -7,6 +7,8 @@ WORKDIR /web
 COPY src/web/package.json src/web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY src/web/ ./
+# The component gallery at /dev/ui is built in only when this is "true" (staging does; production never).
+ARG VITE_SHOW_DEV_PAGES=false
 RUN npm run build
 
 # ---- 2. Build and publish the API ----

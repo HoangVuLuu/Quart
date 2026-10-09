@@ -35,6 +35,7 @@ describe('HomePage', () => {
       environment: 'Development',
       serverTimeUtc: '2026-09-21T12:00:00Z',
       database: 'ok',
+      lastTickAt: '2026-09-21T11:57:00Z',
     });
 
     renderPage();
@@ -44,6 +45,38 @@ describe('HomePage', () => {
     expect(screen.getByText(en.home.database.ok)).toBeInTheDocument();
   });
 
+  it('says when background jobs last ran, measured from the server time', async () => {
+    answerWith(200, {
+      name: 'Quart',
+      version: '1.2.3',
+      environment: 'Development',
+      serverTimeUtc: '2026-09-21T12:00:00Z',
+      database: 'ok',
+      lastTickAt: '2026-09-21T11:57:00Z',
+    });
+
+    renderPage();
+
+    const lastRun = await screen.findByText('3 minutes ago');
+    expect(lastRun).toHaveAttribute('dateTime', '2026-09-21T11:57:00Z');
+    expect(screen.getByText(en.home.lastTick)).toBeInTheDocument();
+  });
+
+  it('says background jobs have not run yet', async () => {
+    answerWith(200, {
+      name: 'Quart',
+      version: '1.2.3',
+      environment: 'Development',
+      serverTimeUtc: '2026-09-21T12:00:00Z',
+      database: 'ok',
+      lastTickAt: null,
+    });
+
+    renderPage();
+
+    expect(await screen.findByText(en.home.lastTickNever)).toBeInTheDocument();
+  });
+
   it('still renders when the database is unavailable, with an icon and text', async () => {
     answerWith(200, {
       name: 'Quart',
@@ -51,6 +84,7 @@ describe('HomePage', () => {
       environment: 'Development',
       serverTimeUtc: '2026-09-21T12:00:00Z',
       database: 'unavailable',
+      lastTickAt: null,
     });
 
     renderPage();
@@ -95,6 +129,7 @@ describe('HomePage', () => {
       environment: 'Production',
       serverTimeUtc: '2026-09-21T12:00:00Z',
       database: 'ok',
+      lastTickAt: '2026-09-21T11:57:00Z',
     });
 
     renderPage();

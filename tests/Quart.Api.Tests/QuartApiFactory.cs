@@ -7,7 +7,12 @@ using Serilog.Core;
 namespace Quart.Api.Tests;
 
 /// <summary>The real app, hosted in memory, pointed at the database a test names.</summary>
-public sealed class QuartApiFactory(string connectionString, string? environment = null, string? webRoot = null)
+/// <param name="services">Extra or replacement services, registered after the app's own (a fake clock, a test job handler).</param>
+public sealed class QuartApiFactory(
+    string connectionString,
+    string? environment = null,
+    string? webRoot = null,
+    Action<IServiceCollection>? services = null)
     : WebApplicationFactory<Program>
 {
     /// <summary>Every log line the app wrote, in its production format.</summary>
@@ -28,6 +33,10 @@ public sealed class QuartApiFactory(string connectionString, string? environment
         {
             builder.UseWebRoot(webRoot);
         }
-        builder.ConfigureTestServices(services => services.AddSingleton<ILogEventSink>(Logs));
+        builder.ConfigureTestServices(testServices =>
+        {
+            testServices.AddSingleton<ILogEventSink>(Logs);
+            services?.Invoke(testServices);
+        });
     }
 }

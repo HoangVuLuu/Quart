@@ -1,3 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Types every module may use. Keep it small: if something here only serves one module, it belongs in that module. -->
+  <ItemGroup>
+    <!-- Time is NodaTime everywhere (AD-028), including in the contracts modules share. -->
+    <PackageReference Include="NodaTime" />
+  </ItemGroup>
 </Project>
