@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
+import { Badge } from '../ui/Badge';
 import { maxTabs, type Tab } from './navigation';
 
 // The main navigation, one element for every screen size: a floating white pill above the bottom edge
@@ -32,10 +33,11 @@ export function MainNav({ tabs }: { tabs: Tab[] }) {
               {/* The space keeps the label and the count apart for screen readers: "Requests 2 waiting". */}
               {tab.count ? ' ' : null}
               {tab.count ? (
-                <span className="absolute top-1 right-2 min-w-4 rounded-pill bg-accent px-1 text-center text-[10px] leading-4 font-bold text-on-primary md:static md:ml-auto md:min-w-5 md:text-xs md:leading-5">
-                  <span aria-hidden="true">{tab.count}</span>
-                  <span className="sr-only">{t('nav.count', { count: tab.count })}</span>
-                </span>
+                <Badge
+                  count={tab.count}
+                  label={t('nav.count', { count: tab.count })}
+                  className="absolute top-1 right-2 md:static md:ml-auto md:min-w-5 md:text-xs md:leading-5"
+                />
               ) : null}
             </NavLink>
           </li>

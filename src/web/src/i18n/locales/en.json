@@ -80,5 +80,79 @@
     "title": "News",
     "emptyTitle": "No news",
     "emptyText": "Announcements and the team’s recipes show up here."
+  },
+  "ui": {
+    "close": "Close",
+    "showPassword": "Show",
+    "hidePassword": "Hide",
+    "decrease": "Decrease",
+    "increase": "Increase",
+    "notification": "Notifications"
+  },
+  "gallery": {
+    "context": "For developers",
+    "title": "Component gallery",
+    "theme": {
+      "label": "Theme",
+      "device": "Device",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "buttons": {
+      "title": "Buttons",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "saving": "Saving…",
+      "unavailable": "Not available"
+    },
+    "fields": {
+      "title": "Fields",
+      "name": "First name",
+      "nameHint": "As your coworkers know you.",
+      "email": "Email",
+      "emailError": "This email is not valid.",
+      "password": "Password",
+      "shift": "Shift",
+      "shiftAll": "All shifts",
+      "shiftOpening": "Openings",
+      "shiftClosing": "Closings"
+    },
+    "controls": {
+      "title": "Switches and steppers",
+      "claims": "Approve claims",
+      "claimsHint": "Otherwise the first claim wins",
+      "days": "Most days in a row",
+      "daysHint": "The generator never goes past this"
+    },
+    "cards": {
+      "title": "Cards",
+      "card": "A card",
+      "cardText": "Rows and wells sit inside it.",
+      "heroEyebrow": "Next shift",
+      "heroTitle": "Tomorrow, opening",
+      "heroText": "10:00–16:00 · with Amélie",
+      "loading": "Loading the schedule…",
+      "emptyTitle": "Nothing here yet",
+      "emptyText": "Come back when the schedule is published."
+    },
+    "chips": {
+      "title": "Status chips and badges",
+      "sent": "Sent",
+      "blocked": "Needs 1 level 3 — missing",
+      "reopened": "Reopened",
+      "noAnswer": "No answer yet"
+    },
+    "overlays": {
+      "title": "Sheet, dialog and toast",
+      "openSheet": "Open the sheet",
+      "sheetTitle": "Shift details",
+      "sheetText": "Detail opens in a sheet from the bottom, not on a new page.",
+      "openDialog": "Open the dialog",
+      "dialogTitle": "Delete this post?",
+      "dialogText": "The post and its photos are deleted for everyone.",
+      "showToast": "Show a message",
+      "toastText": "Claim sent to Philippe"
+    }
   }
 }

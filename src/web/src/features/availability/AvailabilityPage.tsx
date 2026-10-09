@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { EmptyState } from '../../components/EmptyState';
-import { PageHeader } from '../../components/PageHeader';
+import { EmptyState } from '../../ui/EmptyState';
+import { PageHeader } from '../../ui/PageHeader';
 
 // Placeholder until this screen is built; the tab and its route are real.
 export function AvailabilityPage() {
