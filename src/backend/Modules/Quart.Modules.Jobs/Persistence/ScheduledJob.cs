@@ -2,7 +2,7 @@ using NodaTime;
 
 namespace Quart.Modules.Jobs.Persistence;
 
-/// <summary>One unit of background work waiting to run (AD-029). M0-12 adds the code that claims and runs them.</summary>
+/// <summary>One unit of background work (AD-029). The tick claims due rows and runs them (Tick/JobRunner.cs).</summary>
 internal sealed class ScheduledJob
 {
     public Guid Id { get; set; }
@@ -24,6 +24,9 @@ internal sealed class ScheduledJob
 
     /// <summary>While a runner holds the job, no other runner may take it before this moment.</summary>
     public Instant? LockedUntil { get; set; }
+
+    /// <summary>Unique when set: scheduling the same work twice adds one row (<c>JobRequest.DedupeKey</c>).</summary>
+    public string? DedupeKey { get; set; }
 }
 
 internal enum ScheduledJobStatus

@@ -88,7 +88,8 @@
           "version",
           "environment",
           "serverTimeUtc",
-          "database"
+          "database",
+          "lastTickAt"
         ],
         "type": "object",
         "properties": {
@@ -107,6 +108,13 @@
           },
           "database": {
             "type": "string"
+          },
+          "lastTickAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       }

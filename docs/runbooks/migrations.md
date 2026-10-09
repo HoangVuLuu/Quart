@@ -5,12 +5,13 @@ schema and migrations ([decision 0011](../decisions/0011-persistence-per-module.
 
 ## How they run
 
-The API image has two modes:
+The API image has three modes:
 
 | Command                        | What it does                                                                                                      |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | `dotnet Quart.Api.dll`         | Starts the web server. Never migrates, except in Development.                                                     |
 | `dotnet Quart.Api.dll migrate` | Applies every module's pending migrations in a fixed order, then exits. Exit code 0 on success, 1 on any failure. |
+| `dotnet Quart.Api.dll tick`    | Runs the background jobs that are due, then exits ([background-jobs.md](background-jobs.md)).                     |
 
 Deployed environments run `migrate` as its own step, **before** the new version takes traffic, with
 the Container Apps job `quart-staging-migrate` (same image, `migrate` argument). The deploy (M0-09)

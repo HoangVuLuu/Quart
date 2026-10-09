@@ -811,7 +811,7 @@ AD-017  Every uploaded file goes through one StoredFile record and one storage
                      +-- Email provider (transactional)
                      +-- Google APIs (sign-in, Calendar free/busy)
                      +-- Web Push (Apple / Google push services)
-  Scheduled job  ->  calls one "tick" endpoint every 5 minutes
+  Scheduled job  ->  runs the app's image with "tick" every 5 minutes (AD-029)
 
 9.2 Backend: a modular monolith (AD-020)
 One ASP.NET Core application containing strictly separated modules:

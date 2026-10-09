@@ -41,6 +41,8 @@ export interface components {
       /** Format: date-time */
       serverTimeUtc: string;
       database: string;
+      /** Format: date-time */
+      lastTickAt: null | string;
     };
   };
   responses: never;

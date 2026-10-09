@@ -22,6 +22,8 @@
     "version": "Version",
     "environment": "Environment",
     "serverTime": "Server time",
+    "lastTick": "Last background run",
+    "lastTickNever": "Not yet",
     "retry": "Try again"
   },
   "notFound": {

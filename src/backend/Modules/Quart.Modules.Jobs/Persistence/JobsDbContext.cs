@@ -11,6 +11,8 @@ internal sealed class JobsDbContext(DbContextOptions<JobsDbContext> options) : D
 
     public DbSet<ScheduledJob> ScheduledJobs => Set<ScheduledJob>();
 
+    public DbSet<Heartbeat> Heartbeats => Set<Heartbeat>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
@@ -27,9 +29,20 @@ internal sealed class JobsDbContext(DbContextOptions<JobsDbContext> options) : D
             job.Property(x => x.Attempts).HasColumnName("attempts");
             job.Property(x => x.Payload).HasColumnName("payload").HasColumnType("jsonb");
             job.Property(x => x.LockedUntil).HasColumnName("locked_until");
+            job.Property(x => x.DedupeKey).HasColumnName("dedupe_key");
 
             // The tick asks "what is due and not locked?"; this is the index that question needs.
             job.HasIndex(x => new { x.Status, x.RunAt }).HasDatabaseName("ix_scheduled_job_status_run_at");
+            // Postgres lets any number of rows have a null key, so only keyed jobs are deduplicated.
+            job.HasIndex(x => x.DedupeKey).IsUnique().HasDatabaseName("ux_scheduled_job_dedupe_key");
+        });
+
+        modelBuilder.Entity<Heartbeat>(heartbeat =>
+        {
+            heartbeat.ToTable("heartbeat", table => table.HasCheckConstraint("ck_heartbeat_single_row", "id = 1"));
+            heartbeat.HasKey(x => x.Id);
+            heartbeat.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            heartbeat.Property(x => x.LastTickAt).HasColumnName("last_tick_at");
         });
     }
 }
