@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ErrorNotice } from '../../app/ErrorNotice';
-import { formatDateRange } from '../../i18n/format';
+import { formatDateRange, formatNumber } from '../../i18n/format';
 import { ApiError } from '../../lib/api/client';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
@@ -8,6 +9,8 @@ import { EmptyState } from '../../ui/EmptyState';
 import { PageHeader } from '../../ui/PageHeader';
 import { Skeleton } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
+import type { ScheduleIssue } from '../scheduling/components/issues';
+import { IssuesPanel } from '../scheduling/components/IssuesPanel';
 import { ScheduleGrid, type GridShift } from '../scheduling/components/ScheduleGrid';
 import { useGenerate, usePresoteaScenario, type GeneratorResult, type LabScenario } from './useLab';
 
@@ -18,6 +21,10 @@ export function LabPage() {
   const { t } = useTranslation();
   const scenario = usePresoteaScenario();
   const generate = useGenerate();
+  const [picked, setPicked] = useState<ScheduleIssue>();
+  // An issue from an earlier generation is not one of the current result's.
+  const selected = picked && generate.data?.issues.includes(picked) ? picked : undefined;
+  const shifts = scenario.data ? gridShifts(scenario.data, generate.data) : [];
 
   return (
     <section className="flex flex-col gap-4 px-5 pb-10 md:px-0">
@@ -65,10 +72,17 @@ export function LabPage() {
             </Card>
           )}
 
-          <ScheduleGrid
-            shifts={gridShifts(scenario.data, generate.data)}
-            periodStart={periodOf(scenario.data)?.start}
-          />
+          <ScheduleGrid shifts={shifts} periodStart={periodOf(scenario.data)?.start} highlight={selected} />
+
+          {generate.data && (
+            <IssuesPanel
+              issues={generate.data.issues}
+              shifts={shifts}
+              names={namesOf(scenario.data)}
+              selected={selected}
+              onSelect={setPicked}
+            />
+          )}
         </>
       )}
     </section>
@@ -79,7 +93,7 @@ function Summary({ scenario, result }: { scenario: LabScenario; result: Generato
   const { t, i18n } = useTranslation();
   const { input } = scenario;
   const period = periodOf(scenario);
-  const names = new Map(scenario.people.map((person) => [person.id, shortName(person.name)]));
+  const names = namesOf(scenario);
   const notSent = input.members
     .filter((member) => !input.availability.some((entry) => entry.memberId === member.id && entry.submitted))
     .map((member) => names.get(member.id) ?? member.id);
@@ -110,6 +124,10 @@ function Summary({ scenario, result }: { scenario: LabScenario; result: Generato
           <StatusChip tone={result.assignments.length < slots ? 'warning' : 'success'}>
             {t('lab.filled', { filled: result.assignments.length, slots })}
           </StatusChip>
+          <p className="mt-2 font-bold">
+            {t('lab.score', { score: formatNumber(result.score, i18n.language) })}
+          </p>
+          <p className="text-sm text-muted">{t('lab.scoreHint')}</p>
           <p className="mt-2 text-sm text-muted">{t('lab.seed', { seed: result.seed })}</p>
         </div>
       )}
@@ -131,8 +149,13 @@ function shortName(fullName: string): string {
   return `${parts[0]} ${parts.at(-1)?.charAt(0)}.`;
 }
 
+// Short names by member id.
+function namesOf(scenario: LabScenario): Map<string, string> {
+  return new Map(scenario.people.map((person) => [person.id, shortName(person.name)]));
+}
+
 function gridShifts(scenario: LabScenario, result: GeneratorResult | undefined): GridShift[] {
-  const names = new Map(scenario.people.map((person) => [person.id, shortName(person.name)]));
+  const names = namesOf(scenario);
   const levels = new Map(scenario.input.members.map((member) => [member.id, member.level]));
   const assignments = result?.assignments ?? [];
 
