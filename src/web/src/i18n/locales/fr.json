@@ -22,6 +22,8 @@
     "version": "Version",
     "environment": "Environnement",
     "serverTime": "Heure du serveur",
+    "lastTick": "Dernier passage des tâches de fond",
+    "lastTickNever": "Pas encore",
     "retry": "Réessayer"
   },
   "notFound": {

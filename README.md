@@ -66,6 +66,10 @@ The API applies its database migrations on startup in Development, and the home 
 Open <http://localhost:5173>. The Vite dev server proxies `/api` to the API, so the browser sees one
 origin, exactly like production. Emails the app sends appear at <http://localhost:8025>.
 
+Background jobs do not run on their own locally. `curl -X POST http://localhost:5080/internal/tick`
+runs one tick, and the home page's "Last background run" updates
+([docs/runbooks/background-jobs.md](docs/runbooks/background-jobs.md)).
+
 ## Before you push
 
 ```bash

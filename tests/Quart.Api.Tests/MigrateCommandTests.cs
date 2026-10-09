@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Npgsql;
 
 namespace Quart.Api.Tests;
@@ -44,27 +43,8 @@ public sealed class MigrateCommandTests(PostgresFixture postgres)
         Assert.Contains("Migration failed", run.Output, StringComparison.Ordinal);
     }
 
-    private static async Task<(int ExitCode, string Output)> RunMigrateAsync(string connectionString)
-    {
-        var start = new ProcessStartInfo("dotnet", [Path.Combine(AppContext.BaseDirectory, "Quart.Api.dll"), "migrate"])
-        {
-            WorkingDirectory = AppContext.BaseDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            Environment =
-            {
-                ["ASPNETCORE_ENVIRONMENT"] = "Staging",
-                ["ConnectionStrings__Quart"] = connectionString,
-            },
-        };
-        using var process = Process.Start(start)!;
-        var output = process.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
-        var errors = process.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(60)); // A web server that started by mistake would never exit.
-        await process.WaitForExitAsync(timeout.Token);
-        return (process.ExitCode, await output + await errors);
-    }
+    private static Task<(int ExitCode, string Output)> RunMigrateAsync(string connectionString) =>
+        ApiProcess.RunAsync("migrate", connectionString);
 
     private static async Task<List<string>> ListSchemasAsync(string connectionString) =>
         await QueryAsync(connectionString, "SELECT schema_name FROM information_schema.schemata", reader => reader.GetString(0));

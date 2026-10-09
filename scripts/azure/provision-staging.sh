@@ -16,9 +16,13 @@ WORKSPACE="log-quart-staging"
 ENVIRONMENT="cae-quart-staging"
 APP="quart-staging"
 MIGRATE_JOB="quart-staging-migrate"
+TICK_JOB="quart-staging-tick"
 ENTRA_APP="github-quart-staging"
 # Placeholder until M0-09 deploys the real image. Listens on 8080, like ours.
 PLACEHOLDER_IMAGE="mcr.microsoft.com/dotnet/samples:aspnetapp"
+# Placeholder for the scheduled tick job until the next deploy: Microsoft's sample job image, which exits at
+# once. The web placeholder above would never exit and would run until the replica timeout every 5 minutes.
+PLACEHOLDER_JOB_IMAGE="mcr.microsoft.com/k8se/quickstart-jobs:latest"
 
 step() { printf '\n\033[1m== %s\033[0m\n' "$1"; }
 
@@ -81,6 +85,22 @@ if ! az containerapp job show -g "$RESOURCE_GROUP" -n "$MIGRATE_JOB" --output no
     --output none
 else
   az containerapp job secret set -g "$RESOURCE_GROUP" -n "$MIGRATE_JOB" --secrets "db-connection=${CONNECTION_STRING}" --output none
+fi
+
+step "6c. Container Apps job ${TICK_JOB}: the same image with the 'tick' argument, every 5 minutes"
+# Runs `dotnet Quart.Api.dll tick` and exits (docs/runbooks/background-jobs.md, decision 0009): the web app
+# stays asleep. No retries: the next tick comes 5 minutes later anyway. The timeout stays under the jobs'
+# 10-minute lock. The deploy sets the real image; until then the placeholder exits straight away.
+if ! az containerapp job show -g "$RESOURCE_GROUP" -n "$TICK_JOB" --output none 2>/dev/null; then
+  az containerapp job create --resource-group "$RESOURCE_GROUP" --name "$TICK_JOB" --environment "$ENVIRONMENT" \
+    --trigger-type Schedule --cron-expression "*/5 * * * *" \
+    --replica-timeout 300 --replica-retry-limit 0 --parallelism 1 --replica-completion-count 1 \
+    --image "$PLACEHOLDER_JOB_IMAGE" --args "tick" --cpu 0.25 --memory 0.5Gi \
+    --secrets "db-connection=${CONNECTION_STRING}" \
+    --env-vars "ConnectionStrings__Quart=secretref:db-connection" "ASPNETCORE_ENVIRONMENT=Staging" \
+    --output none
+else
+  az containerapp job secret set -g "$RESOURCE_GROUP" -n "$TICK_JOB" --secrets "db-connection=${CONNECTION_STRING}" --output none
 fi
 unset DB_PASSWORD CONNECTION_STRING
 FQDN=$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP" --query properties.configuration.ingress.fqdn -o tsv)

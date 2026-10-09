@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- The scheduled-job table and the tick endpoint that runs whatever is due (AD-029). Starts in M2.
+  <!-- The scheduled-job table and the tick that runs whatever is due (AD-029, docs/runbooks/background-jobs.md).
        A module owns its own database schema and exposes only what its public JobsModule class exposes.
        It may reference Quart.SharedKernel, never another module (enforced by Quart.ArchitectureTests). -->
   <ItemGroup>

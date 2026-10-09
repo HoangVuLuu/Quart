@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { ErrorNotice } from '../../app/ErrorNotice';
-import { formatDateTime } from '../../i18n/format';
+import { formatDateTime, formatRelativeTime } from '../../i18n/format';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { HeroCard } from '../../ui/HeroCard';
@@ -63,6 +63,19 @@ export function HomePage() {
               <div className="flex items-center justify-between gap-4 rounded-field bg-surface-3 px-4 py-3">
                 <dt className="text-muted">{t('home.serverTime')}</dt>
                 <dd className="font-bold">{formatDateTime(meta.data.serverTimeUtc, i18n.language)}</dd>
+              </div>
+              {/* Background jobs run every 5 minutes (AD-029); an old time here means they stopped. */}
+              <div className="flex items-center justify-between gap-4 rounded-field bg-surface-3 px-4 py-3">
+                <dt className="text-muted">{t('home.lastTick')}</dt>
+                <dd className="font-bold">
+                  {meta.data.lastTickAt ? (
+                    <time dateTime={meta.data.lastTickAt}>
+                      {formatRelativeTime(meta.data.lastTickAt, meta.data.serverTimeUtc, i18n.language)}
+                    </time>
+                  ) : (
+                    t('home.lastTickNever')
+                  )}
+                </dd>
               </div>
             </dl>
           </>

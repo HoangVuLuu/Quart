@@ -11,3 +11,22 @@ export function formatDateTime(value: Date | string, language: string): string {
     date,
   );
 }
+
+const relativeUnits: [Intl.RelativeTimeFormatUnit, number][] = [
+  ['day', 86_400],
+  ['hour', 3_600],
+  ['minute', 60],
+];
+
+// "3 minutes ago", "il y a 3 minutes", "now", measured from `reference`. Pass the server's own time
+// as the reference when comparing with a server timestamp, so a wrong clock on the phone cannot skew it.
+export function formatRelativeTime(value: Date | string, reference: Date | string, language: string): string {
+  const seconds = (new Date(value).getTime() - new Date(reference).getTime()) / 1000;
+  const format = new Intl.RelativeTimeFormat(localeFor(language), { numeric: 'auto' });
+  for (const [unit, size] of relativeUnits) {
+    if (Math.abs(seconds) >= size) {
+      return format.format(Math.round(seconds / size), unit);
+    }
+  }
+  return format.format(Math.round(seconds), 'second');
+}
