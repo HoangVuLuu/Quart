@@ -24,6 +24,16 @@ type ScheduleGridProps = {
   periodStart?: string;
   /** Shifts and people to point at, such as those of a selected issue. The grid turns to their week. */
   highlight?: GridHighlight;
+  /**
+   * Availability mode: every card is a button that marks or unmarks one person's availability for that
+   * shift, as on the availability screen (1e, FR-093). Taps only (NFR-002). People are not shown.
+   */
+  availability?: GridAvailability;
+};
+
+export type GridAvailability = {
+  isAvailable: (shiftId: string) => boolean;
+  onToggle: (shiftId: string) => void;
 };
 
 type Marks = { shifts: Set<string>; memberIds: Set<string> };
@@ -34,7 +44,7 @@ type Marks = { shifts: Set<string>; memberIds: Set<string> };
 // layout classes change, so nothing is rendered twice.
 //
 // Built for reuse: the lab shows it now, and the real schedule screens use it from M5.
-export function ScheduleGrid({ shifts, periodStart, highlight }: ScheduleGridProps) {
+export function ScheduleGrid({ shifts, periodStart, highlight, availability }: ScheduleGridProps) {
   const { t } = useTranslation();
   const weeks = toWeeks(shifts, periodStart);
   const marks: Marks = {
@@ -95,7 +105,7 @@ export function ScheduleGrid({ shifts, periodStart, highlight }: ScheduleGridPro
           className="flex flex-col gap-5 lg:grid lg:grid-cols-7 lg:gap-1.5"
         >
           {week.days.map((day) => (
-            <Day key={day.date} day={day} marks={marks} />
+            <Day key={day.date} day={day} marks={marks} availability={availability} />
           ))}
         </Tabs.Content>
       ))}
@@ -103,7 +113,7 @@ export function ScheduleGrid({ shifts, periodStart, highlight }: ScheduleGridPro
   );
 }
 
-function Day({ day, marks }: { day: GridDay; marks: Marks }) {
+function Day({ day, marks, availability }: { day: GridDay; marks: Marks; availability?: GridAvailability }) {
   const { t, i18n } = useTranslation();
   const headingId = useId();
   const empty = day.shifts.length === 0;
@@ -122,9 +132,13 @@ function Day({ day, marks }: { day: GridDay; marks: Marks }) {
         <p className="px-1 text-sm text-muted">{t('scheduling.grid.noShifts')}</p>
       ) : (
         <ul className="grid grid-cols-2 gap-3 lg:grid-cols-1 lg:gap-2">
-          {day.shifts.map(({ shift, kind }) => (
-            <ShiftCard key={shift.id} shift={shift} kind={kind} marks={marks} />
-          ))}
+          {day.shifts.map(({ shift, kind }) =>
+            availability ? (
+              <AvailabilityCard key={shift.id} shift={shift} kind={kind} availability={availability} />
+            ) : (
+              <ShiftCard key={shift.id} shift={shift} kind={kind} marks={marks} />
+            ),
+          )}
         </ul>
       )}
     </section>
@@ -142,12 +156,13 @@ function ShiftCard({ shift, kind, marks }: { shift: GridShift; kind: ShiftKind; 
   const fill = fillOf(shift);
   const marked = marks.shifts.has(shift.id);
   const open = Math.max(0, shift.headcount - shift.people.length);
+  const missing = shift.missingLevels ?? [];
 
   return (
     <li
       className={cx(
         'min-w-0 rounded-card bg-surface p-2.5 shadow-card lg:rounded-field lg:p-2',
-        fill === 'short' && !marked && 'ring-2 ring-danger/50',
+        (fill === 'short' || missing.length > 0) && !marked && 'ring-2 ring-danger/50',
         // A thick outline in the link colour: a change of shape as well as colour (NFR-008).
         marked && 'ring-4 ring-link',
       )}
@@ -213,6 +228,56 @@ function ShiftCard({ shift, kind, marks }: { shift: GridShift; kind: ShiftKind; 
           ))}
         </ul>
       )}
+      {/* A level requirement nobody met, as the red card in 1l: words, not only the red ring (NFR-008). */}
+      {missing.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {missing.map((level) => (
+            <span
+              key={level}
+              className="rounded-pill bg-danger-soft px-2 py-0.5 text-xs font-bold text-danger lg:text-[11px]"
+            >
+              {t('scheduling.grid.missingLevel', { level })}
+            </span>
+          ))}
+        </div>
+      )}
+    </li>
+  );
+}
+
+// One shift as a toggle on the availability screen (1e): dark with a tick when marked, pale with a
+// plus when not. The button's name is the shift; aria-pressed says whether it is marked.
+function AvailabilityCard({
+  shift,
+  kind,
+  availability,
+}: {
+  shift: GridShift;
+  kind: ShiftKind;
+  availability: GridAvailability;
+}) {
+  const { t } = useTranslation();
+  const on = availability.isAvailable(shift.id);
+
+  return (
+    <li className="min-w-0">
+      <button
+        type="button"
+        aria-pressed={on}
+        onClick={() => availability.onToggle(shift.id)}
+        className={cx(
+          'flex min-h-14 w-full flex-col items-center justify-center rounded-card px-2 py-2 text-center shadow-press lg:rounded-field lg:px-1',
+          on ? 'bg-ink text-bg' : 'bg-surface-3 text-ink',
+        )}
+      >
+        <span className="text-sm leading-tight font-bold lg:text-xs">
+          <span aria-hidden="true">{on ? '✓ ' : '+ '}</span>
+          {t(`scheduling.kind.${kind}`)}
+        </span>
+        <span className="text-xs whitespace-nowrap lg:text-[11px]">
+          {shortTime(shift.start)}–{shortTime(shift.end)}
+        </span>
+      </button>
     </li>
   );
 }

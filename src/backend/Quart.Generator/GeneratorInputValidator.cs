@@ -23,6 +23,9 @@ public static class GeneratorInputValidator
     public const int MaxLevel = 3;
     public const int MaxConsecutiveShiftsLimit = 4;
 
+    /// <summary>Hours in a week: no weekly target or maximum can be above it.</summary>
+    public const decimal HoursInAWeek = 168m;
+
     /// <summary>Returns every error found, or an empty list when the input is valid.</summary>
     public static IReadOnlyList<InputError> Validate(GeneratorInput? input)
     {
@@ -110,14 +113,15 @@ public static class GeneratorInputValidator
             {
                 errors.Add(new InputError(OutOfRange, $"{path}.level"));
             }
-            if (member.DesiredWeeklyHours < 0)
+            if (member.DesiredWeeklyHours is < 0 or > HoursInAWeek)
             {
                 errors.Add(new InputError(OutOfRange, $"{path}.desiredWeeklyHours"));
             }
-            if (member.MaxWeeklyHours < 0)
+            if (member.MaxWeeklyHours is < 0 or > HoursInAWeek)
             {
                 errors.Add(new InputError(OutOfRange, $"{path}.maxWeeklyHours"));
             }
+
         }
 
         var membersWithAvailability = new HashSet<string>(StringComparer.Ordinal);

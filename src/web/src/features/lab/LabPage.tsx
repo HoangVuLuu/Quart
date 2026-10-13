@@ -1,3 +1,4 @@
+import { Tabs } from 'radix-ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ErrorNotice } from '../../app/ErrorNotice';
@@ -9,14 +10,19 @@ import { EmptyState } from '../../ui/EmptyState';
 import { PageHeader } from '../../ui/PageHeader';
 import { Skeleton } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
-import { Switch } from '../../ui/Switch';
+import { cx } from '../../ui/cx';
 import { countHardRuleBreaks, type ScheduleIssue } from '../scheduling/components/issues';
 import { IssuesPanel } from '../scheduling/components/IssuesPanel';
 import { ScheduleGrid } from '../scheduling/components/ScheduleGrid';
+import { AvailabilityEditor } from './AvailabilityEditor';
 import { HoursTable } from './HoursTable';
 import { gridShifts, namesOf, periodOf } from './lab';
+import { PeopleEditor } from './PeopleEditor';
+import { RulesEditor } from './RulesEditor';
+import { ScenarioFile } from './ScenarioFile';
 import { SeedControls } from './SeedControls';
 import { useGenerate, usePresoteaScenario, type GeneratorResult, type LabScenario } from './useLab';
+import { ValidationErrors } from './ValidationErrors';
 
 // The generator lab (M1-01, spec 7.8): the sample scenario as a schedule grid, and a button that runs
 // the generator on it. Not in the mockups; it borrows the draft schedule's pattern (1l): the actions
@@ -58,9 +64,10 @@ export function LabPage() {
   );
 }
 
-// The lab once the sample is here. `scenario` is the lab's own copy, which the rule switches (and the
-// scenario editor) change; `ran` is the scenario as it was when Generate last ran, so the grid, the
-// tables and the issues always describe the same people and shifts as the result.
+// The lab once the sample is here. `scenario` is the lab's own copy, which the scenario editor changes
+// (M1-06); `ran` is the scenario as it was when Generate last ran, so the grid, the tables and the
+// issues always describe the same people and shifts as the result. Generate sits above the two tabs,
+// so it works from either, and shows the result on the schedule tab.
 function Lab({ sample }: { sample: LabScenario }) {
   const { t } = useTranslation();
   const generate = useGenerate();
@@ -68,6 +75,7 @@ function Lab({ sample }: { sample: LabScenario }) {
   const [ran, setRan] = useState<LabScenario>();
   const [picked, setPicked] = useState<ScheduleIssue>();
   const [seedText, setSeedText] = useState(String(sample.input.seed));
+  const [tab, setTab] = useState('schedule');
   const result = generate.data;
   const shown = (result && ran) ?? scenario;
   // An issue from an earlier generation is not one of the current result's.
@@ -78,34 +86,17 @@ function Lab({ sample }: { sample: LabScenario }) {
   const run = (seed: number) => {
     const next = { ...scenario, input: { ...scenario.input, seed } };
     setRan(next);
+    setTab('schedule');
     generate.mutate(next.input);
   };
-  const setRules = (rules: Partial<LabScenario['input']['rules']>) =>
-    setScenario((current) => ({
-      ...current,
-      input: { ...current.input, rules: { ...current.input.rules, ...rules } },
-    }));
+  const replace = (next: LabScenario) => {
+    setScenario(next);
+    setSeedText(String(next.input.seed));
+  };
 
   return (
     <>
       <Summary scenario={scenario} ran={ran} result={result} />
-
-      <Card className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold">{t('lab.rules.title')}</h2>
-        {/* BR-020: two independent switches. */}
-        <Switch
-          label={t('lab.rules.openingFairness')}
-          description={t('lab.rules.fairnessHint')}
-          checked={scenario.input.rules.openingFairness}
-          onCheckedChange={(openingFairness) => setRules({ openingFairness })}
-        />
-        <Switch
-          label={t('lab.rules.closingFairness')}
-          description={t('lab.rules.fairnessHint')}
-          checked={scenario.input.rules.closingFairness}
-          onCheckedChange={(closingFairness) => setRules({ closingFairness })}
-        />
-      </Card>
 
       <SeedControls
         seedText={seedText}
@@ -114,25 +105,52 @@ function Lab({ sample }: { sample: LabScenario }) {
         onGenerate={run}
       />
 
-      {generate.isError && (
-        <Card role="alert">
-          <ErrorNotice error={generate.error} />
-        </Card>
-      )}
+      {generate.isError &&
+        (generate.error instanceof ApiError && generate.error.errors.length > 0 ? (
+          <ValidationErrors error={generate.error} scenario={ran ?? scenario} />
+        ) : (
+          <Card role="alert">
+            <ErrorNotice error={generate.error} />
+          </Card>
+        ))}
 
-      <ScheduleGrid shifts={shifts} periodStart={periodOf(shown)?.start} highlight={selected} />
+      <Tabs.Root value={tab} onValueChange={setTab}>
+        <Tabs.List aria-label={t('lab.tabs.label')} className="mb-4 flex flex-wrap gap-2">
+          {(['schedule', 'scenario'] as const).map((value) => (
+            <Tabs.Trigger
+              key={value}
+              value={value}
+              className={cx(
+                'min-h-11 rounded-pill bg-surface px-5 font-bold shadow-press',
+                'data-[state=active]:bg-primary data-[state=active]:text-on-primary',
+              )}
+            >
+              {t(`lab.tabs.${value}`)}
+            </Tabs.Trigger>
+          ))}
+        </Tabs.List>
 
-      {result && <HoursTable members={shown.input.members} summaries={result.members} names={names} />}
+        <Tabs.Content value="schedule" className="flex flex-col gap-4">
+          <ScheduleGrid shifts={shifts} periodStart={periodOf(shown)?.start} highlight={selected} />
+          {result && <HoursTable members={shown.input.members} summaries={result.members} names={names} />}
+          {result && (
+            <IssuesPanel
+              issues={result.issues}
+              shifts={shifts}
+              names={names}
+              selected={selected}
+              onSelect={setPicked}
+            />
+          )}
+        </Tabs.Content>
 
-      {result && (
-        <IssuesPanel
-          issues={result.issues}
-          shifts={shifts}
-          names={names}
-          selected={selected}
-          onSelect={setPicked}
-        />
-      )}
+        <Tabs.Content value="scenario" className="flex flex-col gap-4">
+          <PeopleEditor scenario={scenario} onChange={setScenario} />
+          <AvailabilityEditor scenario={scenario} onChange={setScenario} />
+          <RulesEditor scenario={scenario} onChange={setScenario} />
+          <ScenarioFile scenario={scenario} onImport={replace} onReset={() => replace(sample)} />
+        </Tabs.Content>
+      </Tabs.Root>
     </>
   );
 }

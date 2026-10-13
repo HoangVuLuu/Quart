@@ -282,6 +282,26 @@ public sealed class ScheduleGeneratorTests
     }
 
     [Fact]
+    public void With_only_two_level_3s_the_gaps_show_as_missing_levels_and_no_rule_is_broken()
+    {
+        // Q-01's worst case, M1-06's "done when": three of the sample's five level 3s become level 2.
+        // Two level 3s cannot cover 28 shifts in two weeks with at most 3 shifts in a row, so some shifts
+        // go without one. The generator says so instead of breaking a rule to hide it (FR-125).
+        var levelThrees = Samples.Presotea.Members.Where(member => member.Level == 3).Select(member => member.Id).ToList();
+        var input = Samples.Presotea with
+        {
+            Members = Samples.Presotea.Members.Select(member => levelThrees.Skip(2).Contains(member.Id) ? member with { Level = 2 } : member).ToList(),
+        };
+
+        var result = generator.Generate(input);
+
+        var missing = result.Issues.Where(issue => issue.Code == IssueCodes.MissingLevel).ToList();
+        Assert.NotEmpty(missing);
+        Assert.All(missing, issue => Assert.Equal("3", issue.Parameters["level"]));
+        Assert.DoesNotContain(result.Issues, issue => issue.HardRule);
+    }
+
+    [Fact]
     public void Refuses_an_input_that_is_not_valid()
     {
         var input = Input(TwoDays, ThreePeople, [Available("nobody", "mon-open")]);

@@ -130,6 +130,15 @@ function serve(answers: Record<string, Answer>) {
   return fetch;
 }
 
+async function openScenario(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('tab', { name: en.lab.tabs.scenario }));
+}
+
+async function lastPosted(fetch: ReturnType<typeof serve>): Promise<typeof scenario.input> {
+  const posted = fetch.mock.calls.map(([request]) => request).filter((request) => request.method === 'POST');
+  return (await posted.at(-1)?.json()) as typeof scenario.input;
+}
+
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -275,22 +284,194 @@ describe('LabPage', () => {
       '/api/lab/generate': { status: 200, body: result },
     });
     renderPage();
+    await openScenario(user);
 
-    await user.click(await screen.findByRole('switch', { name: new RegExp(en.lab.rules.openingFairness) }));
+    await user.click(screen.getByRole('switch', { name: new RegExp(en.lab.rules.openingFairness) }));
     expect(screen.getByRole('switch', { name: new RegExp(en.lab.rules.closingFairness) })).toBeChecked();
     await user.click(screen.getByRole('button', { name: en.lab.generate }));
 
-    const posted = fetch.mock.calls.map(([request]) => request).find((request) => request.method === 'POST');
-    expect(((await posted?.json()) as typeof scenario.input).rules).toEqual({
+    expect((await lastPosted(fetch)).rules).toEqual({
       maxConsecutiveShifts: 3,
       openingFairness: false,
       closingFairness: true,
     });
     expect(screen.queryByText(en.lab.changedSinceRun)).not.toBeInTheDocument();
 
+    await openScenario(user);
     await user.click(screen.getByRole('switch', { name: new RegExp(en.lab.rules.closingFairness) }));
 
     expect(await screen.findByText(en.lab.changedSinceRun)).toBeInTheDocument();
+  });
+
+  it('edits a person in a sheet and generates with the change (M1-06)', async () => {
+    const user = userEvent.setup();
+    const fetch = serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: result },
+    });
+    renderPage();
+    await openScenario(user);
+
+    await user.click(screen.getByRole('button', { name: 'Edit Marc-Olivier Roy' }));
+    const sheet = await screen.findByRole('dialog', { name: en.lab.team.sheetTitle });
+    await user.click(within(sheet).getByRole('radio', { name: 'Level 1' }));
+    const max = within(sheet).getByRole('spinbutton', { name: en.lab.team.max });
+    await user.type(max, '12');
+    await user.click(within(sheet).getByRole('button', { name: en.lab.team.save }));
+    await user.click(screen.getByRole('button', { name: en.lab.generate }));
+
+    expect((await lastPosted(fetch)).members[1]).toEqual({
+      id: 'p2',
+      level: 1,
+      desiredWeeklyHours: 18,
+      maxWeeklyHours: 12,
+    });
+  });
+
+  it('adds and removes people, and their availability goes with them', async () => {
+    const user = userEvent.setup();
+    const fetch = serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: result },
+    });
+    renderPage();
+    await openScenario(user);
+
+    await user.click(screen.getByRole('button', { name: en.lab.team.add }));
+    const sheet = await screen.findByRole('dialog', { name: en.lab.team.sheetTitle });
+    await user.clear(within(sheet).getByRole('textbox', { name: en.lab.team.name }));
+    await user.type(within(sheet).getByRole('textbox', { name: en.lab.team.name }), 'Zoé Gagnon');
+    await user.click(within(sheet).getByRole('button', { name: en.lab.team.save }));
+    await user.click(screen.getByRole('button', { name: 'Edit Philippe Nguyen' }));
+    await user.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: en.lab.team.remove }),
+    );
+    await user.click(screen.getByRole('button', { name: en.lab.generate }));
+
+    const input = await lastPosted(fetch);
+    expect(input.members.map((member) => member.id)).toEqual(['p2', 'p3', 'p4']);
+    expect(input.availability.map((entry) => entry.memberId)).toEqual(['p2', 'p3', 'p4']);
+  });
+
+  it('taps shifts to mark availability for the chosen person', async () => {
+    const user = userEvent.setup();
+    const fetch = serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: result },
+    });
+    renderPage();
+    await openScenario(user);
+
+    await user.selectOptions(screen.getByRole('combobox', { name: en.lab.availability.person }), 'p2');
+    const closing = screen.getByRole('button', { name: /Closing/, pressed: false });
+    await user.click(closing);
+    expect(screen.getByRole('button', { name: /Closing/, pressed: true })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: en.lab.generate }));
+
+    expect((await lastPosted(fetch)).availability[1]).toEqual({
+      memberId: 'p2',
+      submitted: true,
+      shiftIds: ['mon-open', 'mon-close'],
+    });
+  });
+
+  it('sets the limit of shifts in a row and a pair who cannot work together', async () => {
+    const user = userEvent.setup();
+    const fetch = serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: result },
+    });
+    renderPage();
+    await openScenario(user);
+
+    await user.click(screen.getByRole('radio', { name: en.lab.rules.noLimit }));
+    await user.selectOptions(screen.getByRole('combobox', { name: en.lab.rules.second }), 'p2');
+    await user.click(screen.getByRole('button', { name: en.lab.rules.addPair }));
+    // "Every shift" adds the pair to each block, as "Apply to all" does (1k5).
+    expect(screen.getAllByText('Philippe N. cannot work with Marc-Olivier R.')).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: en.lab.generate }));
+
+    const input = await lastPosted(fetch);
+    expect(input.rules.maxConsecutiveShifts).toBeNull();
+    expect(input.conflictPairs).toEqual([
+      { blockId: 'opening', memberA: 'p1', memberB: 'p2' },
+      { blockId: 'closing', memberA: 'p1', memberB: 'p2' },
+    ]);
+  });
+
+  it('imports a counterexample pasted as JSON, with people named by their ids', async () => {
+    const user = userEvent.setup();
+    serve({ '/api/lab/scenarios/presotea': { status: 200, body: scenario } });
+    renderPage();
+    await openScenario(user);
+    const counterexample = { ...scenario.input, members: [scenario.input.members[0]] };
+
+    await user.click(screen.getByRole('textbox', { name: en.lab.file.paste }));
+    await user.paste(JSON.stringify(counterexample));
+    await user.click(screen.getByRole('button', { name: en.lab.file.import }));
+
+    expect(await screen.findByText(`Imported “${en.lab.file.importedName}”.`)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: en.lab.file.importedName })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit p1' })).toBeInTheDocument();
+  });
+
+  it('says what is wrong with pasted text that is not a scenario', async () => {
+    const user = userEvent.setup();
+    serve({ '/api/lab/scenarios/presotea': { status: 200, body: scenario } });
+    renderPage();
+    await openScenario(user);
+
+    await user.click(screen.getByRole('textbox', { name: en.lab.file.paste }));
+    await user.paste('{ nope');
+    await user.click(screen.getByRole('button', { name: en.lab.file.import }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(en.lab.file.invalid_json);
+  });
+
+  it('lists the problems the server found, translated, with the person they concern', async () => {
+    const user = userEvent.setup();
+    serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': {
+        status: 400,
+        body: {
+          code: 'common.validation',
+          traceId: 'abc',
+          status: 400,
+          errors: [
+            { code: 'generator.out_of_range', path: 'members[1].maxWeeklyHours' },
+            { code: 'lab.too_many_people', path: 'members' },
+          ],
+        },
+      },
+    });
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: en.lab.generate }));
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByText('Marc-Olivier Roy · maxWeeklyHours: out of range')).toBeInTheDocument();
+    expect(within(alert).getByText('members: more than 60 people')).toBeInTheDocument();
+  });
+
+  it('marks a shift missing its level on the grid, as "No level 3" (1l)', async () => {
+    const user = userEvent.setup();
+    const missing = {
+      code: 'issue.missing_level',
+      shiftIds: ['mon-open'],
+      memberIds: [],
+      parameters: { level: '3', required: '1', present: '0' },
+      hardRule: false,
+    };
+    serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: { ...result, issues: [...result.issues, missing] } },
+    });
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: en.lab.generate }));
+
+    expect(await screen.findByText('No level 3')).toBeInTheDocument();
   });
 
   it('says so when the lab is off on this server', async () => {

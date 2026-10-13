@@ -116,6 +116,8 @@
       "email": "Email",
       "emailError": "This email is not valid.",
       "password": "Password",
+      "note": "Note for the manager",
+      "notePlaceholder": "e.g. Exams Oct 12–16, evenings only that week",
       "shift": "Shift",
       "shiftAll": "All shifts",
       "shiftOpening": "Openings",
@@ -181,6 +183,7 @@
       "noShifts": "No shifts",
       "fill": "{{filled}} of {{headcount}} people",
       "open": "Open place",
+      "missingLevel": "No level {{level}}",
       "highlighted": "Concerned by the selected issue"
     }
   },
@@ -227,7 +230,94 @@
       "title": "Rules",
       "openingFairness": "Spread openings fairly",
       "closingFairness": "Spread closings fairly",
-      "fairnessHint": "In proportion to what each person is available for."
+      "fairnessHint": "In proportion to what each person is available for.",
+      "maxInARow": "Max shifts in a row",
+      "maxHint": "Most shifts one person can work back to back.",
+      "noLimit": "No limit",
+      "pairs": "Cannot work together",
+      "pairsHint": "The generator never puts them on the same shift of that block.",
+      "pairLine": "{{first}} cannot work with {{second}}",
+      "noPairs": "No pairs yet.",
+      "first": "Person",
+      "second": "Cannot work with",
+      "block": "On",
+      "allBlocks": "Every shift",
+      "addPair": "Add the pair",
+      "removePair": "Remove {{first}} and {{second}}"
+    },
+    "tabs": {
+      "schedule": "Schedule",
+      "scenario": "Scenario",
+      "label": "Lab sections"
+    },
+    "team": {
+      "title": "People",
+      "hint": "Levels, hours and who sent availability all feed the generator.",
+      "add": "Add a person",
+      "newName": "New person",
+      "line": "Level {{level}} · {{desired}} h a week",
+      "lineMax": "Level {{level}} · {{desired}} h a week, at most {{max}}",
+      "notSent": "Not sent",
+      "edit": "Edit",
+      "editLabel": "Edit {{name}}",
+      "full": "The lab takes at most {{max}} people.",
+      "sheetTitle": "Edit person",
+      "name": "Name",
+      "nameRequired": "A name, please.",
+      "levelGroup": "Level",
+      "desired": "Desired hours a week",
+      "max": "Maximum hours a week",
+      "maxHint": "Leave empty for no maximum. The generator never goes above it.",
+      "hoursInvalid": "Between 0 and 168 hours.",
+      "submitted": "Sent their availability",
+      "submittedHint": "If not, the generator never places them.",
+      "save": "Save",
+      "remove": "Remove this person"
+    },
+    "availability": {
+      "title": "Availability",
+      "person": "Whose availability",
+      "hint": "Tap the shifts they can work.",
+      "all": "Mark all",
+      "none": "Clear",
+      "notSent": "{{name}} has not sent availability, so the generator never places them.",
+      "count_one": "{{count}} shift marked",
+      "count_other": "{{count}} shifts marked"
+    },
+    "file": {
+      "title": "Import and export",
+      "hint": "Export downloads this scenario as JSON. Import reads the same format, or a counterexample printed by the property tests.",
+      "export": "Export JSON",
+      "paste": "Paste JSON",
+      "import": "Import",
+      "chooseFile": "Import a file",
+      "imported": "Imported “{{name}}”.",
+      "importedName": "Imported scenario",
+      "reset": "Back to the sample",
+      "invalid_json": "This is not valid JSON.",
+      "not_a_scenario": "This JSON is not a lab scenario or a generator input."
+    },
+    "validation": {
+      "title": "The scenario has problems",
+      "item": "{{where}}: {{problem}}",
+      "unknown": "problem {{code}}",
+      "codes": {
+        "generator": {
+          "required": "missing",
+          "duplicate": "used twice",
+          "unknown_shift": "no such shift",
+          "unknown_member": "no such person",
+          "unknown_block": "no such shift block",
+          "out_of_range": "out of range",
+          "end_not_after_start": "ends before it starts",
+          "same_member": "the same person twice"
+        },
+        "lab": {
+          "too_many_people": "more than 60 people",
+          "too_many_weeks": "longer than 8 weeks",
+          "too_many_shifts": "more than 600 shifts"
+        }
+      }
     }
   },
   "issues": {

@@ -1,4 +1,10 @@
-import { useId, useState, type InputHTMLAttributes, type ReactNode } from 'react';
+import {
+  useId,
+  useState,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type TextareaHTMLAttributes,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { cx } from './cx';
 
@@ -37,6 +43,48 @@ export function TextField({ label, hint, error, trailing, className, ...rest }: 
         />
         {trailing && <div className="absolute inset-y-0 right-1 flex items-center">{trailing}</div>}
       </div>
+      {hint && (
+        <p id={hintId} className="mt-1.5 text-xs text-muted">
+          {hint}
+        </p>
+      )}
+      {error && (
+        <p id={errorId} className="mt-1.5 flex items-start gap-1.5 text-sm font-bold text-danger">
+          <span aria-hidden="true">✕</span>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+type TextAreaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'id'> & {
+  label: string;
+  hint?: string;
+  error?: string;
+};
+
+// The same field for several lines of text, such as a note or pasted data. The label, hint and error
+// work as in TextField.
+export function TextArea({ label, hint, error, className, rows = 4, ...rest }: TextAreaProps) {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  const describedBy = [hint && hintId, error && errorId].filter(Boolean).join(' ') || undefined;
+
+  return (
+    <div className={className}>
+      <label htmlFor={id} className="mb-1.5 block text-xs font-bold tracking-[0.06em] text-muted uppercase">
+        {label}
+      </label>
+      <textarea
+        id={id}
+        rows={rows}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
+        className={cx(fieldClassName, 'py-3')}
+        {...rest}
+      />
       {hint && (
         <p id={hintId} className="mt-1.5 text-xs text-muted">
           {hint}

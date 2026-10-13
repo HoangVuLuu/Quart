@@ -27,12 +27,22 @@ export function gridShifts(scenario: LabScenario, result: GeneratorResult | unde
   const levels = new Map(scenario.input.members.map((member) => [member.id, member.level]));
   const assignments = result?.assignments ?? [];
 
+  // A level requirement nobody met shows on its card, as "No level 3" does in 1l.
+  const missing = new Map<string, number[]>();
+  for (const issue of result?.issues ?? []) {
+    const shiftId = issue.shiftIds[0];
+    const level = Number(issue.parameters.level);
+    if (issue.code !== 'issue.missing_level' || !shiftId || !Number.isFinite(level)) continue;
+    missing.set(shiftId, [...(missing.get(shiftId) ?? []), level]);
+  }
+
   return scenario.input.shifts.map((shift) => ({
     id: shift.id,
     date: shift.date,
     start: shift.start,
     end: shift.end,
     headcount: shift.headcount,
+    missingLevels: missing.get(shift.id),
     people: assignments
       .filter((assignment) => assignment.shiftId === shift.id)
       .map((assignment) => ({

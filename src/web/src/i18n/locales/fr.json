@@ -116,6 +116,8 @@
       "email": "Courriel",
       "emailError": "Ce courriel n’est pas valide.",
       "password": "Mot de passe",
+      "note": "Note pour la gestion",
+      "notePlaceholder": "p. ex. Examens du 12 au 16 oct., soirs seulement cette semaine",
       "shift": "Quart",
       "shiftAll": "Tous les quarts",
       "shiftOpening": "Ouvertures",
@@ -181,6 +183,7 @@
       "noShifts": "Aucun quart",
       "fill": "{{filled}} sur {{headcount}} personnes",
       "open": "Place libre",
+      "missingLevel": "Pas de niveau {{level}}",
       "highlighted": "Concerné par le problème choisi"
     }
   },
@@ -227,7 +230,94 @@
       "title": "Règles",
       "openingFairness": "Répartir les ouvertures équitablement",
       "closingFairness": "Répartir les fermetures équitablement",
-      "fairnessHint": "En proportion de ce pour quoi chaque personne est disponible."
+      "fairnessHint": "En proportion de ce pour quoi chaque personne est disponible.",
+      "maxInARow": "Maximum de quarts d’affilée",
+      "maxHint": "Le plus de quarts qu’une personne peut faire à la suite.",
+      "noLimit": "Aucune limite",
+      "pairs": "Ne peuvent pas travailler ensemble",
+      "pairsHint": "Le générateur ne les met jamais sur le même quart de ce bloc.",
+      "pairLine": "{{first}} ne peut pas travailler avec {{second}}",
+      "noPairs": "Aucune paire pour l’instant.",
+      "first": "Personne",
+      "second": "Ne peut pas travailler avec",
+      "block": "Sur",
+      "allBlocks": "Tous les quarts",
+      "addPair": "Ajouter la paire",
+      "removePair": "Retirer {{first}} et {{second}}"
+    },
+    "tabs": {
+      "schedule": "Horaire",
+      "scenario": "Scénario",
+      "label": "Sections du labo"
+    },
+    "team": {
+      "title": "Personnes",
+      "hint": "Les niveaux, les heures et qui a envoyé ses dispos nourrissent le générateur.",
+      "add": "Ajouter une personne",
+      "newName": "Nouvelle personne",
+      "line": "Niveau {{level}} · {{desired}} h par semaine",
+      "lineMax": "Niveau {{level}} · {{desired}} h par semaine, au plus {{max}}",
+      "notSent": "Pas envoyé",
+      "edit": "Modifier",
+      "editLabel": "Modifier {{name}}",
+      "full": "Le labo accepte au plus {{max}} personnes.",
+      "sheetTitle": "Modifier la personne",
+      "name": "Nom",
+      "nameRequired": "Un nom, s’il te plaît.",
+      "levelGroup": "Niveau",
+      "desired": "Heures voulues par semaine",
+      "max": "Maximum d’heures par semaine",
+      "maxHint": "Laisse vide pour aucun maximum. Le générateur ne le dépasse jamais.",
+      "hoursInvalid": "Entre 0 et 168 heures.",
+      "submitted": "A envoyé ses dispos",
+      "submittedHint": "Sinon, le générateur ne la place jamais.",
+      "save": "Enregistrer",
+      "remove": "Retirer cette personne"
+    },
+    "availability": {
+      "title": "Disponibilités",
+      "person": "Les dispos de",
+      "hint": "Touche les quarts qu’elle peut faire.",
+      "all": "Tout cocher",
+      "none": "Tout effacer",
+      "notSent": "{{name}} n’a pas envoyé ses dispos : le générateur ne la place jamais.",
+      "count_one": "{{count}} quart coché",
+      "count_other": "{{count}} quarts cochés"
+    },
+    "file": {
+      "title": "Importer et exporter",
+      "hint": "Exporter télécharge ce scénario en JSON. Importer lit le même format, ou un contre-exemple affiché par les tests de propriétés.",
+      "export": "Exporter en JSON",
+      "paste": "Colle le JSON",
+      "import": "Importer",
+      "chooseFile": "Importer un fichier",
+      "imported": "« {{name}} » importé.",
+      "importedName": "Scénario importé",
+      "reset": "Revenir à l’exemple",
+      "invalid_json": "Ce n’est pas du JSON valide.",
+      "not_a_scenario": "Ce JSON n’est ni un scénario du labo ni une entrée du générateur."
+    },
+    "validation": {
+      "title": "Le scénario a des problèmes",
+      "item": "{{where}} : {{problem}}",
+      "unknown": "problème {{code}}",
+      "codes": {
+        "generator": {
+          "required": "manquant",
+          "duplicate": "en double",
+          "unknown_shift": "quart inconnu",
+          "unknown_member": "personne inconnue",
+          "unknown_block": "bloc de quart inconnu",
+          "out_of_range": "hors limites",
+          "end_not_after_start": "finit avant de commencer",
+          "same_member": "la même personne deux fois"
+        },
+        "lab": {
+          "too_many_people": "plus de 60 personnes",
+          "too_many_weeks": "plus de 8 semaines",
+          "too_many_shifts": "plus de 600 quarts"
+        }
+      }
     }
   },
   "issues": {

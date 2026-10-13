@@ -18,6 +18,8 @@ export interface GridShift {
   end: string;
   headcount: number;
   people: GridPerson[];
+  /** Levels a requirement on this shift is short of, such as [3] for "no level 3" (BR-011). */
+  missingLevels?: number[];
 }
 
 /** Opening and closing are the first and last shift of each day (BR-034); anything between is "mid". */
