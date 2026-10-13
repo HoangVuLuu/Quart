@@ -30,6 +30,9 @@ internal static class LocalSearch
     /// </summary>
     private const int MaxTries = 8_000;
 
+    /// <summary>...and never wait longer than this for an improvement. The sample's two weeks give up after 840.</summary>
+    private const int MaxPatience = 1_500;
+
     public static void Run(GeneratorInput input, CandidateFilter filter, SeededRandom random, Evaluator.Rulebook rulebook, int score)
     {
         var slots = input.Shifts.Sum(shift => shift.Headcount);
@@ -40,7 +43,8 @@ internal static class LocalSearch
 
         var search = new Search(input, filter, random, rulebook, score);
         var budget = Math.Min(TriesPerSlot * slots, MaxTries);
-        for (int tries = 0, stale = 0; tries < budget && stale < PatiencePerSlot * slots; tries++)
+        var patience = Math.Min(PatiencePerSlot * slots, MaxPatience);
+        for (int tries = 0, stale = 0; tries < budget && stale < patience; tries++)
         {
             var improved = random.Next(3) switch
             {
@@ -60,6 +64,10 @@ internal static class LocalSearch
         private readonly Dictionary<string, string[]> candidates = CandidatesOf(input);
 
         private int score = score;
+
+        // Every assignment that may change, rebuilt only after a kept change: a rejected try is undone,
+        // which leaves the same assignments in place.
+        private List<(string ShiftId, string MemberId)>? movable;
 
         public bool TryFill()
         {
@@ -155,16 +163,12 @@ internal static class LocalSearch
         /// <summary>A random assignment local search may change: anything but a lock, on <paramref name="date"/> when given.</summary>
         private (string ShiftId, string MemberId)? RandomMovable(DateOnly? date = null)
         {
-            var movable = filter.Assignments
-                .Where(assignment => !filter.IsLocked(assignment.ShiftId, assignment.MemberId)
-                    && (date is null || shifts[assignment.ShiftId].Date == date))
+            movable ??= filter.Assignments
+                .Where(assignment => !filter.IsLocked(assignment.ShiftId, assignment.MemberId))
+                .Select(assignment => (assignment.ShiftId, assignment.MemberId))
                 .ToList();
-            if (movable.Count == 0)
-            {
-                return null;
-            }
-            var pick = movable[random.Next(movable.Count)];
-            return (pick.ShiftId, pick.MemberId);
+            var pool = date is null ? movable : movable.Where(assignment => shifts[assignment.ShiftId].Date == date).ToList();
+            return pool.Count == 0 ? null : pool[random.Next(pool.Count)];
         }
 
         /// <summary>Grades the changed schedule; keeps the change when it scores higher, otherwise undoes it.</summary>
@@ -174,6 +178,7 @@ internal static class LocalSearch
             if (changed > score)
             {
                 score = changed;
+                movable = null;
                 return true;
             }
             undo();

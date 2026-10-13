@@ -135,11 +135,17 @@ public static class Evaluator
         var penalty = 0L;
         foreach (var shift in context.Input.Shifts)
         {
-            var levels = context.OnShift(shift.Id).Select(memberId => context.Members[memberId].Level).ToList();
             foreach (var requirement in shift.LevelRequirements)
             {
                 // Levels are a ladder: a level 3 counts toward a level 2 requirement (FR-066).
-                var present = levels.Count(level => level >= requirement.Level);
+                var present = 0;
+                foreach (var memberId in context.OnShift(shift.Id))
+                {
+                    if (context.Members[memberId].Level >= requirement.Level)
+                    {
+                        present++;
+                    }
+                }
                 if (present < requirement.MinCount)
                 {
                     penalty += (long)(requirement.MinCount - present) * MissingLevelWeight;
@@ -204,12 +210,12 @@ public static class Evaluator
                 continue;
             }
 
-            var weekly = new decimal[context.Weeks];
-            foreach (var shift in context.ShiftsOf(member.Id))
+            var weekly = context.WeeklyHours(member.Id);
+            var distance = 0m;
+            foreach (var weekHours in weekly)
             {
-                weekly[context.WeekOf(shift)] += HardRules.Hours(shift);
+                distance += Math.Abs(weekHours - member.DesiredWeeklyHours);
             }
-            var distance = weekly.Sum(hours => Math.Abs(hours - member.DesiredWeeklyHours));
             penalty += (long)Math.Round(distance * HoursWeight, MidpointRounding.AwayFromZero);
 
             var hours = weekly.Sum();
@@ -234,14 +240,15 @@ public static class Evaluator
                 continue;
             }
 
-            foreach (var week in context.ShiftsOf(member.Id).GroupBy(context.WeekOf))
+            var weekly = context.WeeklyHours(member.Id);
+            for (var week = 0; week < weekly.Length; week++)
             {
-                var hours = week.Sum(HardRules.Hours);
-                if (hours > max)
+                if (weekly[week] > max)
                 {
                     penalty += HardRuleWeight;
-                    issues?.Add(Issue(IssueCodes.OverMaxHours, week.Select(shift => shift.Id).ToList(), [member.Id],
-                        ("week", Number(week.Key + 1)), ("hours", Number(hours)), ("max", Number(max))));
+                    issues?.Add(Issue(IssueCodes.OverMaxHours,
+                        context.ShiftsOf(member.Id).Where(shift => context.WeekOf(shift) == week).Select(shift => shift.Id).ToList(), [member.Id],
+                        ("week", Number(week + 1)), ("hours", Number(weekly[week])), ("max", Number(max))));
                 }
             }
         }
@@ -286,11 +293,23 @@ public static class Evaluator
         var penalty = 0L;
         foreach (var member in context.Input.Members)
         {
-            foreach (var day in context.ShiftsOf(member.Id).GroupBy(shift => shift.Date).Where(day => day.Count() > 1))
+            // The shifts are in time order, so a day's shifts sit next to each other.
+            var shifts = context.ShiftsOf(member.Id);
+            for (var first = 0; first < shifts.Count;)
             {
-                penalty += (long)(day.Count() - 1) * DoubleShiftWeight;
-                issues?.Add(Issue(IssueCodes.DoubleShift, day.Select(shift => shift.Id).ToList(), [member.Id],
-                    ("date", day.Key.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)), ("count", Number(day.Count()))));
+                var next = first + 1;
+                while (next < shifts.Count && shifts[next].Date == shifts[first].Date)
+                {
+                    next++;
+                }
+                var count = next - first;
+                if (count > 1)
+                {
+                    penalty += (long)(count - 1) * DoubleShiftWeight;
+                    issues?.Add(Issue(IssueCodes.DoubleShift, shifts.Skip(first).Take(count).Select(shift => shift.Id).ToList(), [member.Id],
+                        ("date", shifts[first].Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)), ("count", Number(count))));
+                }
+                first = next;
             }
         }
         return penalty;
@@ -302,7 +321,11 @@ public static class Evaluator
         foreach (var shift in context.Input.Shifts)
         {
             var onShift = context.OnShift(shift.Id);
-            foreach (var pair in context.Input.ConflictPairs.Where(pair => pair.BlockId == shift.BlockId))
+            if (!context.PairsByBlock.TryGetValue(shift.BlockId, out var pairs))
+            {
+                continue;
+            }
+            foreach (var pair in pairs)
             {
                 // A lock can force a pair together; the lock wins and the pair is flagged (BR-036).
                 if (onShift.Contains(pair.MemberA) && onShift.Contains(pair.MemberB))
@@ -345,11 +368,7 @@ public static class Evaluator
         context.Input.Members.Select(member =>
         {
             var shifts = context.ShiftsOf(member.Id);
-            var weekly = new decimal[context.Weeks];
-            foreach (var shift in shifts)
-            {
-                weekly[context.WeekOf(shift)] += HardRules.Hours(shift);
-            }
+            var weekly = context.WeeklyHours(member.Id);
 
             var openings = shifts.Count(shift => rulebook.Parts[shift.Id].HasFlag(DayPart.Opening));
             var closings = shifts.Count(shift => rulebook.Parts[shift.Id].HasFlag(DayPart.Closing));
@@ -362,7 +381,7 @@ public static class Evaluator
                 ? actual
                 : Math.Round((decimal)shifts.Count * availableOfKind / free.Shifts, 2);
 
-            return new MemberSummary(member.Id, weekly.Sum(), member.DesiredWeeklyHours * context.Weeks, weekly,
+            return new MemberSummary(member.Id, weekly.Sum(), member.DesiredWeeklyHours * context.Weeks, weekly.ToArray(),
                 openings, Expected(free.Openings, openings), closings, Expected(free.Closings, closings));
         }).ToList();
 
@@ -390,6 +409,8 @@ public static class Evaluator
             Weeks = HardRules.Weeks(input);
             FirstDay = HardRules.FirstDay(input);
             Parts = DayParts.Of(input.Shifts);
+            PairsByBlock = input.ConflictPairs.GroupBy(pair => pair.BlockId, StringComparer.Ordinal)
+                .ToDictionary(block => block.Key, block => block.ToList(), StringComparer.Ordinal);
             FreeFor = input.Members.ToDictionary(
                 member => member.Id,
                 member =>
@@ -416,6 +437,9 @@ public static class Evaluator
 
         public IReadOnlyDictionary<string, DayPart> Parts { get; }
 
+        /// <summary>The conflict pairs of each shift block (BR-036).</summary>
+        public Dictionary<string, List<ConflictPair>> PairsByBlock { get; }
+
         /// <summary>Per member, how many shifts they are available for, and how many of those open and close their day.</summary>
         public Dictionary<string, (int Shifts, int Openings, int Closings)> FreeFor { get; }
     }
@@ -426,6 +450,7 @@ public static class Evaluator
         private readonly Rulebook rulebook;
         private readonly Dictionary<string, List<string>> onShift;
         private readonly Dictionary<string, List<GeneratorShift>> shiftsOf;
+        private readonly Dictionary<string, decimal[]> weeklyHours;
 
         public Context(Rulebook rulebook, IReadOnlyList<Assignment> assignments)
         {
@@ -435,6 +460,7 @@ public static class Evaluator
 
             onShift = input.Shifts.ToDictionary(shift => shift.Id, _ => new List<string>(), StringComparer.Ordinal);
             shiftsOf = input.Members.ToDictionary(member => member.Id, _ => new List<GeneratorShift>(), StringComparer.Ordinal);
+            weeklyHours = input.Members.ToDictionary(member => member.Id, _ => new decimal[rulebook.Weeks], StringComparer.Ordinal);
             foreach (var assignment in assignments)
             {
                 if (assignment is null || !rulebook.Shifts.TryGetValue(assignment.ShiftId, out var shift) || !Members.ContainsKey(assignment.MemberId))
@@ -447,6 +473,7 @@ public static class Evaluator
                 }
                 onShift[shift.Id].Add(assignment.MemberId);
                 shiftsOf[assignment.MemberId].Add(shift);
+                weeklyHours[assignment.MemberId][HardRules.Week(shift, rulebook.FirstDay)] += HardRules.Hours(shift);
             }
             foreach (var list in shiftsOf.Values)
             {
@@ -470,6 +497,11 @@ public static class Evaluator
         public HashSet<(string MemberId, string ShiftId)> Available => rulebook.Available;
 
         public int Weeks => rulebook.Weeks;
+
+        public Dictionary<string, List<ConflictPair>> PairsByBlock => rulebook.PairsByBlock;
+
+        /// <summary>The member's hours in each week of the period, the first week first (BR-031).</summary>
+        public decimal[] WeeklyHours(string memberId) => weeklyHours[memberId];
 
         /// <summary>Which week of the period the shift falls in: 0 for the first.</summary>
         public int WeekOf(GeneratorShift shift) => HardRules.Week(shift, rulebook.FirstDay);
