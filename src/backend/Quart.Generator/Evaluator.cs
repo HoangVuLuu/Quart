@@ -20,9 +20,11 @@ public static class Evaluator
     // less than the 1 000 an empty slot costs.
 
     /// <summary>
-    /// A hard rule broken (spec 7.3, BR-036): someone unavailable or who never sent availability, a
-    /// shift past the consecutive limit, an incompatible pair. The generator never does this; only a
-    /// manual edit or a lock can, and nothing else a schedule gains may pay for it.
+    /// A hard rule broken (spec 7.3, BR-036, <see cref="IssueCodes.HardRules"/>): someone unavailable
+    /// or who never sent availability, an overfilled shift, overlapping shifts, a shift past the
+    /// consecutive limit, an incompatible pair. The generator never does this (its
+    /// <see cref="CandidateFilter"/> stops it); only a manual edit or a lock can, and nothing else a
+    /// schedule gains may pay for it.
     /// </summary>
     public const int HardRuleWeight = 10_000;
 
@@ -61,6 +63,7 @@ public static class Evaluator
         penalty += Headcount(context, issues);
         penalty += Levels(context, issues);
         penalty += Availability(context, issues);
+        penalty += Overlaps(context, issues);
         penalty += Hours(context, issues);
         penalty += Consecutive(context, issues);
         penalty += Doubles(context, issues);
@@ -83,6 +86,11 @@ public static class Evaluator
             {
                 penalty += (long)(shift.Headcount - assigned) * EmptySlotWeight;
                 issues.Add(Issue(IssueCodes.BelowHeadcount, [shift.Id], [], ("assigned", Number(assigned)), ("headcount", Number(shift.Headcount))));
+            }
+            else if (assigned > shift.Headcount)
+            {
+                penalty += (long)(assigned - shift.Headcount) * HardRuleWeight;
+                issues.Add(Issue(IssueCodes.AboveHeadcount, [shift.Id], [], ("assigned", Number(assigned)), ("headcount", Number(shift.Headcount))));
             }
         }
         return penalty;
@@ -125,6 +133,25 @@ public static class Evaluator
                 {
                     penalty += HardRuleWeight;
                     issues.Add(Issue(IssueCodes.Unavailable, [shift.Id], [memberId]));
+                }
+            }
+        }
+        return penalty;
+    }
+
+    private static long Overlaps(Context context, List<GeneratorIssue> issues)
+    {
+        var penalty = 0L;
+        foreach (var member in context.Input.Members)
+        {
+            // Time order: once a later shift starts after this one ends, so do all the ones after it.
+            var shifts = context.ShiftsOf(member.Id);
+            for (var i = 0; i < shifts.Count; i++)
+            {
+                for (var j = i + 1; j < shifts.Count && HardRules.Overlap(shifts[i], shifts[j]); j++)
+                {
+                    penalty += HardRuleWeight;
+                    issues.Add(Issue(IssueCodes.OverlappingShifts, [shifts[i].Id, shifts[j].Id], [member.Id]));
                 }
             }
         }
@@ -244,9 +271,7 @@ public static class Evaluator
             Members = input.Members.ToDictionary(member => member.Id, StringComparer.Ordinal);
             var shifts = input.Shifts.ToDictionary(shift => shift.Id, StringComparer.Ordinal);
             Submitted = input.Availability.Where(entry => entry.Submitted).Select(entry => entry.MemberId).ToHashSet(StringComparer.Ordinal);
-            Available = input.Availability.Where(entry => entry.Submitted)
-                .SelectMany(entry => entry.ShiftIds.Select(shiftId => (entry.MemberId, shiftId)))
-                .ToHashSet();
+            Available = HardRules.Available(input);
 
             onShift = input.Shifts.ToDictionary(shift => shift.Id, _ => new List<string>(), StringComparer.Ordinal);
             shiftsOf = input.Members.ToDictionary(member => member.Id, _ => new List<GeneratorShift>(), StringComparer.Ordinal);

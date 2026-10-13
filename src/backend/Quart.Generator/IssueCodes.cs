@@ -10,14 +10,27 @@ public static class IssueCodes
     /// <summary>A shift with fewer people than its headcount. Parameters: <c>assigned</c>, <c>headcount</c>.</summary>
     public const string BelowHeadcount = "issue.below_headcount";
 
+    /// <summary>
+    /// A shift with more people than its headcount (BR-003). Only a lock or a manual edit can do this.
+    /// Parameters: <c>assigned</c>, <c>headcount</c>.
+    /// </summary>
+    public const string AboveHeadcount = "issue.above_headcount";
+
     /// <summary>A shift short of a level requirement. Parameters: <c>level</c>, <c>required</c>, <c>present</c> (people at that level or above).</summary>
     public const string MissingLevel = "issue.missing_level";
 
-    /// <summary>Someone on a shift they did not mark themselves available for. No parameters.</summary>
+    /// <summary>
+    /// Someone on a shift they did not mark themselves available for, or that overlaps a time they are
+    /// busy at another workplace (BR-002). Both read the same, so the other workplace stays hidden
+    /// (FR-094). No parameters.
+    /// </summary>
     public const string Unavailable = "issue.unavailable";
 
     /// <summary>Someone on a shift who never sent availability. No parameters.</summary>
     public const string NotSubmitted = "issue.not_submitted";
+
+    /// <summary>Someone on two shifts that overlap in time (BR-002). Both shifts are in the shift ids. No parameters.</summary>
+    public const string OverlappingShifts = "issue.overlapping_shifts";
 
     /// <summary>Someone more than 2 hours under their desired hours over the period (BR-033). Parameters: <c>hours</c>, <c>target</c>.</summary>
     public const string UnderHours = "issue.under_hours";
@@ -37,6 +50,16 @@ public static class IssueCodes
     /// <summary>Every code, in display order.</summary>
     public static IReadOnlyList<string> All { get; } =
     [
-        BelowHeadcount, MissingLevel, Unavailable, NotSubmitted, UnderHours, OverHours, ConsecutiveShifts, DoubleShift, IncompatiblePair,
+        BelowHeadcount, AboveHeadcount, MissingLevel, Unavailable, NotSubmitted, OverlappingShifts, UnderHours, OverHours,
+        ConsecutiveShifts, DoubleShift, IncompatiblePair,
     ];
+
+    /// <summary>
+    /// The codes that mean a hard rule is broken (spec 7.3, BR-036). The generator never causes one;
+    /// only a lock or a manual edit can.
+    /// </summary>
+    public static IReadOnlySet<string> HardRules { get; } = new HashSet<string>(StringComparer.Ordinal)
+    {
+        AboveHeadcount, Unavailable, NotSubmitted, OverlappingShifts, ConsecutiveShifts, IncompatiblePair,
+    };
 }

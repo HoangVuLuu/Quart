@@ -9,6 +9,7 @@ namespace Quart.Generator;
 /// <param name="Shifts">The dated shifts of the period, each one a slot group to fill.</param>
 /// <param name="Members">The people who can be scheduled.</param>
 /// <param name="Availability">Per member, whether they submitted and which shifts they can work. A member with no entry has not submitted.</param>
+/// <param name="BusyTimes">When members are already working at another workplace (BR-002). Nobody is placed on a shift that overlaps one.</param>
 /// <param name="LockedAssignments">Assignments that must survive generation exactly (BR-004, FR-123).</param>
 /// <param name="ConflictPairs">"Cannot work together" pairs, per shift block (BR-036).</param>
 /// <param name="Rules">The workplace's scheduling rules.</param>
@@ -17,6 +18,7 @@ public sealed record GeneratorInput(
     IReadOnlyList<GeneratorShift> Shifts,
     IReadOnlyList<GeneratorMember> Members,
     IReadOnlyList<MemberAvailability> Availability,
+    IReadOnlyList<BusyTime> BusyTimes,
     IReadOnlyList<Assignment> LockedAssignments,
     IReadOnlyList<ConflictPair> ConflictPairs,
     GeneratorRules Rules,
@@ -48,6 +50,14 @@ public sealed record GeneratorMember(string Id, int Level, decimal DesiredWeekly
 /// <param name="Submitted">False when the member never sent availability for the period. The generator never places them (FR-121).</param>
 /// <param name="ShiftIds">The shifts the member said they can work (BR-001).</param>
 public sealed record MemberAvailability(string MemberId, bool Submitted, IReadOnlyList<string> ShiftIds);
+
+/// <summary>
+/// A time the member is busy elsewhere, such as a shift they hold at another workplace (BR-002). It
+/// carries no detail of where or why: this workplace only ever learns "unavailable" (FR-094).
+/// </summary>
+/// <param name="Start">Local date and time in this workplace's time zone, like the shifts.</param>
+/// <param name="End">After <paramref name="Start"/>; it may fall on a later day. Half-open: a shift starting at <paramref name="End"/> does not overlap.</param>
+public sealed record BusyTime(string MemberId, DateTime Start, DateTime End);
 
 /// <summary>One person on one shift.</summary>
 public sealed record Assignment(string ShiftId, string MemberId);

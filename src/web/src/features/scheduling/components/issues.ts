@@ -6,14 +6,18 @@ export interface ScheduleIssue {
   shiftIds: string[];
   memberIds: string[];
   parameters: Record<string, string>;
+  /** True when a hard rule is broken (spec 7.3). The generator never causes one; only a lock or a manual edit can. */
+  hardRule?: boolean;
 }
 
 /** The issue types, in the order the list shows them: the order of Quart.Generator.IssueCodes. */
 export const issueTypes = [
   'below_headcount',
+  'above_headcount',
   'missing_level',
   'unavailable',
   'not_submitted',
+  'overlapping_shifts',
   'under_hours',
   'over_hours',
   'consecutive_shifts',
@@ -27,6 +31,11 @@ export type IssueType = (typeof issueTypes)[number];
 export function typeOf(code: string): IssueType | 'unknown' {
   const type = code.replace(/^issue\./, '');
   return (issueTypes as readonly string[]).includes(type) ? (type as IssueType) : 'unknown';
+}
+
+/** How many issues break a hard rule. The server decides which do, so a code this app does not know still counts. */
+export function countHardRuleBreaks(issues: ScheduleIssue[]): number {
+  return issues.filter((issue) => issue.hardRule === true).length;
 }
 
 export interface IssueGroup {

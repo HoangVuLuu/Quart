@@ -104,6 +104,12 @@ function describer(t: TFunction, language: string, shifts: GridShift[], names: M
           assigned: number(p.assigned),
           headcount: number(p.headcount),
         });
+      case 'above_headcount':
+        return t('issues.above_headcount.item', {
+          shift,
+          assigned: number(p.assigned),
+          headcount: number(p.headcount),
+        });
       case 'missing_level':
         return t('issues.missing_level.item', {
           shift,
@@ -115,6 +121,12 @@ function describer(t: TFunction, language: string, shifts: GridShift[], names: M
         return t('issues.unavailable.item', { person: person(first), shift });
       case 'not_submitted':
         return t('issues.not_submitted.item', { person: person(first), shift });
+      case 'overlapping_shifts':
+        return t('issues.overlapping_shifts.item', {
+          person: person(first),
+          shift,
+          other: shiftName(issue.shiftIds[1]),
+        });
       case 'under_hours':
         return t('issues.under_hours.item', {
           person: person(first),
@@ -152,9 +164,11 @@ function describer(t: TFunction, language: string, shifts: GridShift[], names: M
 // name says the same in words (NFR-008).
 const iconPaths: Record<IssueType | 'unknown', string> = {
   below_headcount: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM2 21v-1a6 6 0 0 1 11-3.3M16 19h6',
+  above_headcount: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM2 21v-1a6 6 0 0 1 11-3.3M16 19h6M19 16v6',
   missing_level: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9Z',
   unavailable: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM5.6 5.6l12.8 12.8',
   not_submitted: 'M3 6h18v12H3ZM3 6l9 7 9-7',
+  overlapping_shifts: 'M3 6h11v7H3ZM10 11h11v7H10Z',
   under_hours: 'M12 4v16M6 14l6 6 6-6',
   over_hours: 'M12 20V4M6 10l6-6 6 6',
   consecutive_shifts: 'm4 7 5 5-5 5M11 7l5 5-5 5M18 7v10',

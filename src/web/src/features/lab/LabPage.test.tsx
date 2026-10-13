@@ -45,6 +45,7 @@ const scenario: Schemas['LabScenario'] = {
       { memberId: 'p2', submitted: true, shiftIds: ['mon-open'] },
       { memberId: 'p3', submitted: false, shiftIds: [] },
     ],
+    busyTimes: [],
     lockedAssignments: [],
     conflictPairs: [],
     rules: { maxConsecutiveShifts: 3, openingFairness: true, closingFairness: true },
@@ -64,12 +65,14 @@ const result: Schemas['GeneratorResult'] = {
       shiftIds: ['mon-close'],
       memberIds: [],
       parameters: { assigned: '1', headcount: '2' },
+      hardRule: false,
     },
     {
       code: 'issue.double_shift',
       shiftIds: ['mon-open', 'mon-close'],
       memberIds: ['p1'],
       parameters: { date: '2026-10-05', count: '2' },
+      hardRule: false,
     },
   ],
   score: -1050,
@@ -131,12 +134,34 @@ describe('LabPage', () => {
     await user.click(await screen.findByRole('button', { name: en.lab.generate }));
 
     expect(await screen.findByText('3 of 4 places filled')).toBeInTheDocument();
+    expect(screen.getByText('Hard rules: 0 violations')).toBeInTheDocument();
     expect(screen.getByText('Seed #1')).toBeInTheDocument();
+    expect(screen.getAllByText(en.scheduling.grid.open)).toHaveLength(1);
     const monday = screen.getByRole('region', { name: 'Monday · Oct 5' });
     expect(within(monday).getAllByText('Philippe N.')).toHaveLength(2);
     expect(within(monday).getByText('Marc-Olivier R.')).toBeInTheDocument();
     const posted = fetch.mock.calls.map(([request]) => request).find((request) => request.method === 'POST');
     expect(await posted?.json()).toEqual(scenario.input);
+  });
+
+  it('counts the hard rules a lock broke', async () => {
+    const user = userEvent.setup();
+    const unavailable = {
+      code: 'issue.unavailable',
+      shiftIds: ['mon-close'],
+      memberIds: ['p2'],
+      parameters: {},
+      hardRule: true,
+    };
+    serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: { ...result, issues: [...result.issues, unavailable] } },
+    });
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: en.lab.generate }));
+
+    expect(await screen.findByText('Hard rules: 1 violation')).toBeInTheDocument();
   });
 
   it('says so when the lab is off on this server', async () => {

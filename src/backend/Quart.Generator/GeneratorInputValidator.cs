@@ -37,6 +37,7 @@ public static class GeneratorInputValidator
         var shifts = Present(input.Shifts, "shifts", errors);
         var members = Present(input.Members, "members", errors);
         var availability = Present(input.Availability, "availability", errors);
+        var busyTimes = Present(input.BusyTimes, "busyTimes", errors);
         var locked = Present(input.LockedAssignments, "lockedAssignments", errors);
         var conflicts = Present(input.ConflictPairs, "conflictPairs", errors);
 
@@ -138,6 +139,23 @@ public static class GeneratorInputValidator
             for (var s = 0; s < available.Count; s++)
             {
                 Shift(available[s], shiftIds, $"{path}.shiftIds[{s}]", errors);
+            }
+        }
+
+        for (var i = 0; i < busyTimes.Count; i++)
+        {
+            var path = $"busyTimes[{i}]";
+            var busy = busyTimes[i];
+            if (busy is null)
+            {
+                errors.Add(new InputError(Required, path));
+                continue;
+            }
+
+            Member(busy.MemberId, memberIds, $"{path}.memberId", errors);
+            if (busy.End <= busy.Start)
+            {
+                errors.Add(new InputError(EndNotAfterStart, $"{path}.end"));
             }
         }
 

@@ -44,6 +44,13 @@ describe('ScheduleGrid', () => {
     expect(within(closing!).getByText('1 of 2 people')).toBeInTheDocument();
   });
 
+  it('shows each place nobody fills as open (FR-125)', () => {
+    render(<ScheduleGrid shifts={twoWeeks} />);
+
+    const monday = screen.getByRole('region', { name: 'Monday · Oct 5' });
+    expect(within(monday).getAllByText(en.scheduling.grid.open)).toHaveLength(1); // the closing has 1 of 2
+  });
+
   it('shows one week at a time, with a tab per week', async () => {
     const user = userEvent.setup();
     render(<ScheduleGrid shifts={twoWeeks} />);

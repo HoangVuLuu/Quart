@@ -366,6 +366,7 @@
         "shiftIds": ["2026-10-05-closing", "2026-10-06-closing", "2026-10-07-closing", "2026-10-08-opening", "2026-10-08-closing", "2026-10-09-closing", "2026-10-11-closing", "2026-10-13-closing", "2026-10-14-closing", "2026-10-15-opening", "2026-10-15-closing", "2026-10-16-closing", "2026-10-17-closing", "2026-10-18-closing"]
       }
     ],
+    "busyTimes": [],
     "lockedAssignments": [],
     "conflictPairs": [],
     "rules": { "maxConsecutiveShifts": 3, "openingFairness": true, "closingFairness": true },

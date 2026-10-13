@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupIssues, typeOf, type ScheduleIssue } from './issues';
+import { countHardRuleBreaks, groupIssues, typeOf, type ScheduleIssue } from './issues';
 
 const issue = (code: string): ScheduleIssue => ({ code, shiftIds: [], memberIds: [], parameters: {} });
 
@@ -22,5 +22,16 @@ describe('issues', () => {
       ['double_shift', 2],
       ['unknown', 1],
     ]);
+  });
+
+  it('counts the hard rules broken as the server marks them, unknown codes included', () => {
+    expect(
+      countHardRuleBreaks([
+        { ...issue('issue.unavailable'), hardRule: true },
+        { ...issue('issue.from_the_future'), hardRule: true },
+        { ...issue('issue.below_headcount'), hardRule: false },
+        issue('issue.double_shift'),
+      ]),
+    ).toBe(2);
   });
 });

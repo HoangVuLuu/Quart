@@ -141,6 +141,7 @@ function ShiftCard({ shift, kind, marks }: { shift: GridShift; kind: ShiftKind; 
   const { t } = useTranslation();
   const fill = fillOf(shift);
   const marked = marks.shifts.has(shift.id);
+  const open = Math.max(0, shift.headcount - shift.people.length);
 
   return (
     <li
@@ -182,7 +183,7 @@ function ShiftCard({ shift, kind, marks }: { shift: GridShift; kind: ShiftKind; 
           {shortTime(shift.start)}–{shortTime(shift.end)}
         </p>
       </div>
-      {shift.people.length > 0 && (
+      {shift.people.length + open > 0 && (
         <ul className="mt-2 flex flex-col gap-1">
           {shift.people.map((person) => (
             <li
@@ -199,6 +200,15 @@ function ShiftCard({ shift, kind, marks }: { shift: GridShift; kind: ShiftKind; 
               <span className="truncate" title={person.name}>
                 {person.name}
               </span>
+            </li>
+          ))}
+          {/* A place nobody can fill without breaking a hard rule stays open, and says so (FR-125). */}
+          {Array.from({ length: open }, (_, index) => (
+            <li
+              key={`open-${index}`}
+              className="truncate rounded-pill border border-dashed border-danger/50 px-1.5 text-sm text-muted lg:px-1 lg:text-[11px]"
+            >
+              {t('scheduling.grid.open')}
             </li>
           ))}
         </ul>

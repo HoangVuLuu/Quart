@@ -34,10 +34,10 @@ public sealed class GeneratorInputValidatorTests
     public void Missing_lists_are_reported_by_name()
     {
         // JSON without a field arrives as null, whatever the type says.
-        var input = new GeneratorInput(null!, null!, null!, null!, null!, null!, Seed: 1);
+        var input = new GeneratorInput(null!, null!, null!, null!, null!, null!, null!, Seed: 1);
 
         Assert.Equal(
-            ["shifts", "members", "availability", "lockedAssignments", "conflictPairs", "rules"],
+            ["shifts", "members", "availability", "busyTimes", "lockedAssignments", "conflictPairs", "rules"],
             GeneratorInputValidator.Validate(input).Select(error => error.Path));
     }
 
@@ -102,6 +102,16 @@ public sealed class GeneratorInputValidatorTests
             "availability for an unknown shift",
             input => input with { Availability = [Available("ana", "mon-open", "sun-open")] },
             GeneratorInputValidator.UnknownShift, "availability[0].shiftIds[1]"
+        },
+        {
+            "busy time of an unknown member",
+            input => input with { BusyTimes = [new BusyTime("nobody", new DateTime(2026, 10, 5, 9, 0, 0), new DateTime(2026, 10, 5, 12, 0, 0))] },
+            GeneratorInputValidator.UnknownMember, "busyTimes[0].memberId"
+        },
+        {
+            "busy time ending before it starts",
+            input => input with { BusyTimes = [new BusyTime("ana", new DateTime(2026, 10, 5, 12, 0, 0), new DateTime(2026, 10, 5, 12, 0, 0))] },
+            GeneratorInputValidator.EndNotAfterStart, "busyTimes[0].end"
         },
         {
             "lock on an unknown shift",

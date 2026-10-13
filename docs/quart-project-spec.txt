@@ -451,9 +451,14 @@ FR-142  From that panel the admin can add someone, remove someone, or lock an
         assignment.
 FR-143  The issues dashboard lists everything the evaluator found. Issue types:
           - shift below its headcount
+          - shift above its headcount (only a lock or a manual edit can
+            cause it; BR-003)
           - shift missing a required level
-          - person assigned who is not available
+          - person assigned who is not available (this includes a shift
+            that overlaps their work at another workplace, which is never
+            shown as anything more than "not available"; FR-094)
           - person assigned who never submitted availability
+          - person assigned to two shifts that overlap in time (BR-002)
           - person under their desired hours
           - person over their desired hours
           - person working more consecutive shifts than allowed
@@ -641,7 +646,8 @@ implement a second, parallel set of checks anywhere.
 The generator is a pure function with no database, HTTP or time dependencies:
 
   input:  shifts, members (level, desired hours, max hours), availability,
-          locked assignments, workplace rules, random seed
+          busy times at other workplaces (BR-002), locked assignments,
+          conflict pairs (BR-036), workplace rules, random seed
   output: assignments, issues
 
 This makes it fast, deterministic for a given seed, and trivially testable.
@@ -1696,6 +1702,14 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
 2026-10-09  Period length remains per-period (FR-090) but is now set on the
             Edit Generator page's General tab instead of a separate setting.
             Changing it mid-period adds weeks with no submitted availability.
+2026-10-13  Hard rules are enforced by one candidate filter that every phase
+            of the generator uses (M1-03). To make BR-002 and BR-003
+            checkable on drafts, as AD-011 already required, the generator
+            input gains busy times at other workplaces, and the evaluator
+            gains two hard-rule issue types: shift above its headcount and
+            overlapping shifts. A shift that overlaps work elsewhere is
+            reported as "not available", so the other workplace stays
+            hidden (FR-094).  (BR-002, BR-003, FR-143, AD-011, 7.2)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

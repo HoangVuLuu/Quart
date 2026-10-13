@@ -85,6 +85,31 @@ public sealed class NaiveGeneratorTests
     }
 
     [Fact]
+    public void Leaves_a_slot_open_rather_than_break_a_hard_rule()
+    {
+        // FR-125. ana is the only one free on Monday and Tuesday, and the limit is 3 in a row: the fourth
+        // shift stays open and is reported, not filled.
+        var input = Input(TwoDays, ThreePeople, [Available("ana", "mon-open", "mon-close", "tue-open", "tue-close")]);
+
+        var result = generator.Generate(input);
+
+        Assert.DoesNotContain(new Assignment("tue-close", "ana"), result.Assignments);
+        Assert.Contains(result.Issues, issue => issue.Code == IssueCodes.BelowHeadcount && issue.ShiftIds.SequenceEqual(["tue-close"]));
+        Assert.DoesNotContain(result.Issues, issue => issue.HardRule);
+    }
+
+    [Fact]
+    public void Never_puts_a_conflict_pair_on_the_same_shift()
+    {
+        var input = Input(TwoDays, ThreePeople, [Available("ana", "mon-open"), Available("ben", "mon-open"), Available("cleo", "mon-open")],
+            conflicts: [new ConflictPair("opening", "ana", "ben")]);
+
+        var result = generator.Generate(input);
+
+        Assert.Equal([new("mon-open", "ana"), new("mon-open", "cleo")], result.Assignments);
+    }
+
+    [Fact]
     public void Lists_assignments_in_the_order_of_the_input_shifts()
     {
         var input = Input(
