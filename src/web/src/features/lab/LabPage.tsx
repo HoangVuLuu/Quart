@@ -9,7 +9,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { PageHeader } from '../../ui/PageHeader';
 import { Skeleton } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
-import type { ScheduleIssue } from '../scheduling/components/issues';
+import { countHardRuleBreaks, type ScheduleIssue } from '../scheduling/components/issues';
 import { IssuesPanel } from '../scheduling/components/IssuesPanel';
 import { ScheduleGrid, type GridShift } from '../scheduling/components/ScheduleGrid';
 import { useGenerate, usePresoteaScenario, type GeneratorResult, type LabScenario } from './useLab';
@@ -62,7 +62,7 @@ export function LabPage() {
             <Button loading={generate.isPending} onClick={() => generate.mutate(scenario.data.input)}>
               {generate.isPending ? t('lab.generating') : t('lab.generate')}
             </Button>
-            {/* M1-01's generator is naive on purpose; say so, so nobody judges the generator by it. */}
+            {/* The generator is naive on purpose for now; say so, so nobody judges the generator by it. */}
             <p className="text-sm text-muted">{t('lab.naiveHint')}</p>
           </div>
 
@@ -98,6 +98,7 @@ function Summary({ scenario, result }: { scenario: LabScenario; result: Generato
     .filter((member) => !input.availability.some((entry) => entry.memberId === member.id && entry.submitted))
     .map((member) => names.get(member.id) ?? member.id);
   const slots = input.shifts.reduce((total, shift) => total + shift.headcount, 0);
+  const hardRuleBreaks = result ? countHardRuleBreaks(result.issues) : 0;
 
   return (
     <Card className="flex flex-col gap-3">
@@ -121,9 +122,16 @@ function Summary({ scenario, result }: { scenario: LabScenario; result: Generato
       )}
       {result && (
         <div role="status">
-          <StatusChip tone={result.assignments.length < slots ? 'warning' : 'success'}>
-            {t('lab.filled', { filled: result.assignments.length, slots })}
-          </StatusChip>
+          <div className="flex flex-wrap gap-2">
+            <StatusChip tone={result.assignments.length < slots ? 'warning' : 'success'}>
+              {t('lab.filled', { filled: result.assignments.length, slots })}
+            </StatusChip>
+            {/* M1-03: the generator never breaks a hard rule; only a lock can (BR-004). */}
+            <StatusChip tone={hardRuleBreaks === 0 ? 'success' : 'danger'}>
+              {t('lab.hardRules', { count: hardRuleBreaks })}
+            </StatusChip>
+          </div>
+          <p className="mt-2 text-sm text-muted">{t('lab.hardRulesHint')}</p>
           <p className="mt-2 font-bold">
             {t('lab.score', { score: formatNumber(result.score, i18n.language) })}
           </p>

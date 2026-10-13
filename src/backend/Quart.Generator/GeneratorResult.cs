@@ -23,4 +23,8 @@ public sealed record GeneratorIssue(
     string Code,
     IReadOnlyList<string> ShiftIds,
     IReadOnlyList<string> MemberIds,
-    IReadOnlyDictionary<string, string> Parameters);
+    IReadOnlyDictionary<string, string> Parameters)
+{
+    /// <summary>True when the issue is a broken hard rule (<see cref="IssueCodes.HardRules"/>), which the generator never causes.</summary>
+    public bool HardRule => IssueCodes.HardRules.Contains(Code);
+}

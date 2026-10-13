@@ -97,10 +97,11 @@ public sealed class LabEndpointsTests
     }
 
     [Fact]
-    public async Task The_naive_schedule_for_the_sample_shows_its_issues()
+    public async Task The_naive_schedule_for_the_sample_breaks_no_hard_rule()
     {
-        // M1-02's "done when": first available wins, so Philippe, available for everything, works all 28
-        // shifts. The evaluator must say so.
+        // M1-03: first available still wins, but never past a hard rule. Philippe is available for
+        // everything; under M1-02 he worked all 28 shifts in a row. Now the limit of 3 stops him (BR-005),
+        // and the schedule is still poor in the ways the evaluator reports.
         await using var factory = Lab();
         using var client = factory.CreateClient();
         var input = await SampleInputAsync(client);
@@ -110,13 +111,8 @@ public sealed class LabEndpointsTests
         var result = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         Assert.True(result.GetProperty("score").GetInt32() < 0);
         var issues = result.GetProperty("issues").EnumerateArray().ToList();
-        static bool About(JsonElement issue, string code, string memberId) =>
-            issue.GetProperty("code").GetString() == code
-            && issue.GetProperty("memberIds").EnumerateArray().Select(id => id.GetString()).SequenceEqual([memberId]);
-        var run = Assert.Single(issues, issue => About(issue, "issue.consecutive_shifts", "p1"));
-        Assert.Equal("28", run.GetProperty("parameters").GetProperty("count").GetString());
-        Assert.Equal(14, issues.Count(issue => About(issue, "issue.double_shift", "p1")));
-        Assert.Single(issues, issue => About(issue, "issue.over_hours", "p1"));
+        Assert.DoesNotContain(issues, issue => issue.GetProperty("hardRule").GetBoolean());
+        Assert.DoesNotContain(issues, issue => issue.GetProperty("code").GetString() == "issue.consecutive_shifts");
         Assert.Contains(issues, issue => issue.GetProperty("code").GetString() == "issue.under_hours");
     }
 

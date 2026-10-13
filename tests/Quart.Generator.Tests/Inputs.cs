@@ -20,8 +20,10 @@ internal static class Inputs
         IReadOnlyList<MemberAvailability> availability,
         IReadOnlyList<Assignment>? locked = null,
         IReadOnlyList<ConflictPair>? conflicts = null,
-        int seed = 1) =>
-        new(shifts, members, availability, locked ?? [], conflicts ?? [], Rules, seed);
+        int seed = 1,
+        IReadOnlyList<BusyTime>? busy = null,
+        GeneratorRules? rules = null) =>
+        new(shifts, members, availability, busy ?? [], locked ?? [], conflicts ?? [], rules ?? Rules, seed);
 
     /// <summary>Monday and Tuesday, an opening and a closing each, two people per shift.</summary>
     public static GeneratorShift[] TwoDays { get; } =

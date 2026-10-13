@@ -188,6 +188,27 @@
           }
         }
       },
+      "BusyTime": {
+        "required": [
+          "memberId",
+          "start",
+          "end"
+        ],
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "ConflictPair": {
         "required": [
           "blockId",
@@ -212,6 +233,7 @@
           "shifts",
           "members",
           "availability",
+          "busyTimes",
           "lockedAssignments",
           "conflictPairs",
           "rules",
@@ -235,6 +257,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MemberAvailability"
+            }
+          },
+          "busyTimes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BusyTime"
             }
           },
           "lockedAssignments": {
@@ -287,6 +315,9 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "hardRule": {
+            "type": "boolean"
           }
         }
       },

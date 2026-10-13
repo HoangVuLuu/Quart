@@ -76,6 +76,13 @@ export interface components {
       shiftId: string;
       memberId: string;
     };
+    BusyTime: {
+      memberId: string;
+      /** Format: date-time */
+      start: string;
+      /** Format: date-time */
+      end: string;
+    };
     ConflictPair: {
       blockId: string;
       memberA: string;
@@ -85,6 +92,7 @@ export interface components {
       shifts: components['schemas']['GeneratorShift'][];
       members: components['schemas']['GeneratorMember'][];
       availability: components['schemas']['MemberAvailability'][];
+      busyTimes: components['schemas']['BusyTime'][];
       lockedAssignments: components['schemas']['Assignment'][];
       conflictPairs: components['schemas']['ConflictPair'][];
       rules: components['schemas']['GeneratorRules'];
@@ -98,6 +106,7 @@ export interface components {
       parameters: {
         [key: string]: string;
       };
+      hardRule?: boolean;
     };
     GeneratorMember: {
       id: string;

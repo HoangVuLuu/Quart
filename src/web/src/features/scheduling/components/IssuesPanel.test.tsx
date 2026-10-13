@@ -30,6 +30,13 @@ const issues: ScheduleIssue[] = [
     memberIds: [],
     parameters: { level: '3', required: '1', present: '0' },
   },
+  {
+    code: 'issue.overlapping_shifts',
+    shiftIds: ['wed-open', 'wed-close'],
+    memberIds: ['p2'],
+    parameters: {},
+    hardRule: true,
+  },
   { code: 'issue.under_hours', shiftIds: [], memberIds: ['p2'], parameters: { hours: '13.5', target: '20' } },
   {
     code: 'issue.double_shift',
@@ -61,11 +68,12 @@ describe('IssuesPanel', () => {
   it('groups issues by type with a count each, in the order of FR-143', () => {
     renderPanel();
 
-    expect(screen.getByText('5 issues')).toBeInTheDocument();
+    expect(screen.getByText('6 issues')).toBeInTheDocument();
     const groups = screen.getAllByRole('group').map((group) => group.querySelector('summary')?.textContent);
     expect(groups).toEqual([
       `${en.issues.below_headcount.title}11 issue`,
       `${en.issues.missing_level.title}11 issue`,
+      `${en.issues.overlapping_shifts.title}11 issue`,
       `${en.issues.under_hours.title}11 issue`,
       `${en.issues.double_shift.title}22 issues`,
     ]);
@@ -80,6 +88,11 @@ describe('IssuesPanel', () => {
     expect(screen.getByRole('button', { name: 'Wed, Oct 7 · Closing: 1 of 2 people' })).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Wed, Oct 7 · Closing: needs 1 at level 3 or above, has 0' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Sarah G. is on Wed, Oct 7 · Opening and Wed, Oct 7 · Closing, which overlap',
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sarah G.: 13.5 h of 20 h wanted' })).toBeInTheDocument();
     expect(

@@ -60,6 +60,21 @@ public sealed class EvaluatorTests
     }
 
     [Fact]
+    public void Above_headcount_names_the_shift_and_the_count()
+    {
+        // Only a lock or a manual edit can overfill a shift (BR-003, BR-004).
+        var input = Everyone([Week[0]], ThreePeople);
+
+        var issue = Assert.Single(IssuesOf(IssueCodes.AboveHeadcount, input, On("d0-open", "ana"), On("d0-open", "ben"), On("d0-open", "cleo")));
+
+        Assert.Equal(["d0-open"], issue.ShiftIds);
+        Assert.Empty(issue.MemberIds);
+        Assert.Equal("3", issue.Parameters["assigned"]);
+        Assert.Equal("2", issue.Parameters["headcount"]);
+        Assert.True(issue.HardRule);
+    }
+
+    [Fact]
     public void Missing_level_names_the_level_required_and_present()
     {
         var shift = Week[0] with { LevelRequirements = [new LevelRequirement(3, 1)] };
@@ -108,6 +123,20 @@ public sealed class EvaluatorTests
 
         Assert.Equal(["ana"], issue.MemberIds);
         Assert.Empty(IssuesOf(IssueCodes.Unavailable, input, On("d0-open", "ana")));
+    }
+
+    [Theory]
+    [InlineData("2026-10-05T15:00", "2026-10-05T18:00", true)] // overlaps the end of the opening
+    [InlineData("2026-10-04T22:00", "2026-10-05T11:00", true)] // runs past midnight into it
+    [InlineData("2026-10-05T16:00", "2026-10-05T20:00", false)] // starts as the opening ends: half-open
+    [InlineData("2026-10-05T06:00", "2026-10-05T10:00", false)] // ends as it starts
+    public void A_shift_that_overlaps_a_busy_time_at_another_workplace_reads_as_unavailable(string start, string end, bool reported)
+    {
+        // BR-002 across workplaces. The issue reads "not available" and says nothing of where (FR-094).
+        var busy = new BusyTime("ana", DateTime.Parse(start, System.Globalization.CultureInfo.InvariantCulture), DateTime.Parse(end, System.Globalization.CultureInfo.InvariantCulture));
+        var input = Everyone([Week[0]], ThreePeople) with { BusyTimes = [busy] };
+
+        Assert.Equal(reported ? 1 : 0, IssuesOf(IssueCodes.Unavailable, input, On("d0-open", "ana")).Count);
     }
 
     [Theory]
@@ -240,6 +269,29 @@ public sealed class EvaluatorTests
     }
 
     [Fact]
+    public void Two_shifts_that_overlap_in_time_are_reported()
+    {
+        // BR-002. Shift blocks on the same day may overlap (FR-063): an opener and a mid.
+        var mid = Shift("d0-mid", "2026-10-05", "12:00", "18:00", blockId: "mid");
+        var input = Everyone([Week[0], mid, Week[1]], [Member("ana", desired: 12)]);
+
+        var issue = Assert.Single(IssuesOf(IssueCodes.OverlappingShifts, input, On("d0-open", "ana"), On("d0-mid", "ana")));
+
+        Assert.Equal(["d0-open", "d0-mid"], issue.ShiftIds);
+        Assert.Equal(["ana"], issue.MemberIds);
+        Assert.True(issue.HardRule);
+    }
+
+    [Fact]
+    public void Back_to_back_shifts_do_not_overlap()
+    {
+        // The opening ends at 16:00 as the closing starts: ranges are half-open (AD-011).
+        var input = Everyone(Week, [Member("ana", desired: 13)]);
+
+        Assert.Empty(IssuesOf(IssueCodes.OverlappingShifts, input, On("d0-open", "ana"), On("d0-close", "ana")));
+    }
+
+    [Fact]
     public void An_incompatible_pair_on_a_shift_of_their_block_is_reported()
     {
         var input = Everyone(Week, ThreePeople, conflicts: [new ConflictPair("opening", "ana", "ben")]);
@@ -294,6 +346,14 @@ public sealed class EvaluatorTests
             .ToList();
 
         Assert.Equal(IssueCodes.All.Where(codes.Contains), codes);
+    }
+
+    [Fact]
+    public void Only_hard_rule_issues_are_marked_hard()
+    {
+        Assert.Equal(
+            [IssueCodes.AboveHeadcount, IssueCodes.Unavailable, IssueCodes.NotSubmitted, IssueCodes.OverlappingShifts, IssueCodes.ConsecutiveShifts, IssueCodes.IncompatiblePair],
+            IssueCodes.All.Where(code => new GeneratorIssue(code, [], [], new Dictionary<string, string>()).HardRule));
     }
 
     [Fact]
