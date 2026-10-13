@@ -246,9 +246,16 @@ describe('LabPage', () => {
 
   it('shows hours per person as assigned/desired, per week and over the period', async () => {
     const user = userEvent.setup();
+    const under = {
+      code: 'issue.under_hours',
+      shiftIds: [],
+      memberIds: ['p1'],
+      parameters: { hours: '13', target: '20' },
+      hardRule: false,
+    };
     serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: result },
+      '/api/lab/generate': { status: 200, body: { ...result, issues: [...result.issues, under] } },
     });
     renderPage();
 
@@ -261,6 +268,9 @@ describe('LabPage', () => {
         .getAllByRole('cell')
         .map((cell) => cell.textContent),
     ).toEqual(['13/20', `13/20${en.lab.hours.under}`, '1/1', '1/1']);
+    // Diego never sent availability: the evaluator does not report his hours, so neither does the table.
+    const diego = within(table).getByRole('row', { name: /Diego A\./ });
+    expect(within(diego).queryByText(en.lab.hours.under)).not.toBeInTheDocument();
   });
 
   it('shows the score before and after local search (M1-05)', async () => {
@@ -472,6 +482,32 @@ describe('LabPage', () => {
     await user.click(await screen.findByRole('button', { name: en.lab.generate }));
 
     expect(await screen.findByText('No level 3')).toBeInTheDocument();
+  });
+
+  it('keeps a person on a shift with a tap, and generating again sends the lock (M1-07)', async () => {
+    const user = userEvent.setup();
+    const fetch = serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: result },
+    });
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: en.lab.generate }));
+
+    const keep = (await screen.findAllByRole('button', { name: 'Keep Marc-Olivier R. on this shift' }))[0]!;
+    expect(keep).toHaveAttribute('aria-pressed', 'false');
+    await user.click(keep);
+
+    expect(keep).toHaveAttribute('aria-pressed', 'true');
+    expect(within(keep).getByText(en.scheduling.grid.kept)).toBeInTheDocument();
+    expect(screen.getByText('1 person kept')).toBeInTheDocument();
+    expect(screen.queryByText(en.lab.changedSinceRun)).not.toBeInTheDocument();
+
+    vi.spyOn(Math, 'random').mockReturnValue(0.25);
+    await user.click(screen.getByRole('button', { name: en.lab.generateAgain }));
+    expect((await lastPosted(fetch)).lockedAssignments).toEqual([{ shiftId: 'mon-open', memberId: 'p2' }]);
+
+    await user.click(screen.getByRole('button', { name: en.lab.locks.release }));
+    expect(screen.queryByText(en.scheduling.grid.kept)).not.toBeInTheDocument();
   });
 
   it('says so when the lab is off on this server', async () => {

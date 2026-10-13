@@ -2,22 +2,26 @@ import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../../i18n/format';
 import { Card } from '../../ui/Card';
 import { cx } from '../../ui/cx';
+import type { ScheduleIssue } from '../scheduling/components/issues';
 import type { GeneratorInput, MemberSummary } from './useLab';
 
 type HoursTableProps = {
   members: GeneratorInput['members'];
   /** The evaluator's totals per member, from the result (one rulebook, AD-002). */
   summaries: MemberSummary[];
+  /** The evaluator's issues, which say who is under or over their hours. */
+  issues: ScheduleIssue[];
   /** Short names by member id. */
   names: Map<string, string>;
 };
 
 // Hours per person as assigned/desired (M1-04): one column per week, as the shift panel's counter will
-// show them (FR-141), then the period against its target. Off target by more than 2 hours (BR-033) is
-// written in bold with a word, not only a colour (NFR-008). Then openings and closings worked against
+// show them (FR-141), then the period against its target. Someone the evaluator reports under or over
+// (BR-033) is written in bold with a word, not only a colour (NFR-008); the table never judges that
+// itself, so it cannot disagree with the issues list (AD-002). Then openings and closings worked against
 // each person's fair share (M1-05, BR-022), which the evaluator works out. A wide period scrolls inside
 // the card, so the page itself never scrolls sideways at 390 px.
-export function HoursTable({ members, summaries, names }: HoursTableProps) {
+export function HoursTable({ members, summaries, issues, names }: HoursTableProps) {
   const { t, i18n } = useTranslation();
   const number = (value: number) => formatNumber(value, i18n.language);
   const byId = new Map(summaries.map((summary) => [summary.memberId, summary]));
@@ -56,8 +60,11 @@ export function HoursTable({ members, summaries, names }: HoursTableProps) {
             {members.map((member) => {
               const summary = byId.get(member.id);
               if (!summary) return null;
-              const gap = summary.hours - summary.targetHours;
-              const off = Math.abs(gap) > 2;
+              const off = issues.find(
+                (issue) =>
+                  (issue.code === 'issue.under_hours' || issue.code === 'issue.over_hours') &&
+                  issue.memberIds.includes(member.id),
+              );
               return (
                 <tr key={member.id} className="bg-surface-3">
                   <th
@@ -86,7 +93,7 @@ export function HoursTable({ members, summaries, names }: HoursTableProps) {
                     })}
                     {off && (
                       <span className="block text-xs">
-                        {gap < 0 ? t('lab.hours.under') : t('lab.hours.over')}
+                        {off.code === 'issue.under_hours' ? t('lab.hours.under') : t('lab.hours.over')}
                       </span>
                     )}
                   </td>

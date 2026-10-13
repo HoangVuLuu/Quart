@@ -64,6 +64,44 @@ describe('ScheduleGrid', () => {
     expect(screen.queryByRole('region', { name: 'Monday · Oct 5' })).not.toBeInTheDocument();
   });
 
+  it('marks kept people, and with a toggle keeps or releases them with a tap (1l, FR-123)', async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+    const isLocked = (shiftId: string, memberId: string) =>
+      shiftId === 'mon-open' && memberId === 'mon-open-0';
+
+    const { rerender } = render(<ScheduleGrid shifts={twoWeeks} locks={{ isLocked }} />);
+    expect(screen.getByText(en.scheduling.grid.kept)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Keep/ })).not.toBeInTheDocument();
+
+    rerender(<ScheduleGrid shifts={twoWeeks} locks={{ isLocked, onToggle }} />);
+    expect(screen.getByRole('button', { name: 'Keep Marc-Olivier R. on this shift' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(screen.getByRole('button', { name: 'Keep Camille F. on this shift' }));
+    expect(onToggle).toHaveBeenCalledWith('mon-open', 'mon-open-1');
+  });
+
+  it('turns each card into an availability toggle in availability mode (1e)', async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+    render(
+      <ScheduleGrid shifts={twoWeeks} availability={{ isAvailable: (id) => id === 'mon-close', onToggle }} />,
+    );
+
+    expect(screen.getByRole('button', { name: /Closing/, pressed: true })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Opening/, pressed: false }));
+    expect(onToggle).toHaveBeenCalledWith('mon-open');
+    expect(screen.queryByText('Marc-Olivier R.')).not.toBeInTheDocument();
+  });
+
+  it('shows a level a shift is missing, as "No level 3" (1l)', () => {
+    render(<ScheduleGrid shifts={[{ ...twoWeeks[1]!, missingLevels: [3] }]} />);
+
+    expect(screen.getByText('No level 3')).toBeInTheDocument();
+  });
+
   it('has no week tabs for a single week', () => {
     render(<ScheduleGrid shifts={twoWeeks.slice(0, 2)} />);
 
@@ -83,6 +121,21 @@ describe('ScheduleGrid', () => {
   it('has no accessibility problems', async () => {
     const { container } = render(<ScheduleGrid shifts={twoWeeks} />);
 
+    expect(await accessibilityProblems(container)).toEqual([]);
+  });
+
+  it('has no accessibility problems with people to keep, or as availability toggles', async () => {
+    const { container, rerender } = render(
+      <ScheduleGrid shifts={twoWeeks} locks={{ isLocked: () => true, onToggle: () => undefined }} />,
+    );
+    expect(await accessibilityProblems(container)).toEqual([]);
+
+    rerender(
+      <ScheduleGrid
+        shifts={twoWeeks}
+        availability={{ isAvailable: () => false, onToggle: () => undefined }}
+      />,
+    );
     expect(await accessibilityProblems(container)).toEqual([]);
   });
 

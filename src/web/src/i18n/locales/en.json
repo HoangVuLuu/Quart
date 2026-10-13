@@ -184,6 +184,8 @@
       "fill": "{{filled}} of {{headcount}} people",
       "open": "Open place",
       "missingLevel": "No level {{level}}",
+      "kept": "Kept",
+      "keep": "Keep {{name}} on this shift",
       "highlighted": "Concerned by the selected issue"
     }
   },
@@ -318,6 +320,12 @@
           "too_many_shifts": "more than 600 shifts"
         }
       }
+    },
+    "locks": {
+      "hint": "Tap someone to keep them on that shift. Kept people stay put when you generate again.",
+      "count_one": "{{count}} person kept",
+      "count_other": "{{count}} people kept",
+      "release": "Release all"
     }
   },
   "issues": {

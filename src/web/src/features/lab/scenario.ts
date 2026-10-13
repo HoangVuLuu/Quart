@@ -118,6 +118,26 @@ function setShifts(scenario: LabScenario, id: string, change: (shiftIds: string[
   });
 }
 
+export function isLocked(scenario: LabScenario, shiftId: string, memberId: string): boolean {
+  return scenario.input.lockedAssignments.some(
+    (lock) => lock.shiftId === shiftId && lock.memberId === memberId,
+  );
+}
+
+/** Keeps someone on a shift for the next generations, or releases them (FR-123, BR-004). */
+export function toggleLock(scenario: LabScenario, shiftId: string, memberId: string): LabScenario {
+  const locks = scenario.input.lockedAssignments;
+  return withInput(scenario, {
+    lockedAssignments: isLocked(scenario, shiftId, memberId)
+      ? locks.filter((lock) => lock.shiftId !== shiftId || lock.memberId !== memberId)
+      : [...locks, { shiftId, memberId }],
+  });
+}
+
+export function releaseLocks(scenario: LabScenario): LabScenario {
+  return withInput(scenario, { lockedAssignments: [] });
+}
+
 /** 1 to 4 shifts in a row, or null for no limit (BR-005). */
 export function setMaxConsecutive(scenario: LabScenario, max: number | null): LabScenario {
   return withInput(scenario, { rules: { ...scenario.input.rules, maxConsecutiveShifts: max } });

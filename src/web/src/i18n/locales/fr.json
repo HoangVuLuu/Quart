@@ -184,6 +184,8 @@
       "fill": "{{filled}} sur {{headcount}} personnes",
       "open": "Place libre",
       "missingLevel": "Pas de niveau {{level}}",
+      "kept": "Gardé",
+      "keep": "Garder {{name}} sur ce quart",
       "highlighted": "Concerné par le problème choisi"
     }
   },
@@ -318,6 +320,12 @@
           "too_many_shifts": "plus de 600 quarts"
         }
       }
+    },
+    "locks": {
+      "hint": "Touche quelqu’un pour le garder sur ce quart. Les personnes gardées restent en place quand tu génères à nouveau.",
+      "count_one": "{{count}} personne gardée",
+      "count_other": "{{count}} personnes gardées",
+      "release": "Tout libérer"
     }
   },
   "issues": {

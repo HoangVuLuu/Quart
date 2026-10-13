@@ -18,6 +18,7 @@ import { AvailabilityEditor } from './AvailabilityEditor';
 import { HoursTable } from './HoursTable';
 import { gridShifts, namesOf, periodOf } from './lab';
 import { PeopleEditor } from './PeopleEditor';
+import { isLocked, releaseLocks, toggleLock } from './scenario';
 import { RulesEditor } from './RulesEditor';
 import { ScenarioFile } from './ScenarioFile';
 import { SeedControls } from './SeedControls';
@@ -131,8 +132,27 @@ function Lab({ sample }: { sample: LabScenario }) {
         </Tabs.List>
 
         <Tabs.Content value="schedule" className="flex flex-col gap-4">
-          <ScheduleGrid shifts={shifts} periodStart={periodOf(shown)?.start} highlight={selected} />
-          {result && <HoursTable members={shown.input.members} summaries={result.members} names={names} />}
+          {result && <Locks scenario={scenario} onChange={setScenario} />}
+          <ScheduleGrid
+            shifts={shifts}
+            periodStart={periodOf(shown)?.start}
+            highlight={selected}
+            // Locks belong to the scenario, so the next Generate keeps them (M1-07).
+            locks={{
+              isLocked: (shiftId, memberId) => isLocked(scenario, shiftId, memberId),
+              onToggle: result
+                ? (shiftId, memberId) => setScenario(toggleLock(scenario, shiftId, memberId))
+                : undefined,
+            }}
+          />
+          {result && (
+            <HoursTable
+              members={shown.input.members}
+              summaries={result.members}
+              issues={result.issues}
+              names={names}
+            />
+          )}
           {result && (
             <IssuesPanel
               issues={result.issues}
@@ -152,6 +172,26 @@ function Lab({ sample }: { sample: LabScenario }) {
         </Tabs.Content>
       </Tabs.Root>
     </>
+  );
+}
+
+// How to keep someone, and how many are kept (M1-07), as the hint above the draft grid in 1l.
+function Locks({ scenario, onChange }: { scenario: LabScenario; onChange: (scenario: LabScenario) => void }) {
+  const { t } = useTranslation();
+  const count = scenario.input.lockedAssignments.length;
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <p className="flex-1 text-sm text-muted">
+        {t('lab.locks.hint')}
+        {count > 0 && <span className="font-bold text-ink"> {t('lab.locks.count', { count })}</span>}
+      </p>
+      {count > 0 && (
+        <Button variant="white" className="min-h-11 px-4" onClick={() => onChange(releaseLocks(scenario))}>
+          {t('lab.locks.release')}
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -222,10 +262,10 @@ function Summary({
   );
 }
 
-// The seed is not part of the scenario: a new seed alone does not make the result stale.
+// Neither the seed nor the locks describe the scenario: keeping someone already on the shown result,
+// or picking a new seed, does not make that result stale.
 function sameInput(a: LabScenario, b: LabScenario): boolean {
-  return (
-    JSON.stringify({ ...a, input: { ...a.input, seed: 0 } }) ===
-    JSON.stringify({ ...b, input: { ...b.input, seed: 0 } })
-  );
+  const comparable = (s: LabScenario) =>
+    JSON.stringify({ ...s, input: { ...s.input, seed: 0, lockedAssignments: [] } });
+  return comparable(a) === comparable(b);
 }

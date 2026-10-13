@@ -223,6 +223,24 @@ public sealed class EvaluatorTests
     }
 
     [Fact]
+    public void Hours_are_scored_against_the_target_of_each_week()
+    {
+        // BR-012: ana wants 6 hours a week. One 12-hour fortnight split 6 + 6 is perfect; 12 + 0 is the
+        // same total but 12 hours away (6 over, then 6 under), and nothing is reported over the period.
+        var nextMonday = Shift("next-mon", "2026-10-12");
+        var input = Everyone([.. Week, nextMonday], [Member("ana", desired: 6)]) with
+        {
+            Rules = Rules with { MaxConsecutiveShifts = null },
+        };
+
+        var even = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("next-mon", "ana")]);
+        var lumped = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d2-open", "ana")]);
+
+        Assert.Equal(12 * Evaluator.HoursWeight, even.Score - lumped.Score);
+        Assert.DoesNotContain(lumped.Issues, issue => issue.Code is IssueCodes.UnderHours or IssueCodes.OverHours);
+    }
+
+    [Fact]
     public void Each_member_is_summed_up_per_week_and_against_the_target()
     {
         var input = Everyone([.. Week, Shift("next-mon", "2026-10-12")], [Member("ana", desired: 10), Member("ben", desired: 4)]);

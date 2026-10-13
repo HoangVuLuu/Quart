@@ -1721,6 +1721,13 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             evaluator reports a week above it as a new issue type. The spec
             had the maximum (BR-032, FR-037) but never said what it does.
             (BR-006, BR-032, FR-143, M1-04)
+2026-10-13  Hours are scored week by week, as BR-012 says ("desired weekly
+            hours"): the evaluator adds up how far each week is from the
+            target, so 13 hours then 27 against 20 a week is no longer a
+            perfect fortnight. Under and over hours are still reported over
+            the whole period (BR-033). Fairness is scored on the square of
+            the distance from each person's fair share, so evening two
+            people out always wins.  (BR-012, BR-013, BR-014, BR-033, M1-05)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

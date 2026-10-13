@@ -6,12 +6,15 @@ import {
   exportScenario,
   hasSubmitted,
   isAvailable,
+  isLocked,
   parseScenario,
+  releaseLocks,
   removePair,
   removePerson,
   setAllAvailability,
   setMaxConsecutive,
   toggleAvailability,
+  toggleLock,
   updatePerson,
 } from './scenario';
 import type { LabScenario } from './useLab';
@@ -112,6 +115,15 @@ describe('scenario editing', () => {
   it('marks every shift or none', () => {
     expect(setAllAvailability(base, 'p1', true).input.availability[0]?.shiftIds).toEqual(['close', 'open']);
     expect(setAllAvailability(base, 'p1', false).input.availability[0]?.shiftIds).toEqual([]);
+  });
+
+  it('keeps someone on a shift, releases them, and releases everyone', () => {
+    const kept = toggleLock(base, 'close', 'p1');
+    expect(isLocked(kept, 'close', 'p1')).toBe(true);
+    expect(kept.input.lockedAssignments).toHaveLength(2);
+
+    expect(isLocked(toggleLock(kept, 'close', 'p1'), 'close', 'p1')).toBe(false);
+    expect(releaseLocks(kept).input.lockedAssignments).toEqual([]);
   });
 
   it('sets the limit of shifts in a row, or none', () => {

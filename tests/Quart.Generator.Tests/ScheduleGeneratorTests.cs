@@ -191,6 +191,78 @@ public sealed class ScheduleGeneratorTests
     }
 
     [Fact]
+    public void Three_locks_on_the_sample_survive_ten_regenerations()
+    {
+        // M1-07's "done when": lock three assignments from a first schedule, then generate again with ten
+        // new seeds. The locks never move; everything else is rebuilt around them (FR-123, BR-004).
+        var first = generator.Generate(Samples.Presotea);
+        var locks = new[] { first.Assignments[0], first.Assignments[17], first.Assignments[40] };
+        var input = Samples.Presotea with { LockedAssignments = locks };
+
+        var schedules = Enumerable.Range(100, 10).Select(seed => generator.Generate(input with { Seed = seed })).ToList();
+
+        Assert.All(schedules, result => Assert.Subset(result.Assignments.ToHashSet(), locks.ToHashSet()));
+        Assert.True(schedules.Select(result => JsonSerializer.Serialize(result.Assignments)).Distinct().Count() > 1);
+    }
+
+    [Fact]
+    public void Locked_hours_count_toward_someones_desired_hours()
+    {
+        // M1-07: ana is locked onto 13 hours, which is all she wants, so the open shift goes to ben.
+        var input = Input(TwoDays, [Member("ana", desired: 13), Member("ben", desired: 6)],
+            [Available("ana", "mon-open", "mon-close", "tue-open"), Available("ben", "tue-open")],
+            locked: [new Assignment("mon-open", "ana"), new Assignment("mon-close", "ana")]);
+        input = input with { Shifts = input.Shifts.Select(shift => shift with { Headcount = 1 }).ToList() };
+
+        var result = generator.Generate(input);
+
+        Assert.Contains(new Assignment("tue-open", "ben"), result.Assignments);
+    }
+
+    [Fact]
+    public void Locked_shifts_count_toward_the_limit_of_shifts_in_a_row()
+    {
+        // BR-005 with a limit of 3: ana is locked onto Monday's two shifts and Tuesday's opening, so she
+        // cannot also close on Tuesday, even though she is the only one available.
+        var locks = new[] { new Assignment("mon-open", "ana"), new Assignment("mon-close", "ana"), new Assignment("tue-open", "ana") };
+        var input = Input(TwoDays, [Member("ana", desired: 40)], [Available("ana", "mon-open", "mon-close", "tue-open", "tue-close")], locked: locks);
+
+        var result = generator.Generate(input);
+
+        Assert.DoesNotContain(new Assignment("tue-close", "ana"), result.Assignments);
+    }
+
+    [Fact]
+    public void A_locked_level_3_meets_the_level_requirement()
+    {
+        // A level 3 locked onto the shift already meets "at least 1 level 3", so the other place goes to
+        // whoever needs the hours, not to a second level 3.
+        var shift = Shift("mon-open") with { LevelRequirements = [new LevelRequirement(3, 1)] };
+        var input = Input([shift], [Member("ana", level: 3, desired: 6), Member("bea", level: 3, desired: 0), Member("cleo", desired: 30)],
+            [Available("ana", "mon-open"), Available("bea", "mon-open"), Available("cleo", "mon-open")],
+            locked: [new Assignment("mon-open", "ana")]);
+
+        var people = generator.Generate(input).Assignments.Select(assignment => assignment.MemberId);
+
+        Assert.Equal(["ana", "cleo"], people);
+    }
+
+    [Fact]
+    public void A_lock_that_breaks_a_rule_is_kept_and_reported()
+    {
+        // M1-07: ben never said he could work Monday morning. The lock stays, and the evaluator says so.
+        var input = Input(TwoDays, ThreePeople, [Available("ana", "mon-open"), Available("ben", "tue-open")],
+            locked: [new Assignment("mon-open", "ben")]);
+
+        var result = generator.Generate(input);
+
+        Assert.Contains(new Assignment("mon-open", "ben"), result.Assignments);
+        var issue = Assert.Single(result.Issues, issue => issue.HardRule);
+        Assert.Equal(IssueCodes.Unavailable, issue.Code);
+        Assert.Equal(["ben"], issue.MemberIds);
+    }
+
+    [Fact]
     public void Leaves_a_slot_open_rather_than_break_a_hard_rule()
     {
         // FR-125. ana is the only one free on Monday and Tuesday, and the limit is 3 in a row: one of the

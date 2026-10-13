@@ -35,7 +35,11 @@ public static class Evaluator
     /// <summary>Per person missing from a level requirement (BR-011).</summary>
     public const int MissingLevelWeight = 500;
 
-    /// <summary>Per hour away from a person's desired hours over the period, in either direction (BR-012).</summary>
+    /// <summary>
+    /// Per hour away from a person's desired weekly hours, in either direction, counted in each week of
+    /// the period (BR-012): 13 hours then 27 against 20 a week costs 14 hours, even though the period's
+    /// 40 is right. Under and over hours are still reported over the whole period (BR-033).
+    /// </summary>
     public const int HoursWeight = 10;
 
     /// <summary>
@@ -200,10 +204,17 @@ public static class Evaluator
                 continue;
             }
 
-            var hours = context.ShiftsOf(member.Id).Sum(HardRules.Hours);
+            var weekly = new decimal[context.Weeks];
+            foreach (var shift in context.ShiftsOf(member.Id))
+            {
+                weekly[context.WeekOf(shift)] += HardRules.Hours(shift);
+            }
+            var distance = weekly.Sum(hours => Math.Abs(hours - member.DesiredWeeklyHours));
+            penalty += (long)Math.Round(distance * HoursWeight, MidpointRounding.AwayFromZero);
+
+            var hours = weekly.Sum();
             var target = member.DesiredWeeklyHours * context.Weeks;
             var gap = hours - target;
-            penalty += (long)Math.Round(Math.Abs(gap) * HoursWeight, MidpointRounding.AwayFromZero);
             if (Math.Abs(gap) > HoursTolerance)
             {
                 issues?.Add(Issue(gap < 0 ? IssueCodes.UnderHours : IssueCodes.OverHours, [], [member.Id],
