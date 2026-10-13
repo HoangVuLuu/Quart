@@ -14,7 +14,7 @@ import { Skeleton } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
 import { Stepper } from '../../ui/Stepper';
 import { Switch } from '../../ui/Switch';
-import { PasswordField, TextField } from '../../ui/TextField';
+import { PasswordField, TextArea, TextField } from '../../ui/TextField';
 import { useToast } from '../../ui/toast-context';
 
 type Theme = 'device' | 'light' | 'dark';
@@ -99,6 +99,11 @@ export function UiGalleryPage() {
             autoComplete="email"
           />
           <PasswordField label={t('gallery.fields.password')} />
+          <TextArea
+            label={t('gallery.fields.note')}
+            placeholder={t('gallery.fields.notePlaceholder')}
+            rows={3}
+          />
           <Select label={t('gallery.fields.shift')} defaultValue="all">
             <option value="all">{t('gallery.fields.shiftAll')}</option>
             <option value="opening">{t('gallery.fields.shiftOpening')}</option>

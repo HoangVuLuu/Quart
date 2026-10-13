@@ -9,13 +9,18 @@ namespace Quart.Generator.Tests;
 /// </summary>
 public sealed class HardRulePropertyTests
 {
-    private static readonly NaiveGenerator Generator = new();
+    private static readonly ScheduleGenerator Generator = new();
 
     [Fact]
     public void Generated_schedules_never_break_a_hard_rule() =>
         RandomInputs.Any.Sample(
-            input => AssertKeepsHardRules(input, Generator.Generate(input).Assignments),
-            iter: 10_000,
+            input =>
+            {
+                var result = Generator.Generate(input);
+                AssertKeepsHardRules(input, result.Assignments);
+                Assert.True(result.Score >= result.ConstructionScore, "local search made the schedule worse"); // M1-05
+            },
+            iter: 2_000, // the whole generator, local search included, on inputs up to several times Presotea's size
             print: RandomInputs.Json,
             writeLine: TestContext.Current.TestOutputHelper!.WriteLine);
 

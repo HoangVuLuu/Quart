@@ -38,6 +38,13 @@ public static class IssueCodes
     /// <summary>Someone more than 2 hours over their desired hours over the period (BR-033). Parameters: <c>hours</c>, <c>target</c>.</summary>
     public const string OverHours = "issue.over_hours";
 
+    /// <summary>
+    /// More hours in one week than the maximum an admin set for the person (BR-006). Only a lock or a
+    /// manual edit can do this. The shift ids are that week's shifts of the person. Parameters: <c>week</c>
+    /// (1 for the period's first week), <c>hours</c>, <c>max</c>.
+    /// </summary>
+    public const string OverMaxHours = "issue.over_max_hours";
+
     /// <summary>More shifts in a row than the workplace allows (BR-005). Parameters: <c>count</c>, <c>max</c>.</summary>
     public const string ConsecutiveShifts = "issue.consecutive_shifts";
 
@@ -51,7 +58,7 @@ public static class IssueCodes
     public static IReadOnlyList<string> All { get; } =
     [
         BelowHeadcount, AboveHeadcount, MissingLevel, Unavailable, NotSubmitted, OverlappingShifts, UnderHours, OverHours,
-        ConsecutiveShifts, DoubleShift, IncompatiblePair,
+        OverMaxHours, ConsecutiveShifts, DoubleShift, IncompatiblePair,
     ];
 
     /// <summary>
@@ -60,6 +67,6 @@ public static class IssueCodes
     /// </summary>
     public static IReadOnlySet<string> HardRules { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
-        AboveHeadcount, Unavailable, NotSubmitted, OverlappingShifts, ConsecutiveShifts, IncompatiblePair,
+        AboveHeadcount, Unavailable, NotSubmitted, OverlappingShifts, OverMaxHours, ConsecutiveShifts, IncompatiblePair,
     };
 }

@@ -1,7 +1,7 @@
 namespace Quart.Generator;
 
 /// <summary>
-/// The hard rules (spec 7.3, BR-036) as the one question every phase of every generator asks before it
+/// The hard rules (spec 7.3, BR-006, BR-036) as the one question every phase of every generator asks before it
 /// places someone: can this person go on this shift, given everything placed so far? It holds the
 /// schedule being built, which starts as the locked assignments, so every answer counts the locks too.
 /// Greedy construction and local search (M1-04, M1-05) place and remove people only through it, so no
@@ -21,6 +21,12 @@ public sealed class CandidateFilter
     private readonly Dictionary<(string BlockId, string MemberId), List<string>> partners = [];
     private readonly Dictionary<string, List<string>> onShift;
     private readonly Dictionary<string, List<GeneratorShift>> shiftsOf;
+    private readonly Dictionary<string, GeneratorMember> memberById;
+    private readonly Dictionary<string, decimal[]> weekHours;
+    // Per member, how many shifts they have on each day (by day number), kept up to date as people are
+    // placed and removed: the consecutive-shift check and the double check ask it on every candidate.
+    private readonly Dictionary<string, Dictionary<int, int>> perDay;
+    private readonly DateOnly firstDay;
 
     /// <summary>Starts from the input's locked assignments, placed as they are (BR-004).</summary>
     /// <param name="input">A valid input: generators check it with <see cref="GeneratorInputValidator"/> first.</param>
@@ -30,6 +36,11 @@ public sealed class CandidateFilter
         this.input = input;
         shifts = input.Shifts.ToDictionary(shift => shift.Id, StringComparer.Ordinal);
         members = input.Members.Select(member => member.Id).ToHashSet(StringComparer.Ordinal);
+        memberById = input.Members.ToDictionary(member => member.Id, StringComparer.Ordinal);
+        firstDay = HardRules.FirstDay(input);
+        var weeks = HardRules.Weeks(input);
+        weekHours = input.Members.ToDictionary(member => member.Id, _ => new decimal[weeks], StringComparer.Ordinal);
+        perDay = input.Members.ToDictionary(member => member.Id, _ => new Dictionary<int, int>(), StringComparer.Ordinal);
         available = HardRules.Available(input);
         locked = input.LockedAssignments.Select(assignment => (assignment.ShiftId, assignment.MemberId)).ToHashSet();
         foreach (var pair in input.ConflictPairs)
@@ -56,6 +67,21 @@ public sealed class CandidateFilter
     /// <summary>True when <paramref name="memberId"/> is on <paramref name="shiftId"/> so far, locked or placed.</summary>
     public bool IsAssigned(string shiftId, string memberId) => onShift.TryGetValue(shiftId, out var people) && people.Contains(memberId);
 
+    /// <summary>The people on the shift so far, locks first, in the order they were placed.</summary>
+    public IReadOnlyList<string> On(string shiftId) => onShift.TryGetValue(shiftId, out var people) ? people : throw UnknownShift(shiftId);
+
+    /// <summary>The member's hours so far over the whole period, locks included (BR-031).</summary>
+    public decimal Hours(string memberId) => weekHours[memberId].Sum();
+
+    /// <summary>The member's hours so far in one week of the period (0 is the first), locks included.</summary>
+    public decimal WeekHours(string memberId, int week) => weekHours[memberId][week];
+
+    /// <summary>Which week of the period the shift falls in: 0 for the first seven days.</summary>
+    public int WeekOf(string shiftId) => HardRules.Week(Shift(shiftId), firstDay);
+
+    /// <summary>True when the member already has a shift on that date, for avoiding doubles (BR-015).</summary>
+    public bool WorksOn(string memberId, DateOnly date) => perDay[memberId].ContainsKey(date.DayNumber);
+
     /// <summary>True when the assignment is one of the input's locks, which nothing may remove (BR-004).</summary>
     public bool IsLocked(string shiftId, string memberId) => locked.Contains((shiftId, memberId));
 
@@ -78,6 +104,7 @@ public sealed class CandidateFilter
             && available.Contains((memberId, shiftId)) // BR-001, and BR-002 across workplaces
             && !shiftsOf[memberId].Any(other => HardRules.Overlap(shift, other)) // BR-002 in this workplace
             && !(partners.TryGetValue((shift.BlockId, memberId), out var them) && people.Any(them.Contains)) // BR-036
+            && WithinMaxHours(shift, memberId) // BR-006
             && WithinConsecutiveLimit(shift, memberId); // BR-005
     }
 
@@ -106,7 +133,18 @@ public sealed class CandidateFilter
             throw new InvalidOperationException($"{memberId} is not on {shiftId}.");
         }
         shiftsOf[memberId].Remove(shift);
+        weekHours[memberId][HardRules.Week(shift, firstDay)] -= HardRules.Hours(shift);
+        var days = perDay[memberId];
+        if (--days[shift.Date.DayNumber] == 0)
+        {
+            days.Remove(shift.Date.DayNumber);
+        }
     }
+
+    /// <summary>BR-006: never above the member's maximum hours in any week of the period, when an admin set one.</summary>
+    private bool WithinMaxHours(GeneratorShift shift, string memberId) =>
+        memberById[memberId].MaxWeeklyHours is not decimal max
+        || weekHours[memberId][HardRules.Week(shift, firstDay)] + HardRules.Hours(shift) <= max;
 
     /// <summary>
     /// BR-005: every shift counts as one, whatever its day, and a day without any of the person's
@@ -120,13 +158,13 @@ public sealed class CandidateFilter
             return true;
         }
 
-        var perDay = shiftsOf[memberId].GroupBy(other => other.Date.DayNumber).ToDictionary(day => day.Key, day => day.Count());
-        var run = 1 + perDay.GetValueOrDefault(shift.Date.DayNumber);
-        for (var day = shift.Date.DayNumber - 1; perDay.TryGetValue(day, out var count); day--)
+        var days = perDay[memberId];
+        var run = 1 + days.GetValueOrDefault(shift.Date.DayNumber);
+        for (var day = shift.Date.DayNumber - 1; days.TryGetValue(day, out var count); day--)
         {
             run += count;
         }
-        for (var day = shift.Date.DayNumber + 1; perDay.TryGetValue(day, out var count); day++)
+        for (var day = shift.Date.DayNumber + 1; days.TryGetValue(day, out var count); day++)
         {
             run += count;
         }
@@ -137,12 +175,16 @@ public sealed class CandidateFilter
     {
         onShift[shift.Id].Add(memberId);
         shiftsOf[memberId].Add(shift);
+        weekHours[memberId][HardRules.Week(shift, firstDay)] += HardRules.Hours(shift);
+        var days = perDay[memberId];
+        days[shift.Date.DayNumber] = days.GetValueOrDefault(shift.Date.DayNumber) + 1;
     }
 
     private GeneratorShift Shift(string shiftId) =>
-        shifts.TryGetValue(shiftId, out var shift)
-            ? shift
-            : throw new ArgumentException($"The shift '{shiftId}' is not in the input.", nameof(shiftId));
+        shifts.TryGetValue(shiftId, out var shift) ? shift : throw UnknownShift(shiftId);
+
+    private static ArgumentException UnknownShift(string shiftId) =>
+        new($"The shift '{shiftId}' is not in the input.", nameof(shiftId));
 
     private List<string> Partners(string blockId, string memberId)
     {

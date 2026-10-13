@@ -116,6 +116,8 @@
       "email": "Courriel",
       "emailError": "Ce courriel n’est pas valide.",
       "password": "Mot de passe",
+      "note": "Note pour la gestion",
+      "notePlaceholder": "p. ex. Examens du 12 au 16 oct., soirs seulement cette semaine",
       "shift": "Quart",
       "shiftAll": "Tous les quarts",
       "shiftOpening": "Ouvertures",
@@ -181,6 +183,9 @@
       "noShifts": "Aucun quart",
       "fill": "{{filled}} sur {{headcount}} personnes",
       "open": "Place libre",
+      "missingLevel": "Pas de niveau {{level}}",
+      "kept": "Gardé",
+      "keep": "Garder {{name}} sur ce quart",
       "highlighted": "Concerné par le problème choisi"
     }
   },
@@ -198,14 +203,130 @@
     "notSent": "Pas encore envoyé",
     "generate": "Générer",
     "generating": "Génération…",
-    "naiveHint": "Pour l’instant, le générateur est naïf : la première personne disponible qui n’enfreint aucune règle stricte gagne.",
+    "generateAgain": "Générer à nouveau",
+    "seedLabel": "Graine",
+    "seedInvalid": "Un nombre entier, s’il te plaît.",
+    "seedHint": "La même graine donne toujours le même horaire. Générer à nouveau essaie une nouvelle graine.",
     "filled": "{{filled}} places remplies sur {{slots}}",
     "hardRules_one": "Règles strictes : {{count}} infraction",
     "hardRules_other": "Règles strictes : {{count}} infractions",
     "hardRulesHint": "Le générateur n’en enfreint jamais : il laisse plutôt une place libre. Seul un verrou peut en enfreindre une.",
     "seed": "Graine nº {{seed}}",
+    "changedSinceRun": "Le scénario a changé depuis ce résultat. Génère à nouveau pour le voir.",
     "score": "Score : {{score}}",
-    "scoreHint": "0, c’est parfait. Chaque problème enlève des points."
+    "scoreBefore": "Avant la recherche locale : {{score}}",
+    "scoreHint": "0, c’est parfait. Chaque problème enlève des points.",
+    "hours": {
+      "title": "Heures et équité par personne",
+      "hint": "Heures données / voulues, par semaine et sur la période. Ouvertures et fermetures faites / part équitable, selon ce pour quoi chaque personne est disponible.",
+      "person": "Personne",
+      "period": "Période",
+      "cell": "{{hours}}/{{desired}}",
+      "under": "en dessous",
+      "over": "au-dessus",
+      "openings": "Ouvertures",
+      "closings": "Fermetures",
+      "fairCell": "{{actual}}/{{expected}}"
+    },
+    "rules": {
+      "title": "Règles",
+      "openingFairness": "Répartir les ouvertures équitablement",
+      "closingFairness": "Répartir les fermetures équitablement",
+      "fairnessHint": "En proportion de ce pour quoi chaque personne est disponible.",
+      "maxInARow": "Maximum de quarts d’affilée",
+      "maxHint": "Le plus de quarts qu’une personne peut faire à la suite.",
+      "noLimit": "Aucune limite",
+      "pairs": "Ne peuvent pas travailler ensemble",
+      "pairsHint": "Le générateur ne les met jamais sur le même quart de ce bloc.",
+      "pairLine": "{{first}} ne peut pas travailler avec {{second}}",
+      "noPairs": "Aucune paire pour l’instant.",
+      "first": "Personne",
+      "second": "Ne peut pas travailler avec",
+      "block": "Sur",
+      "allBlocks": "Tous les quarts",
+      "addPair": "Ajouter la paire",
+      "removePair": "Retirer {{first}} et {{second}}"
+    },
+    "tabs": {
+      "schedule": "Horaire",
+      "scenario": "Scénario",
+      "label": "Sections du labo"
+    },
+    "team": {
+      "title": "Personnes",
+      "hint": "Les niveaux, les heures et qui a envoyé ses dispos nourrissent le générateur.",
+      "add": "Ajouter une personne",
+      "newName": "Nouvelle personne",
+      "line": "Niveau {{level}} · {{desired}} h par semaine",
+      "lineMax": "Niveau {{level}} · {{desired}} h par semaine, au plus {{max}}",
+      "notSent": "Pas envoyé",
+      "edit": "Modifier",
+      "editLabel": "Modifier {{name}}",
+      "full": "Le labo accepte au plus {{max}} personnes.",
+      "sheetTitle": "Modifier la personne",
+      "name": "Nom",
+      "nameRequired": "Un nom, s’il te plaît.",
+      "levelGroup": "Niveau",
+      "desired": "Heures voulues par semaine",
+      "max": "Maximum d’heures par semaine",
+      "maxHint": "Laisse vide pour aucun maximum. Le générateur ne le dépasse jamais.",
+      "hoursInvalid": "Entre 0 et 168 heures.",
+      "submitted": "A envoyé ses dispos",
+      "submittedHint": "Sinon, le générateur ne la place jamais.",
+      "save": "Enregistrer",
+      "remove": "Retirer cette personne"
+    },
+    "availability": {
+      "title": "Disponibilités",
+      "person": "Les dispos de",
+      "hint": "Touche les quarts qu’elle peut faire.",
+      "all": "Tout cocher",
+      "none": "Tout effacer",
+      "notSent": "{{name}} n’a pas envoyé ses dispos : le générateur ne la place jamais.",
+      "count_one": "{{count}} quart coché",
+      "count_other": "{{count}} quarts cochés"
+    },
+    "file": {
+      "title": "Importer et exporter",
+      "hint": "Exporter télécharge ce scénario en JSON. Importer lit le même format, ou un contre-exemple affiché par les tests de propriétés.",
+      "export": "Exporter en JSON",
+      "paste": "Colle le JSON",
+      "import": "Importer",
+      "chooseFile": "Importer un fichier",
+      "imported": "« {{name}} » importé.",
+      "importedName": "Scénario importé",
+      "reset": "Revenir à l’exemple",
+      "invalid_json": "Ce n’est pas du JSON valide.",
+      "not_a_scenario": "Ce JSON n’est ni un scénario du labo ni une entrée du générateur."
+    },
+    "validation": {
+      "title": "Le scénario a des problèmes",
+      "item": "{{where}} : {{problem}}",
+      "unknown": "problème {{code}}",
+      "codes": {
+        "generator": {
+          "required": "manquant",
+          "duplicate": "en double",
+          "unknown_shift": "quart inconnu",
+          "unknown_member": "personne inconnue",
+          "unknown_block": "bloc de quart inconnu",
+          "out_of_range": "hors limites",
+          "end_not_after_start": "finit avant de commencer",
+          "same_member": "la même personne deux fois"
+        },
+        "lab": {
+          "too_many_people": "plus de 60 personnes",
+          "too_many_weeks": "plus de 8 semaines",
+          "too_many_shifts": "plus de 600 quarts"
+        }
+      }
+    },
+    "locks": {
+      "hint": "Touche quelqu’un pour le garder sur ce quart. Les personnes gardées restent en place quand tu génères à nouveau.",
+      "count_one": "{{count}} personne gardée",
+      "count_other": "{{count}} personnes gardées",
+      "release": "Tout libérer"
+    }
   },
   "issues": {
     "title": "Problèmes",
@@ -244,6 +365,10 @@
     "over_hours": {
       "title": "Au-dessus des heures voulues",
       "item": "{{person}} : {{hours}} h sur {{target}} h voulues"
+    },
+    "over_max_hours": {
+      "title": "Au-delà de leur maximum d’heures",
+      "item": "{{person}} : {{hours}} h la semaine {{week}} (maximum {{max}} h)"
     },
     "consecutive_shifts": {
       "title": "Trop de quarts d’affilée",

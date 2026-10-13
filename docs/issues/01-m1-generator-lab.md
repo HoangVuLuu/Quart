@@ -81,7 +81,7 @@ spec: BR-001, BR-002, BR-003, BR-004, BR-005, BR-036, FR-125, AD-005, NFR-014
 ## M1-04 · Greedy construction: scarcity first, level first, hours-aware, seeded
 labels: type:feature, stack:full, area:generator, size:M
 depends: M1-03
-spec: AD-004, BR-010, BR-011, BR-012, FR-122
+spec: AD-004, BR-006, BR-010, BR-011, BR-012, FR-122
 
 **Goal.** A good first schedule, reproducible from its seed.
 
@@ -91,6 +91,7 @@ spec: AD-004, BR-010, BR-011, BR-012, FR-122
 - [ ] Order shifts by scarcity (fewest available candidates first), with small jitter from `SeededRandom`.
 - [ ] For each shift, satisfy level requirements first, then fill the remaining slots. Score candidates by distance from their desired hours, and break ties randomly among the top few.
 - [ ] All randomness flows from the single seed; `GeneratorResult` returns it.
+- [ ] Never above a person's maximum weekly hours (BR-006, added 2026-10-13), checked in the one candidate filter and reported by the evaluator.
 
 **Tests**
 - [ ] The same input and seed give identical output, compared byte for byte as JSON.
@@ -109,7 +110,7 @@ spec: AD-004, BR-013, BR-014, BR-015, BR-020, BR-021, BR-022, BR-023
 **You will see.** The score before and after local search, opening and closing fairness toggles, and per person: openings and closings actual against expected.
 
 **Backend**
-- [ ] Local search: repeatedly try substituting one person for another, and keep any change that improves the evaluator score. Hard rules are re-checked before each change is applied. Bound it by iterations and time.
+- [ ] Local search: repeatedly try substituting one person for another, and keep any change that improves the evaluator score. Hard rules are re-checked before each change is applied. Bound it by a number of iterations, not by time: the generator has no clock (7.2), so a time limit would break "same seed, same schedule" (FR-122). The 2-second budget is M1-08's test.
 - [ ] Fairness is proportional to what each person is available for (BR-022): expected openings = total shifts × share of openings in that person's own availability. Two independent switches (BR-020). No weekend rule (BR-023).
 - [ ] A double shift in one day is used only when nothing else fills the slot (BR-015).
 

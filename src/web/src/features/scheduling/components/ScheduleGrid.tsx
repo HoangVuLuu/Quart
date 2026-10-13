@@ -24,6 +24,26 @@ type ScheduleGridProps = {
   periodStart?: string;
   /** Shifts and people to point at, such as those of a selected issue. The grid turns to their week. */
   highlight?: GridHighlight;
+  /**
+   * Availability mode: every card is a button that marks or unmarks one person's availability for that
+   * shift, as on the availability screen (1e, FR-093). Taps only (NFR-002). People are not shown.
+   */
+  availability?: GridAvailability;
+  /**
+   * Kept (locked) assignments, shown with a lock and "Kept" as in 1l. With onToggle, each person on a
+   * card is a button that keeps or releases them on that shift (FR-123, M1-07).
+   */
+  locks?: GridLocks;
+};
+
+export type GridLocks = {
+  isLocked: (shiftId: string, memberId: string) => boolean;
+  onToggle?: (shiftId: string, memberId: string) => void;
+};
+
+export type GridAvailability = {
+  isAvailable: (shiftId: string) => boolean;
+  onToggle: (shiftId: string) => void;
 };
 
 type Marks = { shifts: Set<string>; memberIds: Set<string> };
@@ -34,7 +54,7 @@ type Marks = { shifts: Set<string>; memberIds: Set<string> };
 // layout classes change, so nothing is rendered twice.
 //
 // Built for reuse: the lab shows it now, and the real schedule screens use it from M5.
-export function ScheduleGrid({ shifts, periodStart, highlight }: ScheduleGridProps) {
+export function ScheduleGrid({ shifts, periodStart, highlight, availability, locks }: ScheduleGridProps) {
   const { t } = useTranslation();
   const weeks = toWeeks(shifts, periodStart);
   const marks: Marks = {
@@ -95,7 +115,7 @@ export function ScheduleGrid({ shifts, periodStart, highlight }: ScheduleGridPro
           className="flex flex-col gap-5 lg:grid lg:grid-cols-7 lg:gap-1.5"
         >
           {week.days.map((day) => (
-            <Day key={day.date} day={day} marks={marks} />
+            <Day key={day.date} day={day} marks={marks} availability={availability} locks={locks} />
           ))}
         </Tabs.Content>
       ))}
@@ -103,7 +123,17 @@ export function ScheduleGrid({ shifts, periodStart, highlight }: ScheduleGridPro
   );
 }
 
-function Day({ day, marks }: { day: GridDay; marks: Marks }) {
+function Day({
+  day,
+  marks,
+  availability,
+  locks,
+}: {
+  day: GridDay;
+  marks: Marks;
+  availability?: GridAvailability;
+  locks?: GridLocks;
+}) {
   const { t, i18n } = useTranslation();
   const headingId = useId();
   const empty = day.shifts.length === 0;
@@ -122,9 +152,13 @@ function Day({ day, marks }: { day: GridDay; marks: Marks }) {
         <p className="px-1 text-sm text-muted">{t('scheduling.grid.noShifts')}</p>
       ) : (
         <ul className="grid grid-cols-2 gap-3 lg:grid-cols-1 lg:gap-2">
-          {day.shifts.map(({ shift, kind }) => (
-            <ShiftCard key={shift.id} shift={shift} kind={kind} marks={marks} />
-          ))}
+          {day.shifts.map(({ shift, kind }) =>
+            availability ? (
+              <AvailabilityCard key={shift.id} shift={shift} kind={kind} availability={availability} />
+            ) : (
+              <ShiftCard key={shift.id} shift={shift} kind={kind} marks={marks} locks={locks} />
+            ),
+          )}
         </ul>
       )}
     </section>
@@ -137,17 +171,28 @@ const fillTones: Record<Fill, string> = {
   over: 'bg-warning-soft text-warning',
 };
 
-function ShiftCard({ shift, kind, marks }: { shift: GridShift; kind: ShiftKind; marks: Marks }) {
+function ShiftCard({
+  shift,
+  kind,
+  marks,
+  locks,
+}: {
+  shift: GridShift;
+  kind: ShiftKind;
+  marks: Marks;
+  locks?: GridLocks;
+}) {
   const { t } = useTranslation();
   const fill = fillOf(shift);
   const marked = marks.shifts.has(shift.id);
   const open = Math.max(0, shift.headcount - shift.people.length);
+  const missing = shift.missingLevels ?? [];
 
   return (
     <li
       className={cx(
         'min-w-0 rounded-card bg-surface p-2.5 shadow-card lg:rounded-field lg:p-2',
-        fill === 'short' && !marked && 'ring-2 ring-danger/50',
+        (fill === 'short' || missing.length > 0) && !marked && 'ring-2 ring-danger/50',
         // A thick outline in the link colour: a change of shape as well as colour (NFR-008).
         marked && 'ring-4 ring-link',
       )}
@@ -185,23 +230,46 @@ function ShiftCard({ shift, kind, marks }: { shift: GridShift; kind: ShiftKind; 
       </div>
       {shift.people.length + open > 0 && (
         <ul className="mt-2 flex flex-col gap-1">
-          {shift.people.map((person) => (
-            <li
-              key={person.id}
-              className={cx(
-                'flex min-w-0 items-center gap-1.5 text-sm lg:gap-1 lg:text-[11px]',
-                marked && marks.memberIds.has(person.id) && 'font-bold text-link underline',
-              )}
-            >
-              <span className="flex-none rounded-pill bg-surface-3 px-1.5 text-[11px] font-bold text-muted lg:px-1 lg:text-[10px]">
-                <span aria-hidden="true">{t('scheduling.levelShort', { level: person.level })}</span>
-                <span className="sr-only">{t('scheduling.level', { level: person.level })}</span>
-              </span>
-              <span className="truncate" title={person.name}>
-                {person.name}
-              </span>
-            </li>
-          ))}
+          {shift.people.map((person) => {
+            const locked = locks?.isLocked(shift.id, person.id) ?? false;
+            const line = (
+              <>
+                <span className="flex-none rounded-pill bg-surface-3 px-1.5 text-[11px] font-bold text-muted lg:px-1 lg:text-[10px]">
+                  <span aria-hidden="true">{t('scheduling.levelShort', { level: person.level })}</span>
+                  <span className="sr-only">{t('scheduling.level', { level: person.level })}</span>
+                </span>
+                <span className="min-w-0 flex-1 truncate text-left" title={person.name}>
+                  {person.name}
+                </span>
+                {locked && <KeptMark />}
+              </>
+            );
+            const toggle = locks?.onToggle;
+            return (
+              <li
+                key={person.id}
+                className={cx(
+                  'flex min-w-0 items-center gap-1.5 text-sm lg:gap-1 lg:text-[11px]',
+                  marked && marks.memberIds.has(person.id) && 'font-bold text-link underline',
+                )}
+              >
+                {toggle ? (
+                  // The name says who; aria-pressed says whether they are kept (NFR-008).
+                  <button
+                    type="button"
+                    aria-pressed={locked}
+                    aria-label={t('scheduling.grid.keep', { name: person.name })}
+                    onClick={() => toggle(shift.id, person.id)}
+                    className="-mx-1 flex min-h-11 min-w-0 flex-1 items-center gap-1.5 rounded-field px-1 hover:bg-surface-3 lg:gap-1"
+                  >
+                    {line}
+                  </button>
+                ) : (
+                  line
+                )}
+              </li>
+            );
+          })}
           {/* A place nobody can fill without breaking a hard rule stays open, and says so (FR-125). */}
           {Array.from({ length: open }, (_, index) => (
             <li
@@ -213,6 +281,71 @@ function ShiftCard({ shift, kind, marks }: { shift: GridShift; kind: ShiftKind; 
           ))}
         </ul>
       )}
+      {/* A level requirement nobody met, as the red card in 1l: words, not only the red ring (NFR-008). */}
+      {missing.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {missing.map((level) => (
+            <span
+              key={level}
+              className="rounded-pill bg-danger-soft px-2 py-0.5 text-xs font-bold text-danger lg:text-[11px]"
+            >
+              {t('scheduling.grid.missingLevel', { level })}
+            </span>
+          ))}
+        </div>
+      )}
+    </li>
+  );
+}
+
+// "Kept", with a padlock, as the draft schedule marks a locked person (1l). In the week view's narrow
+// columns the word would hide the name, so there the padlock stands alone and the word is for screen
+// readers; a shape, not a colour, so the meaning never rests on colour (NFR-008).
+function KeptMark() {
+  const { t } = useTranslation();
+  return (
+    <span className="flex flex-none items-center gap-0.5 text-[10px] font-bold tracking-[0.06em] text-muted uppercase">
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="size-3 fill-none stroke-current stroke-[2.5]">
+        <path d="M6 11h12v10H6ZM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11" />
+      </svg>
+      <span className="lg:sr-only">{t('scheduling.grid.kept')}</span>
+    </span>
+  );
+}
+
+// One shift as a toggle on the availability screen (1e): dark with a tick when marked, pale with a
+// plus when not. The button's name is the shift; aria-pressed says whether it is marked.
+function AvailabilityCard({
+  shift,
+  kind,
+  availability,
+}: {
+  shift: GridShift;
+  kind: ShiftKind;
+  availability: GridAvailability;
+}) {
+  const { t } = useTranslation();
+  const on = availability.isAvailable(shift.id);
+
+  return (
+    <li className="min-w-0">
+      <button
+        type="button"
+        aria-pressed={on}
+        onClick={() => availability.onToggle(shift.id)}
+        className={cx(
+          'flex min-h-14 w-full flex-col items-center justify-center rounded-card px-2 py-2 text-center shadow-press lg:rounded-field lg:px-1',
+          on ? 'bg-ink text-bg' : 'bg-surface-3 text-ink',
+        )}
+      >
+        <span className="text-sm leading-tight font-bold lg:text-xs">
+          <span aria-hidden="true">{on ? '✓ ' : '+ '}</span>
+          {t(`scheduling.kind.${kind}`)}
+        </span>
+        <span className="text-xs whitespace-nowrap lg:text-[11px]">
+          {shortTime(shift.start)}–{shortTime(shift.end)}
+        </span>
+      </button>
     </li>
   );
 }

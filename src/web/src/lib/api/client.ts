@@ -12,13 +12,16 @@ export class ApiError extends Error {
   readonly code: string;
   /** The ID on the server's log line for this request. Shown to the person so a screenshot can be traced. */
   readonly traceId: string | undefined;
+  /** For a validation problem, each thing wrong: a stable code and where, such as `members[3].level`. */
+  readonly errors: { code: string; path: string }[];
 
-  constructor(status: number, code: string, traceId?: string) {
+  constructor(status: number, code: string, traceId?: string, errors: { code: string; path: string }[] = []) {
     super(code);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.traceId = traceId;
+    this.errors = errors;
   }
 }
 
@@ -51,7 +54,14 @@ export async function unwrap<T>(
 
 function toApiError(status: number, body: unknown): ApiError {
   const problem = body as Partial<Schemas['ApiProblem']> | undefined;
-  if (typeof problem?.code === 'string') return new ApiError(status, problem.code, problem.traceId);
+  if (typeof problem?.code === 'string') {
+    return new ApiError(
+      status,
+      problem.code,
+      problem.traceId,
+      Array.isArray(problem.errors) ? problem.errors : [],
+    );
+  }
   return new ApiError(status, status === 404 ? 'common.not_found' : 'common.unexpected');
 }
 

@@ -203,6 +203,33 @@ public sealed class CandidateFilterTests
     }
 
     [Fact]
+    public void Nobody_goes_above_their_maximum_hours_in_a_week()
+    {
+        // BR-006: ana may work 13 hours a week. The opening (6 h) and a closing (7 h) fit; a third shift
+        // that week does not, but the next week starts again from 0.
+        var nextMonday = Shift("next-mon", "2026-10-12");
+        var input = Everyone([.. Week, nextMonday], members: [Member("ana", max: 13), Member("ben")], maxConsecutive: null);
+        var filter = With(input, ("d0-open", "ana"), ("d2-close", "ana"));
+
+        Assert.Equal(13m, filter.WeekHours("ana", 0));
+        Assert.False(filter.CanAssign("d4-open", "ana"));
+        Assert.True(filter.CanAssign("next-mon", "ana"));
+        Assert.True(filter.CanAssign("d4-open", "ben")); // no maximum
+    }
+
+    [Fact]
+    public void Locked_hours_count_toward_the_maximum_and_removing_someone_gives_their_hours_back()
+    {
+        var input = Everyone(Week, members: [Member("ana", max: 13)], locked: [new Assignment("d0-close", "ana")], maxConsecutive: null);
+        var filter = With(input, ("d2-open", "ana"));
+
+        Assert.False(filter.CanAssign("d4-open", "ana"));
+        filter.Unassign("d2-open", "ana");
+        Assert.Equal(7m, filter.Hours("ana"));
+        Assert.True(filter.CanAssign("d4-open", "ana"));
+    }
+
+    [Fact]
     public void A_conflict_pair_is_never_put_on_the_same_shift_of_their_block()
     {
         // BR-036

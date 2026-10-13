@@ -355,7 +355,9 @@
           "assignments",
           "issues",
           "score",
-          "seed"
+          "seed",
+          "members",
+          "constructionScore"
         ],
         "type": "object",
         "properties": {
@@ -376,6 +378,16 @@
             "format": "int32"
           },
           "seed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberSummary"
+            }
+          },
+          "constructionScore": {
             "type": "integer",
             "format": "int32"
           }
@@ -519,6 +531,55 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "MemberSummary": {
+        "required": [
+          "memberId",
+          "hours",
+          "targetHours",
+          "weeklyHours",
+          "openings",
+          "expectedOpenings",
+          "closings",
+          "expectedClosings"
+        ],
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string"
+          },
+          "hours": {
+            "type": "number",
+            "format": "double"
+          },
+          "targetHours": {
+            "type": "number",
+            "format": "double"
+          },
+          "weeklyHours": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          "openings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expectedOpenings": {
+            "type": "number",
+            "format": "double"
+          },
+          "closings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expectedClosings": {
+            "type": "number",
+            "format": "double"
           }
         }
       },

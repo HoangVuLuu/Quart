@@ -89,6 +89,16 @@ public sealed class GeneratorInputValidatorTests
             GeneratorInputValidator.OutOfRange, "members[0].desiredWeeklyHours"
         },
         {
+            "desired hours beyond a week",
+            input => input with { Members = [Member("ana", desired: 169), Member("ben"), Member("cleo")] },
+            GeneratorInputValidator.OutOfRange, "members[0].desiredWeeklyHours"
+        },
+        {
+            "a maximum beyond a week",
+            input => input with { Members = [Member("ana", max: 200), Member("ben"), Member("cleo")] },
+            GeneratorInputValidator.OutOfRange, "members[0].maxWeeklyHours"
+        },
+        {
             "availability for an unknown member",
             input => input with { Availability = [Available("zoe", "mon-open")] },
             GeneratorInputValidator.UnknownMember, "availability[0].memberId"

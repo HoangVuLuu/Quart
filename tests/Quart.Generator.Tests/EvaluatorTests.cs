@@ -196,6 +196,66 @@ public sealed class EvaluatorTests
     }
 
     [Fact]
+    public void A_week_above_someones_maximum_hours_is_reported()
+    {
+        // BR-006: 13 hours in the first week against a maximum of 12. The second week is fine.
+        var input = Everyone(Week, [Member("ana", desired: 6, max: 12)]);
+        var secondWeek = Shift("next-mon", "2026-10-12");
+        input = input with { Shifts = [.. input.Shifts, secondWeek], Availability = [Available("ana", [.. Week.Select(s => s.Id), "next-mon"])] };
+
+        var issue = Assert.Single(IssuesOf(IssueCodes.OverMaxHours, input, On("d0-open", "ana"), On("d1-close", "ana"), On("next-mon", "ana")));
+
+        Assert.Equal(["d0-open", "d1-close"], issue.ShiftIds);
+        Assert.Equal(["ana"], issue.MemberIds);
+        Assert.Equal("1", issue.Parameters["week"]);
+        Assert.Equal("13", issue.Parameters["hours"]);
+        Assert.Equal("12", issue.Parameters["max"]);
+        Assert.True(issue.HardRule);
+    }
+
+    [Fact]
+    public void Exactly_the_maximum_is_allowed_and_no_maximum_means_none()
+    {
+        var input = Everyone(Week, [Member("ana", desired: 6, max: 13), Member("ben", desired: 6)]);
+
+        Assert.Empty(IssuesOf(IssueCodes.OverMaxHours, input,
+            On("d0-open", "ana"), On("d1-close", "ana"), On("d0-open", "ben"), On("d1-close", "ben"), On("d2-close", "ben")));
+    }
+
+    [Fact]
+    public void Hours_are_scored_against_the_target_of_each_week()
+    {
+        // BR-012: ana wants 6 hours a week. One 12-hour fortnight split 6 + 6 is perfect; 12 + 0 is the
+        // same total but 12 hours away (6 over, then 6 under), and nothing is reported over the period.
+        var nextMonday = Shift("next-mon", "2026-10-12");
+        var input = Everyone([.. Week, nextMonday], [Member("ana", desired: 6)]) with
+        {
+            Rules = Rules with { MaxConsecutiveShifts = null },
+        };
+
+        var even = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("next-mon", "ana")]);
+        var lumped = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d2-open", "ana")]);
+
+        Assert.Equal(12 * Evaluator.HoursWeight, even.Score - lumped.Score);
+        Assert.DoesNotContain(lumped.Issues, issue => issue.Code is IssueCodes.UnderHours or IssueCodes.OverHours);
+    }
+
+    [Fact]
+    public void Each_member_is_summed_up_per_week_and_against_the_target()
+    {
+        var input = Everyone([.. Week, Shift("next-mon", "2026-10-12")], [Member("ana", desired: 10), Member("ben", desired: 4)]);
+
+        var evaluation = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d1-close", "ana"), On("next-mon", "ana")]);
+
+        var ana = evaluation.Members[0];
+        Assert.Equal("ana", ana.MemberId);
+        Assert.Equal(19m, ana.Hours);
+        Assert.Equal(20m, ana.TargetHours); // 10 a week, over two weeks
+        Assert.Equal([13m, 6m], ana.WeeklyHours);
+        Assert.Equal([0m, 0m], evaluation.Members[1].WeeklyHours);
+    }
+
+    [Fact]
     public void Three_shifts_in_a_row_are_allowed_when_the_limit_is_3()
     {
         // Opening and closing Monday, then opening Tuesday: 3 consecutive shifts (BR-005).
@@ -324,6 +384,66 @@ public sealed class EvaluatorTests
         Assert.Equal(-expected, evaluation.Score);
     }
 
+    private static GeneratorInput WithFairness(GeneratorInput input, bool opening = true, bool closing = true) =>
+        input with { Rules = input.Rules with { OpeningFairness = opening, ClosingFairness = closing, MaxConsecutiveShifts = null } };
+
+    [Fact]
+    public void Fairness_counts_openings_and_closings_against_what_each_person_is_available_for()
+    {
+        // BR-013, BR-014, BR-022: ana is free for every opening and every closing, so half her 4 shifts
+        // should be openings. All 4 are: 2 openings too many and 2 closings too few, squared.
+        var input = Everyone(Week, [Member("ana", desired: 24)]);
+        Assignment[] four = [On("d0-open", "ana"), On("d1-open", "ana"), On("d2-open", "ana"), On("d3-open", "ana")];
+
+        var fair = Evaluator.Evaluate(WithFairness(input), four);
+        var unfair = Evaluator.Evaluate(WithFairness(input, opening: false, closing: false), four);
+
+        var ana = fair.Members.Single();
+        Assert.Equal((4, 2m, 0, 2m), (ana.Openings, ana.ExpectedOpenings, ana.Closings, ana.ExpectedClosings));
+        Assert.Equal(2 * 4 * Evaluator.FairnessWeight, unfair.Score - fair.Score);
+    }
+
+    [Fact]
+    public void The_two_fairness_switches_are_independent()
+    {
+        // BR-020: closings only. ana's 2 missing closings still cost, her 2 extra openings do not.
+        var input = Everyone(Week, [Member("ana", desired: 24)]);
+        Assignment[] four = [On("d0-open", "ana"), On("d1-open", "ana"), On("d2-open", "ana"), On("d3-open", "ana")];
+
+        var closingsOnly = Evaluator.Evaluate(WithFairness(input, opening: false), four);
+        var off = Evaluator.Evaluate(WithFairness(input, opening: false, closing: false), four);
+
+        Assert.Equal(4 * Evaluator.FairnessWeight, off.Score - closingsOnly.Score);
+    }
+
+    [Fact]
+    public void Someone_only_free_in_the_evenings_is_never_penalised_for_zero_openings()
+    {
+        // BR-022
+        var input = WithFairness(Input(Week, [Member("ben", desired: 21)], [Available("ben", "d0-close", "d1-close", "d3-close", "d5-close")]));
+        Assignment[] closings = [On("d0-close", "ben"), On("d1-close", "ben"), On("d3-close", "ben")];
+
+        var evaluation = Evaluator.Evaluate(input, closings);
+        var unfair = Evaluator.Evaluate(WithFairness(input, opening: false, closing: false), closings);
+
+        var ben = evaluation.Members.Single();
+        Assert.Equal((0, 0m, 3, 3m), (ben.Openings, ben.ExpectedOpenings, ben.Closings, ben.ExpectedClosings));
+        Assert.Equal(unfair.Score, evaluation.Score);
+    }
+
+    [Fact]
+    public void Fairness_is_proportional_to_the_shifts_someone_works()
+    {
+        // BR-021: free for everything, 6 shifts expect 3 closings and 2 shifts expect 1.
+        var input = WithFairness(Everyone(Week, [Member("ana", desired: 39), Member("ben", desired: 13)]));
+
+        var evaluation = Evaluator.Evaluate(input,
+            [On("d0-open", "ana"), On("d1-open", "ana"), On("d2-open", "ana"), On("d3-close", "ana"), On("d4-close", "ana"), On("d5-close", "ana"),
+                On("d0-close", "ben"), On("d1-close", "ben")]);
+
+        Assert.Equal([3m, 1m], evaluation.Members.Select(member => member.ExpectedClosings));
+    }
+
     [Fact]
     public void Breaking_a_hard_rule_costs_more_than_leaving_a_slot_empty()
     {
@@ -352,7 +472,8 @@ public sealed class EvaluatorTests
     public void Only_hard_rule_issues_are_marked_hard()
     {
         Assert.Equal(
-            [IssueCodes.AboveHeadcount, IssueCodes.Unavailable, IssueCodes.NotSubmitted, IssueCodes.OverlappingShifts, IssueCodes.ConsecutiveShifts, IssueCodes.IncompatiblePair],
+            [IssueCodes.AboveHeadcount, IssueCodes.Unavailable, IssueCodes.NotSubmitted, IssueCodes.OverlappingShifts, IssueCodes.OverMaxHours,
+                IssueCodes.ConsecutiveShifts, IssueCodes.IncompatiblePair],
             IssueCodes.All.Where(code => new GeneratorIssue(code, [], [], new Dictionary<string, string>()).HardRule));
     }
 

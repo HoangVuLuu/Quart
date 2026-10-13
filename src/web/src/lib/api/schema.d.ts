@@ -124,6 +124,9 @@ export interface components {
       score: number;
       /** Format: int32 */
       seed: number;
+      members: components['schemas']['MemberSummary'][];
+      /** Format: int32 */
+      constructionScore: number;
     };
     GeneratorRules: {
       /** Format: int32 */
@@ -163,6 +166,22 @@ export interface components {
       memberId: string;
       submitted: boolean;
       shiftIds: string[];
+    };
+    MemberSummary: {
+      memberId: string;
+      /** Format: double */
+      hours: number;
+      /** Format: double */
+      targetHours: number;
+      weeklyHours: number[];
+      /** Format: int32 */
+      openings: number;
+      /** Format: double */
+      expectedOpenings: number;
+      /** Format: int32 */
+      closings: number;
+      /** Format: double */
+      expectedClosings: number;
     };
     MetaResponse: {
       name: string;
