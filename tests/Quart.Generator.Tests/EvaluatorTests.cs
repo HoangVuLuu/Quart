@@ -196,6 +196,48 @@ public sealed class EvaluatorTests
     }
 
     [Fact]
+    public void A_week_above_someones_maximum_hours_is_reported()
+    {
+        // BR-006: 13 hours in the first week against a maximum of 12. The second week is fine.
+        var input = Everyone(Week, [Member("ana", desired: 6, max: 12)]);
+        var secondWeek = Shift("next-mon", "2026-10-12");
+        input = input with { Shifts = [.. input.Shifts, secondWeek], Availability = [Available("ana", [.. Week.Select(s => s.Id), "next-mon"])] };
+
+        var issue = Assert.Single(IssuesOf(IssueCodes.OverMaxHours, input, On("d0-open", "ana"), On("d1-close", "ana"), On("next-mon", "ana")));
+
+        Assert.Equal(["d0-open", "d1-close"], issue.ShiftIds);
+        Assert.Equal(["ana"], issue.MemberIds);
+        Assert.Equal("1", issue.Parameters["week"]);
+        Assert.Equal("13", issue.Parameters["hours"]);
+        Assert.Equal("12", issue.Parameters["max"]);
+        Assert.True(issue.HardRule);
+    }
+
+    [Fact]
+    public void Exactly_the_maximum_is_allowed_and_no_maximum_means_none()
+    {
+        var input = Everyone(Week, [Member("ana", desired: 6, max: 13), Member("ben", desired: 6)]);
+
+        Assert.Empty(IssuesOf(IssueCodes.OverMaxHours, input,
+            On("d0-open", "ana"), On("d1-close", "ana"), On("d0-open", "ben"), On("d1-close", "ben"), On("d2-close", "ben")));
+    }
+
+    [Fact]
+    public void Each_member_is_summed_up_per_week_and_against_the_target()
+    {
+        var input = Everyone([.. Week, Shift("next-mon", "2026-10-12")], [Member("ana", desired: 10), Member("ben", desired: 4)]);
+
+        var evaluation = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d1-close", "ana"), On("next-mon", "ana")]);
+
+        var ana = evaluation.Members[0];
+        Assert.Equal("ana", ana.MemberId);
+        Assert.Equal(19m, ana.Hours);
+        Assert.Equal(20m, ana.TargetHours); // 10 a week, over two weeks
+        Assert.Equal([13m, 6m], ana.WeeklyHours);
+        Assert.Equal([0m, 0m], evaluation.Members[1].WeeklyHours);
+    }
+
+    [Fact]
     public void Three_shifts_in_a_row_are_allowed_when_the_limit_is_3()
     {
         // Opening and closing Monday, then opening Tuesday: 3 consecutive shifts (BR-005).
@@ -352,7 +394,8 @@ public sealed class EvaluatorTests
     public void Only_hard_rule_issues_are_marked_hard()
     {
         Assert.Equal(
-            [IssueCodes.AboveHeadcount, IssueCodes.Unavailable, IssueCodes.NotSubmitted, IssueCodes.OverlappingShifts, IssueCodes.ConsecutiveShifts, IssueCodes.IncompatiblePair],
+            [IssueCodes.AboveHeadcount, IssueCodes.Unavailable, IssueCodes.NotSubmitted, IssueCodes.OverlappingShifts, IssueCodes.OverMaxHours,
+                IssueCodes.ConsecutiveShifts, IssueCodes.IncompatiblePair],
             IssueCodes.All.Where(code => new GeneratorIssue(code, [], [], new Dictionary<string, string>()).HardRule));
     }
 

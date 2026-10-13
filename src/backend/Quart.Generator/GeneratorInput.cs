@@ -44,7 +44,7 @@ public sealed record LevelRequirement(int Level, int MinCount);
 
 /// <param name="Level">1, 2 or 3; 3 is the most senior.</param>
 /// <param name="DesiredWeeklyHours">The weekly target (BR-032).</param>
-/// <param name="MaxWeeklyHours">Optional admin-set ceiling; null means none (BR-032).</param>
+/// <param name="MaxWeeklyHours">Optional admin-set ceiling on any one week of the period; null means none (BR-032). The generator never goes above it (BR-006).</param>
 public sealed record GeneratorMember(string Id, int Level, decimal DesiredWeeklyHours, decimal? MaxWeeklyHours);
 
 /// <param name="Submitted">False when the member never sent availability for the period. The generator never places them (FR-121).</param>

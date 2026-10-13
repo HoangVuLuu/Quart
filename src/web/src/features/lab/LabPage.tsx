@@ -7,11 +7,13 @@ import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { EmptyState } from '../../ui/EmptyState';
 import { PageHeader } from '../../ui/PageHeader';
+import { TextField } from '../../ui/TextField';
 import { Skeleton } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
 import { countHardRuleBreaks, type ScheduleIssue } from '../scheduling/components/issues';
 import { IssuesPanel } from '../scheduling/components/IssuesPanel';
 import { ScheduleGrid, type GridShift } from '../scheduling/components/ScheduleGrid';
+import { HoursTable } from './HoursTable';
 import { useGenerate, usePresoteaScenario, type GeneratorResult, type LabScenario } from './useLab';
 
 // The generator lab (M1-01, spec 7.8): the sample scenario as a schedule grid, and a button that runs
@@ -22,6 +24,8 @@ export function LabPage() {
   const scenario = usePresoteaScenario();
   const generate = useGenerate();
   const [picked, setPicked] = useState<ScheduleIssue>();
+  // The seed as typed; undefined until someone types, so the sample's own seed shows first.
+  const [seedText, setSeedText] = useState<string>();
   // An issue from an earlier generation is not one of the current result's.
   const selected = picked && generate.data?.issues.includes(picked) ? picked : undefined;
   const shifts = scenario.data ? gridShifts(scenario.data, generate.data) : [];
@@ -58,13 +62,12 @@ export function LabPage() {
         <>
           <Summary scenario={scenario.data} result={generate.data} />
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button loading={generate.isPending} onClick={() => generate.mutate(scenario.data.input)}>
-              {generate.isPending ? t('lab.generating') : t('lab.generate')}
-            </Button>
-            {/* The generator is naive on purpose for now; say so, so nobody judges the generator by it. */}
-            <p className="text-sm text-muted">{t('lab.naiveHint')}</p>
-          </div>
+          <SeedControls
+            seedText={seedText ?? String(scenario.data.input.seed)}
+            onSeedTextChange={setSeedText}
+            pending={generate.isPending}
+            onGenerate={(seed) => generate.mutate({ ...scenario.data.input, seed })}
+          />
 
           {generate.isError && (
             <Card role="alert">
@@ -73,6 +76,14 @@ export function LabPage() {
           )}
 
           <ScheduleGrid shifts={shifts} periodStart={periodOf(scenario.data)?.start} highlight={selected} />
+
+          {generate.data && (
+            <HoursTable
+              members={scenario.data.input.members}
+              summaries={generate.data.members}
+              names={namesOf(scenario.data)}
+            />
+          )}
 
           {generate.data && (
             <IssuesPanel
@@ -87,6 +98,70 @@ export function LabPage() {
       )}
     </section>
   );
+}
+
+// The seed decides every random choice, so the same seed gives the same schedule (FR-122). Generate
+// uses the seed in the field; Generate again picks a new one, as the draft schedule does (1l).
+function SeedControls({
+  seedText,
+  onSeedTextChange,
+  pending,
+  onGenerate,
+}: {
+  seedText: string;
+  onSeedTextChange: (text: string) => void;
+  pending: boolean;
+  onGenerate: (seed: number) => void;
+}) {
+  const { t } = useTranslation();
+  const seed = parseSeed(seedText);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-end gap-3">
+        <TextField
+          label={t('lab.seedLabel')}
+          type="number"
+          inputMode="numeric"
+          step={1}
+          value={seedText}
+          onChange={(event) => onSeedTextChange(event.target.value)}
+          error={seed === undefined ? t('lab.seedInvalid') : undefined}
+          className="w-40"
+        />
+        <Button
+          loading={pending}
+          disabled={seed === undefined}
+          onClick={() => seed !== undefined && onGenerate(seed)}
+        >
+          {pending ? t('lab.generating') : t('lab.generate')}
+        </Button>
+        <Button
+          variant="white"
+          disabled={pending}
+          onClick={() => {
+            const next = newSeed();
+            onSeedTextChange(String(next));
+            onGenerate(next);
+          }}
+        >
+          {t('lab.generateAgain')}
+        </Button>
+      </div>
+      <p className="text-sm text-muted">{t('lab.seedHint')}</p>
+    </div>
+  );
+}
+
+// A whole number the server's int can hold, or undefined.
+function parseSeed(text: string): number | undefined {
+  if (!/^-?\d+$/.test(text.trim())) return undefined;
+  const seed = Number(text);
+  return seed >= -2147483648 && seed <= 2147483647 ? seed : undefined;
+}
+
+function newSeed(): number {
+  return Math.floor(Math.random() * 2147483647) + 1;
 }
 
 function Summary({ scenario, result }: { scenario: LabScenario; result: GeneratorResult | undefined }) {

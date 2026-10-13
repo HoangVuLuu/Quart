@@ -4,6 +4,7 @@ import { api, unwrap, type Schemas } from '../../lib/api/client';
 export type LabScenario = Schemas['LabScenario'];
 export type GeneratorInput = Schemas['GeneratorInput'];
 export type GeneratorResult = Schemas['GeneratorResult'];
+export type MemberSummary = Schemas['MemberSummary'];
 
 export function usePresoteaScenario() {
   return useQuery({

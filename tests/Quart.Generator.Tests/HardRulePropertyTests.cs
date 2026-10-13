@@ -9,7 +9,7 @@ namespace Quart.Generator.Tests;
 /// </summary>
 public sealed class HardRulePropertyTests
 {
-    private static readonly NaiveGenerator Generator = new();
+    private static readonly ScheduleGenerator Generator = new();
 
     [Fact]
     public void Generated_schedules_never_break_a_hard_rule() =>

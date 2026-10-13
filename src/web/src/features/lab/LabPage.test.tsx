@@ -77,6 +77,11 @@ const result: Schemas['GeneratorResult'] = {
   ],
   score: -1050,
   seed: 1,
+  members: [
+    { memberId: 'p1', hours: 13, targetHours: 20, weeklyHours: [13] },
+    { memberId: 'p2', hours: 6, targetHours: 18, weeklyHours: [6] },
+    { memberId: 'p3', hours: 0, targetHours: 8, weeklyHours: [0] },
+  ],
 };
 
 type Answer = { status: number; body: unknown };
@@ -162,6 +167,63 @@ describe('LabPage', () => {
     await user.click(await screen.findByRole('button', { name: en.lab.generate }));
 
     expect(await screen.findByText('Hard rules: 1 violation')).toBeInTheDocument();
+  });
+
+  it('generates with the seed in the field, and Generate again picks a new one (FR-122)', async () => {
+    const user = userEvent.setup();
+    const fetch = serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: result },
+    });
+    renderPage();
+    const seed = await screen.findByRole('spinbutton', { name: en.lab.seedLabel });
+    expect(seed).toHaveValue(1);
+
+    await user.clear(seed);
+    await user.type(seed, '42');
+    await user.click(screen.getByRole('button', { name: en.lab.generate }));
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    await user.click(screen.getByRole('button', { name: en.lab.generateAgain }));
+
+    const posted = fetch.mock.calls
+      .map(([request]) => request)
+      .filter((request) => request.method === 'POST');
+    const seeds = await Promise.all(
+      posted.map(async (request) => ((await request.json()) as { seed: number }).seed),
+    );
+    expect(seeds).toEqual([42, 1073741824]);
+    expect(screen.getByRole('spinbutton', { name: en.lab.seedLabel })).toHaveValue(1073741824);
+  });
+
+  it('will not generate with a seed that is not a whole number', async () => {
+    const user = userEvent.setup();
+    serve({ '/api/lab/scenarios/presotea': { status: 200, body: scenario } });
+    renderPage();
+    const seed = await screen.findByRole('spinbutton', { name: en.lab.seedLabel });
+
+    await user.clear(seed);
+
+    expect(screen.getByText(en.lab.seedInvalid)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: en.lab.generate })).toBeDisabled();
+  });
+
+  it('shows hours per person as assigned/desired, per week and over the period', async () => {
+    const user = userEvent.setup();
+    serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: result },
+    });
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: en.lab.generate }));
+
+    const table = await screen.findByRole('table');
+    const philippe = within(table).getByRole('row', { name: /Philippe N\./ });
+    expect(
+      within(philippe)
+        .getAllByRole('cell')
+        .map((cell) => cell.textContent),
+    ).toEqual(['13/20', `13/20${en.lab.hours.under}`]);
   });
 
   it('says so when the lab is off on this server', async () => {

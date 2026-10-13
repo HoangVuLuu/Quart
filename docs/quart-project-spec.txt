@@ -461,6 +461,8 @@ FR-143  The issues dashboard lists everything the evaluator found. Issue types:
           - person assigned to two shifts that overlap in time (BR-002)
           - person under their desired hours
           - person over their desired hours
+          - person above their maximum weekly hours (BR-006; only a lock or
+            a manual edit can cause it)
           - person working more consecutive shifts than allowed
           - person working both shifts in one day
           - incompatible pair assigned to the same shift (BR-036)
@@ -667,6 +669,10 @@ BR-005  Nobody exceeds the workplace's maximum consecutive shifts. A shift
         in the prototype: when this was only a weighted penalty, a scarcity of
         level 3s made the optimiser put the owner on 28 straight shifts
         because covering a shift scored higher than the rest-day penalty.)
+BR-006  Nobody is scheduled above the maximum weekly hours an admin set for
+        them (BR-032), in any week of the period. People without a maximum
+        have no ceiling. Only a lock or a manual edit can go above it; the
+        evaluator flags it.
 
 7.4 Soft goals — optimised in this priority order
 BR-010  Fill every slot.                                  (weight: highest)
@@ -1710,6 +1716,11 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             overlapping shifts. A shift that overlaps work elsewhere is
             reported as "not available", so the other workplace stays
             hidden (FR-094).  (BR-002, BR-003, FR-143, AD-011, 7.2)
+2026-10-13  The admin-set maximum weekly hours becomes a hard rule, BR-006:
+            the generator never schedules anyone above it, and the
+            evaluator reports a week above it as a new issue type. The spec
+            had the maximum (BR-032, FR-037) but never said what it does.
+            (BR-006, BR-032, FR-143, M1-04)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

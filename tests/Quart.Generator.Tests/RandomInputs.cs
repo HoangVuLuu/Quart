@@ -6,7 +6,7 @@ namespace Quart.Generator.Tests;
 /// <summary>
 /// Random generator inputs for the property tests (AD-005): 1 to 30 people over 1 to 4 weeks, one to
 /// three shift blocks a day at random times, so blocks often overlap (FR-063), random headcounts and
-/// level requirements, availability from none to everything, people who never sent it, busy times at
+/// level requirements, maximum weekly hours, availability from none to everything, people who never sent it, busy times at
 /// another workplace, conflict pairs, and locks that may themselves break any rule. CsCheck shrinks a
 /// failing input towards a small one.
 /// </summary>
@@ -19,7 +19,7 @@ internal static class RandomInputs
         from weeks in Gen.Int[1, 4]
         from blocks in Gen.Select(Gen.Int[6, 20], Gen.Int[2, 8]).Array[1, 3] // start hour and length
         from shifts in Shifts(weeks * 7, blocks)
-        from members in Gen.Select(Gen.Int[1, 3], Gen.Int[0, 40]).Array[people] // level and desired hours
+        from members in Gen.Select(Gen.Int[1, 3], Gen.Int[0, 40], Gen.Int[0, 50]).Array[people] // level, desired hours, maximum (over 40: none)
         from availability in Availability(shifts).Array[people]
         from busy in Busy(weeks * 7).Array[people]
         from locks in Locks(shifts.Length, people)
@@ -87,7 +87,7 @@ internal static class RandomInputs
 
     private static GeneratorInput Build(
         GeneratorShift[] shifts,
-        (int Level, int Desired)[] members,
+        (int Level, int Desired, int Max)[] members,
         (bool Submitted, string[] ShiftIds)[] availability,
         (DateTime Start, DateTime End)[][] busy,
         (int Shift, int Member)[] locks,
@@ -100,7 +100,7 @@ internal static class RandomInputs
         var blockIds = shifts.Select(shift => shift.BlockId).ToHashSet();
         return new GeneratorInput(
             shifts,
-            members.Select((member, i) => new GeneratorMember(ids[i], member.Level, member.Desired, null)).ToList(),
+            members.Select((member, i) => new GeneratorMember(ids[i], member.Level, member.Desired, member.Max > 40 ? null : member.Max)).ToList(),
             availability.Select((entry, i) => new MemberAvailability(ids[i], entry.Submitted, entry.ShiftIds)).ToList(),
             busy.SelectMany((times, i) => times.Select(time => new BusyTime(ids[i], time.Start, time.End))).ToList(),
             locks.Distinct().Select(lockAt => new Assignment(shifts[lockAt.Shift].Id, ids[lockAt.Member])).ToList(),

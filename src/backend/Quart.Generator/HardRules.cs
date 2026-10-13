@@ -32,4 +32,21 @@ internal static class HardRules
     /// <summary>A shift and a busy time overlap when they share a moment; half-open, like two shifts.</summary>
     public static bool Overlap(GeneratorShift shift, BusyTime busy) =>
         shift.Date.ToDateTime(shift.Start) < busy.End && busy.Start < shift.Date.ToDateTime(shift.End);
+
+    /// <summary>The full shift length; no unpaid break is deducted (BR-031).</summary>
+    public static decimal Hours(GeneratorShift shift) => (decimal)(shift.End - shift.Start).TotalMinutes / 60m;
+
+    /// <summary>The period's first day: the date of its earliest shift. Weeks are counted from it.</summary>
+    public static DateOnly FirstDay(GeneratorInput input) =>
+        input.Shifts.Count == 0 ? default : input.Shifts.Min(shift => shift.Date);
+
+    /// <summary>
+    /// How many weeks the period spans, counted from its first day. Desired and maximum hours are weekly
+    /// (BR-032), so a period's target is the weekly one times this.
+    /// </summary>
+    public static int Weeks(GeneratorInput input) =>
+        input.Shifts.Count == 0 ? 0 : (input.Shifts.Max(shift => shift.Date.DayNumber) - FirstDay(input).DayNumber) / 7 + 1;
+
+    /// <summary>Which week of the period the shift falls in: 0 for the first seven days, and so on.</summary>
+    public static int Week(GeneratorShift shift, DateOnly firstDay) => (shift.Date.DayNumber - firstDay.DayNumber) / 7;
 }

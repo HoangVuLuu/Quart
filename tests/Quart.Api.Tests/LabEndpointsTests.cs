@@ -97,11 +97,10 @@ public sealed class LabEndpointsTests
     }
 
     [Fact]
-    public async Task The_naive_schedule_for_the_sample_breaks_no_hard_rule()
+    public async Task The_schedule_for_the_sample_breaks_no_hard_rule()
     {
-        // M1-03: first available still wins, but never past a hard rule. Philippe is available for
-        // everything; under M1-02 he worked all 28 shifts in a row. Now the limit of 3 stops him (BR-005),
-        // and the schedule is still poor in the ways the evaluator reports.
+        // Philippe is available for everything; under M1-02's naive generator he worked all 28 shifts in
+        // a row. The limit of 3 stops him now (BR-005), and the result carries the evaluator's verdict.
         await using var factory = Lab();
         using var client = factory.CreateClient();
         var input = await SampleInputAsync(client);

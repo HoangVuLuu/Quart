@@ -355,7 +355,8 @@
           "assignments",
           "issues",
           "score",
-          "seed"
+          "seed",
+          "members"
         ],
         "type": "object",
         "properties": {
@@ -378,6 +379,12 @@
           "seed": {
             "type": "integer",
             "format": "int32"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberSummary"
+            }
           }
         }
       },
@@ -518,6 +525,35 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          }
+        }
+      },
+      "MemberSummary": {
+        "required": [
+          "memberId",
+          "hours",
+          "targetHours",
+          "weeklyHours"
+        ],
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string"
+          },
+          "hours": {
+            "type": "number",
+            "format": "double"
+          },
+          "targetHours": {
+            "type": "number",
+            "format": "double"
+          },
+          "weeklyHours": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
             }
           }
         }

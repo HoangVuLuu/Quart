@@ -20,6 +20,7 @@ export const issueTypes = [
   'overlapping_shifts',
   'under_hours',
   'over_hours',
+  'over_max_hours',
   'consecutive_shifts',
   'double_shift',
   'incompatible_pair',

@@ -198,14 +198,26 @@
     "notSent": "Not sent yet",
     "generate": "Generate",
     "generating": "Generating…",
-    "naiveHint": "For now the generator is naive: the first available person who breaks no hard rule wins.",
+    "generateAgain": "Generate again",
+    "seedLabel": "Seed",
+    "seedInvalid": "A whole number, please.",
+    "seedHint": "The same seed always gives the same schedule. Generate again tries a new seed.",
     "filled": "{{filled}} of {{slots}} places filled",
     "hardRules_one": "Hard rules: {{count}} violation",
     "hardRules_other": "Hard rules: {{count}} violations",
     "hardRulesHint": "The generator never breaks one: it leaves a place open instead. Only a lock can break one.",
     "seed": "Seed #{{seed}}",
     "score": "Score: {{score}}",
-    "scoreHint": "0 is perfect. Every issue takes points off."
+    "scoreHint": "0 is perfect. Every issue takes points off.",
+    "hours": {
+      "title": "Hours per person",
+      "hint": "Assigned / desired, per week and over the period.",
+      "person": "Person",
+      "period": "Period",
+      "cell": "{{hours}}/{{desired}}",
+      "under": "under",
+      "over": "over"
+    }
   },
   "issues": {
     "title": "Issues",
@@ -244,6 +256,10 @@
     "over_hours": {
       "title": "Over desired hours",
       "item": "{{person}}: {{hours}} h of {{target}} h wanted"
+    },
+    "over_max_hours": {
+      "title": "Over their maximum hours",
+      "item": "{{person}}: {{hours}} h in week {{week}} (maximum {{max}} h)"
     },
     "consecutive_shifts": {
       "title": "Too many shifts in a row",

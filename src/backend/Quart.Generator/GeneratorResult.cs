@@ -5,11 +5,19 @@ namespace Quart.Generator;
 /// <param name="Issues">What the <see cref="Evaluator"/> found in the assignments (AD-002).</param>
 /// <param name="Score">The <see cref="Evaluator"/>'s grade: 0 is perfect, and every problem takes points off.</param>
 /// <param name="Seed">The seed that produced this result. Store it to reproduce the result exactly (FR-122).</param>
+/// <param name="Members">The <see cref="Evaluator"/>'s totals per member, in the input's order of members.</param>
 public sealed record GeneratorResult(
     IReadOnlyList<Assignment> Assignments,
     IReadOnlyList<GeneratorIssue> Issues,
     int Score,
-    int Seed);
+    int Seed,
+    IReadOnlyList<MemberSummary> Members);
+
+/// <summary>One member's totals in a schedule, for the tables beside the grid: the lab's hours table, and later the live hours counter (FR-141).</summary>
+/// <param name="Hours">Over the whole period, locks included, at the full shift length (BR-031).</param>
+/// <param name="TargetHours">Desired weekly hours times the weeks of the period (BR-032).</param>
+/// <param name="WeeklyHours">Hours in each week of the period, the first week first.</param>
+public sealed record MemberSummary(string MemberId, decimal Hours, decimal TargetHours, IReadOnlyList<decimal> WeeklyHours);
 
 /// <summary>
 /// One problem with a schedule. The server sends a stable code and its parameters, never a sentence;

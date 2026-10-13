@@ -17,6 +17,10 @@
     <Using Include="Xunit" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The lab's Presotea sample, so tests can run the generator on the scenario the lab shows. -->
+    <None Include="..\..\src\backend\Modules\Quart.Modules.Scheduling\Lab\Scenarios\presotea.json" Link="Scenarios\presotea.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\src\backend\Quart.Generator\Quart.Generator.csproj" />
   </ItemGroup>
 </Project>

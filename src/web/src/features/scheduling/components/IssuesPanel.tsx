@@ -139,6 +139,13 @@ function describer(t: TFunction, language: string, shifts: GridShift[], names: M
           hours: number(p.hours),
           target: number(p.target),
         });
+      case 'over_max_hours':
+        return t('issues.over_max_hours.item', {
+          person: person(first),
+          hours: number(p.hours),
+          week: number(p.week),
+          max: number(p.max),
+        });
       case 'consecutive_shifts':
         return t('issues.consecutive_shifts.item', {
           person: person(first),
@@ -171,6 +178,7 @@ const iconPaths: Record<IssueType | 'unknown', string> = {
   overlapping_shifts: 'M3 6h11v7H3ZM10 11h11v7H10Z',
   under_hours: 'M12 4v16M6 14l6 6 6-6',
   over_hours: 'M12 20V4M6 10l6-6 6 6',
+  over_max_hours: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 7v5l3 2M4 4l16 16',
   consecutive_shifts: 'm4 7 5 5-5 5M11 7l5 5-5 5M18 7v10',
   double_shift: 'M8 4h12v12H8ZM4 8v12h12',
   incompatible_pair: 'M7 12a4 4 0 1 0 0-.01M17 12a4 4 0 1 0 0-.01M10 5l4 14',

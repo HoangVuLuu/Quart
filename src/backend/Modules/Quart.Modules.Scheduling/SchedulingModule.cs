@@ -14,7 +14,7 @@ public static class SchedulingModule
     /// <summary>The host must call <c>UseRateLimiter</c>: the lab endpoints are rate limited.</summary>
     public static IServiceCollection AddSchedulingModule(this IServiceCollection services)
     {
-        services.AddSingleton<IScheduleGenerator, NaiveGenerator>();
+        services.AddSingleton<IScheduleGenerator, ScheduleGenerator>();
         services.AddLab();
         return services;
     }
