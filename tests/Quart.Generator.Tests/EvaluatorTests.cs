@@ -366,6 +366,66 @@ public sealed class EvaluatorTests
         Assert.Equal(-expected, evaluation.Score);
     }
 
+    private static GeneratorInput WithFairness(GeneratorInput input, bool opening = true, bool closing = true) =>
+        input with { Rules = input.Rules with { OpeningFairness = opening, ClosingFairness = closing, MaxConsecutiveShifts = null } };
+
+    [Fact]
+    public void Fairness_counts_openings_and_closings_against_what_each_person_is_available_for()
+    {
+        // BR-013, BR-014, BR-022: ana is free for every opening and every closing, so half her 4 shifts
+        // should be openings. All 4 are: 2 openings too many and 2 closings too few, squared.
+        var input = Everyone(Week, [Member("ana", desired: 24)]);
+        Assignment[] four = [On("d0-open", "ana"), On("d1-open", "ana"), On("d2-open", "ana"), On("d3-open", "ana")];
+
+        var fair = Evaluator.Evaluate(WithFairness(input), four);
+        var unfair = Evaluator.Evaluate(WithFairness(input, opening: false, closing: false), four);
+
+        var ana = fair.Members.Single();
+        Assert.Equal((4, 2m, 0, 2m), (ana.Openings, ana.ExpectedOpenings, ana.Closings, ana.ExpectedClosings));
+        Assert.Equal(2 * 4 * Evaluator.FairnessWeight, unfair.Score - fair.Score);
+    }
+
+    [Fact]
+    public void The_two_fairness_switches_are_independent()
+    {
+        // BR-020: closings only. ana's 2 missing closings still cost, her 2 extra openings do not.
+        var input = Everyone(Week, [Member("ana", desired: 24)]);
+        Assignment[] four = [On("d0-open", "ana"), On("d1-open", "ana"), On("d2-open", "ana"), On("d3-open", "ana")];
+
+        var closingsOnly = Evaluator.Evaluate(WithFairness(input, opening: false), four);
+        var off = Evaluator.Evaluate(WithFairness(input, opening: false, closing: false), four);
+
+        Assert.Equal(4 * Evaluator.FairnessWeight, off.Score - closingsOnly.Score);
+    }
+
+    [Fact]
+    public void Someone_only_free_in_the_evenings_is_never_penalised_for_zero_openings()
+    {
+        // BR-022
+        var input = WithFairness(Input(Week, [Member("ben", desired: 21)], [Available("ben", "d0-close", "d1-close", "d3-close", "d5-close")]));
+        Assignment[] closings = [On("d0-close", "ben"), On("d1-close", "ben"), On("d3-close", "ben")];
+
+        var evaluation = Evaluator.Evaluate(input, closings);
+        var unfair = Evaluator.Evaluate(WithFairness(input, opening: false, closing: false), closings);
+
+        var ben = evaluation.Members.Single();
+        Assert.Equal((0, 0m, 3, 3m), (ben.Openings, ben.ExpectedOpenings, ben.Closings, ben.ExpectedClosings));
+        Assert.Equal(unfair.Score, evaluation.Score);
+    }
+
+    [Fact]
+    public void Fairness_is_proportional_to_the_shifts_someone_works()
+    {
+        // BR-021: free for everything, 6 shifts expect 3 closings and 2 shifts expect 1.
+        var input = WithFairness(Everyone(Week, [Member("ana", desired: 39), Member("ben", desired: 13)]));
+
+        var evaluation = Evaluator.Evaluate(input,
+            [On("d0-open", "ana"), On("d1-open", "ana"), On("d2-open", "ana"), On("d3-close", "ana"), On("d4-close", "ana"), On("d5-close", "ana"),
+                On("d0-close", "ben"), On("d1-close", "ben")]);
+
+        Assert.Equal([3m, 1m], evaluation.Members.Select(member => member.ExpectedClosings));
+    }
+
     [Fact]
     public void Breaking_a_hard_rule_costs_more_than_leaving_a_slot_empty()
     {

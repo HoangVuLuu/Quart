@@ -112,7 +112,8 @@ public sealed class LabEndpointsTests
         var issues = result.GetProperty("issues").EnumerateArray().ToList();
         Assert.DoesNotContain(issues, issue => issue.GetProperty("hardRule").GetBoolean());
         Assert.DoesNotContain(issues, issue => issue.GetProperty("code").GetString() == "issue.consecutive_shifts");
-        Assert.Contains(issues, issue => issue.GetProperty("code").GetString() == "issue.under_hours");
+        Assert.Equal(15, result.GetProperty("members").GetArrayLength());
+        Assert.True(result.GetProperty("score").GetInt32() >= result.GetProperty("constructionScore").GetInt32());
     }
 
     [Fact]

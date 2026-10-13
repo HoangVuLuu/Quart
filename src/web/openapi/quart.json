@@ -356,7 +356,8 @@
           "issues",
           "score",
           "seed",
-          "members"
+          "members",
+          "constructionScore"
         ],
         "type": "object",
         "properties": {
@@ -385,6 +386,10 @@
             "items": {
               "$ref": "#/components/schemas/MemberSummary"
             }
+          },
+          "constructionScore": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -534,7 +539,11 @@
           "memberId",
           "hours",
           "targetHours",
-          "weeklyHours"
+          "weeklyHours",
+          "openings",
+          "expectedOpenings",
+          "closings",
+          "expectedClosings"
         ],
         "type": "object",
         "properties": {
@@ -555,6 +564,22 @@
               "type": "number",
               "format": "double"
             }
+          },
+          "openings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expectedOpenings": {
+            "type": "number",
+            "format": "double"
+          },
+          "closings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expectedClosings": {
+            "type": "number",
+            "format": "double"
           }
         }
       },

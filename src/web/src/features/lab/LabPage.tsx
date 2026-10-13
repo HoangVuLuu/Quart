@@ -7,13 +7,15 @@ import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { EmptyState } from '../../ui/EmptyState';
 import { PageHeader } from '../../ui/PageHeader';
-import { TextField } from '../../ui/TextField';
 import { Skeleton } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
+import { Switch } from '../../ui/Switch';
 import { countHardRuleBreaks, type ScheduleIssue } from '../scheduling/components/issues';
 import { IssuesPanel } from '../scheduling/components/IssuesPanel';
-import { ScheduleGrid, type GridShift } from '../scheduling/components/ScheduleGrid';
+import { ScheduleGrid } from '../scheduling/components/ScheduleGrid';
 import { HoursTable } from './HoursTable';
+import { gridShifts, namesOf, periodOf } from './lab';
+import { SeedControls } from './SeedControls';
 import { useGenerate, usePresoteaScenario, type GeneratorResult, type LabScenario } from './useLab';
 
 // The generator lab (M1-01, spec 7.8): the sample scenario as a schedule grid, and a button that runs
@@ -22,13 +24,6 @@ import { useGenerate, usePresoteaScenario, type GeneratorResult, type LabScenari
 export function LabPage() {
   const { t } = useTranslation();
   const scenario = usePresoteaScenario();
-  const generate = useGenerate();
-  const [picked, setPicked] = useState<ScheduleIssue>();
-  // The seed as typed; undefined until someone types, so the sample's own seed shows first.
-  const [seedText, setSeedText] = useState<string>();
-  // An issue from an earlier generation is not one of the current result's.
-  const selected = picked && generate.data?.issues.includes(picked) ? picked : undefined;
-  const shifts = scenario.data ? gridShifts(scenario.data, generate.data) : [];
 
   return (
     <section className="flex flex-col gap-4 px-5 pb-10 md:px-0">
@@ -58,113 +53,99 @@ export function LabPage() {
           </Card>
         ))}
 
-      {scenario.isSuccess && (
-        <>
-          <Summary scenario={scenario.data} result={generate.data} />
-
-          <SeedControls
-            seedText={seedText ?? String(scenario.data.input.seed)}
-            onSeedTextChange={setSeedText}
-            pending={generate.isPending}
-            onGenerate={(seed) => generate.mutate({ ...scenario.data.input, seed })}
-          />
-
-          {generate.isError && (
-            <Card role="alert">
-              <ErrorNotice error={generate.error} />
-            </Card>
-          )}
-
-          <ScheduleGrid shifts={shifts} periodStart={periodOf(scenario.data)?.start} highlight={selected} />
-
-          {generate.data && (
-            <HoursTable
-              members={scenario.data.input.members}
-              summaries={generate.data.members}
-              names={namesOf(scenario.data)}
-            />
-          )}
-
-          {generate.data && (
-            <IssuesPanel
-              issues={generate.data.issues}
-              shifts={shifts}
-              names={namesOf(scenario.data)}
-              selected={selected}
-              onSelect={setPicked}
-            />
-          )}
-        </>
-      )}
+      {scenario.isSuccess && <Lab sample={scenario.data} />}
     </section>
   );
 }
 
-// The seed decides every random choice, so the same seed gives the same schedule (FR-122). Generate
-// uses the seed in the field; Generate again picks a new one, as the draft schedule does (1l).
-function SeedControls({
-  seedText,
-  onSeedTextChange,
-  pending,
-  onGenerate,
-}: {
-  seedText: string;
-  onSeedTextChange: (text: string) => void;
-  pending: boolean;
-  onGenerate: (seed: number) => void;
-}) {
+// The lab once the sample is here. `scenario` is the lab's own copy, which the rule switches (and the
+// scenario editor) change; `ran` is the scenario as it was when Generate last ran, so the grid, the
+// tables and the issues always describe the same people and shifts as the result.
+function Lab({ sample }: { sample: LabScenario }) {
   const { t } = useTranslation();
-  const seed = parseSeed(seedText);
+  const generate = useGenerate();
+  const [scenario, setScenario] = useState(sample);
+  const [ran, setRan] = useState<LabScenario>();
+  const [picked, setPicked] = useState<ScheduleIssue>();
+  const [seedText, setSeedText] = useState(String(sample.input.seed));
+  const result = generate.data;
+  const shown = (result && ran) ?? scenario;
+  // An issue from an earlier generation is not one of the current result's.
+  const selected = picked && result?.issues.includes(picked) ? picked : undefined;
+  const shifts = gridShifts(shown, result);
+  const names = namesOf(shown);
+
+  const run = (seed: number) => {
+    const next = { ...scenario, input: { ...scenario.input, seed } };
+    setRan(next);
+    generate.mutate(next.input);
+  };
+  const setRules = (rules: Partial<LabScenario['input']['rules']>) =>
+    setScenario((current) => ({
+      ...current,
+      input: { ...current.input, rules: { ...current.input.rules, ...rules } },
+    }));
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-end gap-3">
-        <TextField
-          label={t('lab.seedLabel')}
-          type="number"
-          inputMode="numeric"
-          step={1}
-          value={seedText}
-          onChange={(event) => onSeedTextChange(event.target.value)}
-          error={seed === undefined ? t('lab.seedInvalid') : undefined}
-          className="w-40"
+    <>
+      <Summary scenario={scenario} ran={ran} result={result} />
+
+      <Card className="flex flex-col gap-3">
+        <h2 className="text-lg font-bold">{t('lab.rules.title')}</h2>
+        {/* BR-020: two independent switches. */}
+        <Switch
+          label={t('lab.rules.openingFairness')}
+          description={t('lab.rules.fairnessHint')}
+          checked={scenario.input.rules.openingFairness}
+          onCheckedChange={(openingFairness) => setRules({ openingFairness })}
         />
-        <Button
-          loading={pending}
-          disabled={seed === undefined}
-          onClick={() => seed !== undefined && onGenerate(seed)}
-        >
-          {pending ? t('lab.generating') : t('lab.generate')}
-        </Button>
-        <Button
-          variant="white"
-          disabled={pending}
-          onClick={() => {
-            const next = newSeed();
-            onSeedTextChange(String(next));
-            onGenerate(next);
-          }}
-        >
-          {t('lab.generateAgain')}
-        </Button>
-      </div>
-      <p className="text-sm text-muted">{t('lab.seedHint')}</p>
-    </div>
+        <Switch
+          label={t('lab.rules.closingFairness')}
+          description={t('lab.rules.fairnessHint')}
+          checked={scenario.input.rules.closingFairness}
+          onCheckedChange={(closingFairness) => setRules({ closingFairness })}
+        />
+      </Card>
+
+      <SeedControls
+        seedText={seedText}
+        onSeedTextChange={setSeedText}
+        pending={generate.isPending}
+        onGenerate={run}
+      />
+
+      {generate.isError && (
+        <Card role="alert">
+          <ErrorNotice error={generate.error} />
+        </Card>
+      )}
+
+      <ScheduleGrid shifts={shifts} periodStart={periodOf(shown)?.start} highlight={selected} />
+
+      {result && <HoursTable members={shown.input.members} summaries={result.members} names={names} />}
+
+      {result && (
+        <IssuesPanel
+          issues={result.issues}
+          shifts={shifts}
+          names={names}
+          selected={selected}
+          onSelect={setPicked}
+        />
+      )}
+    </>
   );
 }
 
-// A whole number the server's int can hold, or undefined.
-function parseSeed(text: string): number | undefined {
-  if (!/^-?\d+$/.test(text.trim())) return undefined;
-  const seed = Number(text);
-  return seed >= -2147483648 && seed <= 2147483647 ? seed : undefined;
-}
-
-function newSeed(): number {
-  return Math.floor(Math.random() * 2147483647) + 1;
-}
-
-function Summary({ scenario, result }: { scenario: LabScenario; result: GeneratorResult | undefined }) {
+function Summary({
+  scenario,
+  ran,
+  result,
+}: {
+  scenario: LabScenario;
+  ran: LabScenario | undefined;
+  result: GeneratorResult | undefined;
+}) {
   const { t, i18n } = useTranslation();
   const { input } = scenario;
   const period = periodOf(scenario);
@@ -172,8 +153,10 @@ function Summary({ scenario, result }: { scenario: LabScenario; result: Generato
   const notSent = input.members
     .filter((member) => !input.availability.some((entry) => entry.memberId === member.id && entry.submitted))
     .map((member) => names.get(member.id) ?? member.id);
-  const slots = input.shifts.reduce((total, shift) => total + shift.headcount, 0);
+  const slots = (ran ?? scenario).input.shifts.reduce((total, shift) => total + shift.headcount, 0);
   const hardRuleBreaks = result ? countHardRuleBreaks(result.issues) : 0;
+  const changed = result !== undefined && ran !== undefined && !sameInput(ran, scenario);
+  const number = (value: number) => formatNumber(value, i18n.language);
 
   return (
     <Card className="flex flex-col gap-3">
@@ -207,53 +190,24 @@ function Summary({ scenario, result }: { scenario: LabScenario; result: Generato
             </StatusChip>
           </div>
           <p className="mt-2 text-sm text-muted">{t('lab.hardRulesHint')}</p>
-          <p className="mt-2 font-bold">
-            {t('lab.score', { score: formatNumber(result.score, i18n.language) })}
+          <p className="mt-2 font-bold">{t('lab.score', { score: number(result.score) })}</p>
+          {/* M1-05: what local search added to the greedy schedule. */}
+          <p className="text-sm text-muted">
+            {t('lab.scoreBefore', { score: number(result.constructionScore) })}
           </p>
           <p className="text-sm text-muted">{t('lab.scoreHint')}</p>
           <p className="mt-2 text-sm text-muted">{t('lab.seed', { seed: result.seed })}</p>
+          {changed && <p className="mt-2 text-sm font-bold text-warning">{t('lab.changedSinceRun')}</p>}
         </div>
       )}
     </Card>
   );
 }
 
-// From the first shift's date to the last one's; none for a scenario without shifts.
-function periodOf(scenario: LabScenario): { start: string; end: string } | undefined {
-  const dates = scenario.input.shifts.map((shift) => shift.date).sort();
-  const [start, end] = [dates[0], dates.at(-1)];
-  return start && end ? { start, end } : undefined;
-}
-
-// "Marc-Olivier Roy" -> "Marc-Olivier R.", as on the shift cards in the mockups.
-function shortName(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/);
-  if (parts.length < 2) return parts[0] ?? '';
-  return `${parts[0]} ${parts.at(-1)?.charAt(0)}.`;
-}
-
-// Short names by member id.
-function namesOf(scenario: LabScenario): Map<string, string> {
-  return new Map(scenario.people.map((person) => [person.id, shortName(person.name)]));
-}
-
-function gridShifts(scenario: LabScenario, result: GeneratorResult | undefined): GridShift[] {
-  const names = namesOf(scenario);
-  const levels = new Map(scenario.input.members.map((member) => [member.id, member.level]));
-  const assignments = result?.assignments ?? [];
-
-  return scenario.input.shifts.map((shift) => ({
-    id: shift.id,
-    date: shift.date,
-    start: shift.start,
-    end: shift.end,
-    headcount: shift.headcount,
-    people: assignments
-      .filter((assignment) => assignment.shiftId === shift.id)
-      .map((assignment) => ({
-        id: assignment.memberId,
-        name: names.get(assignment.memberId) ?? assignment.memberId,
-        level: levels.get(assignment.memberId) ?? 0,
-      })),
-  }));
+// The seed is not part of the scenario: a new seed alone does not make the result stale.
+function sameInput(a: LabScenario, b: LabScenario): boolean {
+  return (
+    JSON.stringify({ ...a, input: { ...a.input, seed: 0 } }) ===
+    JSON.stringify({ ...b, input: { ...b.input, seed: 0 } })
+  );
 }

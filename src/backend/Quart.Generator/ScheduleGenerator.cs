@@ -15,9 +15,12 @@ public sealed class ScheduleGenerator : IScheduleGenerator
         var random = new SeededRandom(input.Seed);
         var filter = new CandidateFilter(input); // starts from the locks (BR-004)
         GreedyConstruction.Run(input, filter, random);
+        var rulebook = new Evaluator.Rulebook(input);
+        var constructionScore = Evaluator.Score(rulebook, filter.Assignments);
+        LocalSearch.Run(input, filter, random, rulebook, constructionScore);
 
         var assignments = filter.Assignments;
-        var evaluation = Evaluator.Evaluate(input, assignments);
-        return new GeneratorResult(assignments, evaluation.Issues, evaluation.Score, input.Seed, evaluation.Members);
+        var evaluation = Evaluator.Evaluate(rulebook, assignments);
+        return new GeneratorResult(assignments, evaluation.Issues, evaluation.Score, input.Seed, evaluation.Members, constructionScore);
     }
 }

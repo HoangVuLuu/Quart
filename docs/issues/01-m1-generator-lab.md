@@ -110,7 +110,7 @@ spec: AD-004, BR-013, BR-014, BR-015, BR-020, BR-021, BR-022, BR-023
 **You will see.** The score before and after local search, opening and closing fairness toggles, and per person: openings and closings actual against expected.
 
 **Backend**
-- [ ] Local search: repeatedly try substituting one person for another, and keep any change that improves the evaluator score. Hard rules are re-checked before each change is applied. Bound it by iterations and time.
+- [ ] Local search: repeatedly try substituting one person for another, and keep any change that improves the evaluator score. Hard rules are re-checked before each change is applied. Bound it by a number of iterations, not by time: the generator has no clock (7.2), so a time limit would break "same seed, same schedule" (FR-122). The 2-second budget is M1-08's test.
 - [ ] Fairness is proportional to what each person is available for (BR-022): expected openings = total shifts × share of openings in that person's own availability. Two independent switches (BR-020). No weekend rule (BR-023).
 - [ ] A double shift in one day is used only when nothing else fills the slot (BR-015).
 

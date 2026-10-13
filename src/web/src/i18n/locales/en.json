@@ -207,16 +207,27 @@
     "hardRules_other": "Hard rules: {{count}} violations",
     "hardRulesHint": "The generator never breaks one: it leaves a place open instead. Only a lock can break one.",
     "seed": "Seed #{{seed}}",
+    "changedSinceRun": "The scenario changed since this result. Generate again to see it.",
     "score": "Score: {{score}}",
+    "scoreBefore": "Before local search: {{score}}",
     "scoreHint": "0 is perfect. Every issue takes points off.",
     "hours": {
-      "title": "Hours per person",
-      "hint": "Assigned / desired, per week and over the period.",
+      "title": "Hours and fairness per person",
+      "hint": "Hours assigned / desired, per week and over the period. Openings and closings worked / fair share, from what each person is available for.",
       "person": "Person",
       "period": "Period",
       "cell": "{{hours}}/{{desired}}",
       "under": "under",
-      "over": "over"
+      "over": "over",
+      "openings": "Openings",
+      "closings": "Closings",
+      "fairCell": "{{actual}}/{{expected}}"
+    },
+    "rules": {
+      "title": "Rules",
+      "openingFairness": "Spread openings fairly",
+      "closingFairness": "Spread closings fairly",
+      "fairnessHint": "In proportion to what each person is available for."
     }
   },
   "issues": {

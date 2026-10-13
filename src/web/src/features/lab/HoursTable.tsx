@@ -14,8 +14,9 @@ type HoursTableProps = {
 
 // Hours per person as assigned/desired (M1-04): one column per week, as the shift panel's counter will
 // show them (FR-141), then the period against its target. Off target by more than 2 hours (BR-033) is
-// written in bold with a word, not only a colour (NFR-008). A wide period scrolls inside the card, so
-// the page itself never scrolls sideways at 390 px.
+// written in bold with a word, not only a colour (NFR-008). Then openings and closings worked against
+// each person's fair share (M1-05, BR-022), which the evaluator works out. A wide period scrolls inside
+// the card, so the page itself never scrolls sideways at 390 px.
 export function HoursTable({ members, summaries, names }: HoursTableProps) {
   const { t, i18n } = useTranslation();
   const number = (value: number) => formatNumber(value, i18n.language);
@@ -43,6 +44,12 @@ export function HoursTable({ members, summaries, names }: HoursTableProps) {
               <th scope="col" className="py-1 pl-2 text-right font-bold whitespace-nowrap">
                 {t('lab.hours.period')}
               </th>
+              <th scope="col" className="px-2 py-1 text-right font-bold whitespace-nowrap">
+                {t('lab.hours.openings')}
+              </th>
+              <th scope="col" className="py-1 pr-3 pl-2 text-right font-bold whitespace-nowrap">
+                {t('lab.hours.closings')}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -69,7 +76,7 @@ export function HoursTable({ members, summaries, names }: HoursTableProps) {
                   ))}
                   <td
                     className={cx(
-                      'rounded-r-field py-2 pr-3 pl-2 text-right whitespace-nowrap tabular-nums',
+                      'py-2 pl-2 text-right whitespace-nowrap tabular-nums',
                       off && 'font-bold text-warning',
                     )}
                   >
@@ -82,6 +89,18 @@ export function HoursTable({ members, summaries, names }: HoursTableProps) {
                         {gap < 0 ? t('lab.hours.under') : t('lab.hours.over')}
                       </span>
                     )}
+                  </td>
+                  <td className="px-2 py-2 text-right whitespace-nowrap tabular-nums">
+                    {t('lab.hours.fairCell', {
+                      actual: number(summary.openings),
+                      expected: number(summary.expectedOpenings),
+                    })}
+                  </td>
+                  <td className="rounded-r-field py-2 pr-3 pl-2 text-right whitespace-nowrap tabular-nums">
+                    {t('lab.hours.fairCell', {
+                      actual: number(summary.closings),
+                      expected: number(summary.expectedClosings),
+                    })}
                   </td>
                 </tr>
               );

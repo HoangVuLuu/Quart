@@ -90,6 +90,55 @@ public sealed class ScheduleGeneratorTests
     }
 
     [Fact]
+    public void Local_search_never_makes_the_schedule_worse_and_improves_the_sample()
+    {
+        // M1-05: the score before and after local search, as the lab shows them.
+        var result = generator.Generate(Samples.Presotea);
+
+        Assert.True(result.Score > result.ConstructionScore, $"{result.ConstructionScore} -> {result.Score}");
+    }
+
+    [Fact]
+    public void With_fairness_on_everyone_on_the_sample_is_within_one_shift_of_fair()
+    {
+        // M1-05's "done when", over several seeds. People who never sent availability have no shifts.
+        foreach (var seed in Enumerable.Range(1, 20))
+        {
+            var input = Samples.Presotea with
+            {
+                Seed = seed,
+                Rules = Samples.Presotea.Rules with { OpeningFairness = true, ClosingFairness = true },
+            };
+
+            foreach (var member in generator.Generate(input).Members)
+            {
+                Assert.InRange(member.Openings - member.ExpectedOpenings, -1m, 1m);
+                Assert.InRange(member.Closings - member.ExpectedClosings, -1m, 1m);
+            }
+        }
+    }
+
+    [Fact]
+    public void A_spare_person_free_in_the_evenings_means_no_doubles()
+    {
+        // BR-015: ana can work anything and wants every hour; ben is free every evening and has room.
+        // Doubles would give ana more hours, but someone else can always take the closing.
+        var week = Enumerable.Range(0, 7).SelectMany(day =>
+        {
+            var date = new DateOnly(2026, 10, 5).AddDays(day).ToString("yyyy-MM-dd");
+            return new[] { Solo($"d{day}-open", date), Solo($"d{day}-close", date, "16:00", "23:00", "closing") };
+        }).ToArray();
+        var input = Input(week, [Member("ana", desired: 91), Member("ben", desired: 49)],
+            [Available("ana", week.Select(shift => shift.Id).ToArray()), Available("ben", week.Where(shift => shift.BlockId == "closing").Select(shift => shift.Id).ToArray())],
+            rules: Rules with { MaxConsecutiveShifts = null });
+
+        foreach (var seed in Enumerable.Range(1, 20))
+        {
+            Assert.DoesNotContain(generator.Generate(input with { Seed = seed }).Issues, issue => issue.Code == IssueCodes.DoubleShift);
+        }
+    }
+
+    [Fact]
     public void Leaves_a_slot_open_rather_than_place_someone_who_is_not_available()
     {
         var input = Input(TwoDays, ThreePeople, [Available("cleo", "tue-open")]);

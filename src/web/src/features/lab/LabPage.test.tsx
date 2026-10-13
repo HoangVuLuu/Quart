@@ -78,10 +78,38 @@ const result: Schemas['GeneratorResult'] = {
   score: -1050,
   seed: 1,
   members: [
-    { memberId: 'p1', hours: 13, targetHours: 20, weeklyHours: [13] },
-    { memberId: 'p2', hours: 6, targetHours: 18, weeklyHours: [6] },
-    { memberId: 'p3', hours: 0, targetHours: 8, weeklyHours: [0] },
+    {
+      memberId: 'p1',
+      hours: 13,
+      targetHours: 20,
+      weeklyHours: [13],
+      openings: 1,
+      expectedOpenings: 1,
+      closings: 1,
+      expectedClosings: 1,
+    },
+    {
+      memberId: 'p2',
+      hours: 6,
+      targetHours: 18,
+      weeklyHours: [6],
+      openings: 1,
+      expectedOpenings: 1,
+      closings: 0,
+      expectedClosings: 0,
+    },
+    {
+      memberId: 'p3',
+      hours: 0,
+      targetHours: 8,
+      weeklyHours: [0],
+      openings: 0,
+      expectedOpenings: 0,
+      closings: 0,
+      expectedClosings: 0,
+    },
   ],
+  constructionScore: -2100,
 };
 
 type Answer = { status: number; body: unknown };
@@ -223,7 +251,46 @@ describe('LabPage', () => {
       within(philippe)
         .getAllByRole('cell')
         .map((cell) => cell.textContent),
-    ).toEqual(['13/20', `13/20${en.lab.hours.under}`]);
+    ).toEqual(['13/20', `13/20${en.lab.hours.under}`, '1/1', '1/1']);
+  });
+
+  it('shows the score before and after local search (M1-05)', async () => {
+    const user = userEvent.setup();
+    serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: result },
+    });
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: en.lab.generate }));
+
+    expect(await screen.findByText('Score: -1,050')).toBeInTheDocument();
+    expect(screen.getByText('Before local search: -2,100')).toBeInTheDocument();
+  });
+
+  it('turns opening and closing fairness on and off independently (BR-020)', async () => {
+    const user = userEvent.setup();
+    const fetch = serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: result },
+    });
+    renderPage();
+
+    await user.click(await screen.findByRole('switch', { name: new RegExp(en.lab.rules.openingFairness) }));
+    expect(screen.getByRole('switch', { name: new RegExp(en.lab.rules.closingFairness) })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: en.lab.generate }));
+
+    const posted = fetch.mock.calls.map(([request]) => request).find((request) => request.method === 'POST');
+    expect(((await posted?.json()) as typeof scenario.input).rules).toEqual({
+      maxConsecutiveShifts: 3,
+      openingFairness: false,
+      closingFairness: true,
+    });
+    expect(screen.queryByText(en.lab.changedSinceRun)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('switch', { name: new RegExp(en.lab.rules.closingFairness) }));
+
+    expect(await screen.findByText(en.lab.changedSinceRun)).toBeInTheDocument();
   });
 
   it('says so when the lab is off on this server', async () => {
