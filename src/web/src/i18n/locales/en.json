@@ -179,7 +179,8 @@
       "weeks": "Weeks of the period",
       "week": "Week {{number}}",
       "noShifts": "No shifts",
-      "fill": "{{filled}} of {{headcount}} people"
+      "fill": "{{filled}} of {{headcount}} people",
+      "highlighted": "Concerned by the selected issue"
     }
   },
   "lab": {
@@ -198,6 +199,55 @@
     "generating": "Generating…",
     "naiveHint": "For now the generator is naive: the first available person wins.",
     "filled": "{{filled}} of {{slots}} places filled",
-    "seed": "Seed #{{seed}}"
+    "seed": "Seed #{{seed}}",
+    "score": "Score: {{score}}",
+    "scoreHint": "0 is perfect. Every issue takes points off."
+  },
+  "issues": {
+    "title": "Issues",
+    "count_one": "{{count}} issue",
+    "count_other": "{{count}} issues",
+    "none": "No issues",
+    "selectHint": "Open a group, then tap an issue to see it on the schedule.",
+    "below_headcount": {
+      "title": "Shifts below headcount",
+      "item": "{{shift}}: {{assigned}} of {{headcount}} people"
+    },
+    "missing_level": {
+      "title": "Missing a required level",
+      "item": "{{shift}}: needs {{required}} at level {{level}} or above, has {{present}}"
+    },
+    "unavailable": {
+      "title": "On a shift while not available",
+      "item": "{{person}} is on {{shift}} but is not available"
+    },
+    "not_submitted": {
+      "title": "On a shift without sending availability",
+      "item": "{{person}} is on {{shift}} but never sent availability"
+    },
+    "under_hours": {
+      "title": "Under desired hours",
+      "item": "{{person}}: {{hours}} h of {{target}} h wanted"
+    },
+    "over_hours": {
+      "title": "Over desired hours",
+      "item": "{{person}}: {{hours}} h of {{target}} h wanted"
+    },
+    "consecutive_shifts": {
+      "title": "Too many shifts in a row",
+      "item": "{{person}}: {{total}} shifts in a row from {{start}} (limit {{max}})"
+    },
+    "double_shift": {
+      "title": "Several shifts in one day",
+      "item": "{{person}} works {{total}} shifts on {{day}}"
+    },
+    "incompatible_pair": {
+      "title": "Cannot work together, on the same shift",
+      "item": "{{first}} and {{second}} are both on {{shift}}"
+    },
+    "unknown": {
+      "title": "Other issues",
+      "item": "Issue {{code}}"
+    }
   }
 }

@@ -40,6 +40,7 @@ public sealed class NaiveGenerator : IScheduleGenerator
             assignments.AddRange(onShift.Select(memberId => new Assignment(shift.Id, memberId)));
         }
 
-        return new GeneratorResult(assignments, Issues: [], Score: 0, input.Seed);
+        var evaluation = Evaluator.Evaluate(input, assignments);
+        return new GeneratorResult(assignments, evaluation.Issues, evaluation.Score, input.Seed);
     }
 }

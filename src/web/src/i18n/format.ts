@@ -69,3 +69,18 @@ export function formatDateRange(start: string, end: string, language: string): s
     timeZone: 'UTC',
   }).formatRange(calendarDate(start), calendarDate(end));
 }
+
+// "Wed, Oct 7", "mer. 7 oct.": a day inside a sentence, such as an issue in the issues list.
+export function formatShortDate(date: string, language: string): string {
+  return new Intl.DateTimeFormat(localeFor(language), {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(calendarDate(date));
+}
+
+// "13.5" from the API -> "13.5" or "13,5": numbers the server sends as text, in the reader's format.
+export function formatNumber(value: number | string, language: string): string {
+  return new Intl.NumberFormat(localeFor(language), { maximumFractionDigits: 2 }).format(Number(value));
+}

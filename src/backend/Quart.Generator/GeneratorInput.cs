@@ -37,7 +37,7 @@ public sealed record GeneratorShift(
     int Headcount,
     IReadOnlyList<LevelRequirement> LevelRequirements);
 
-/// <summary>At least <paramref name="MinCount"/> people of <paramref name="Level"/> on the shift ("at least 1 of level 3").</summary>
+/// <summary>At least <paramref name="MinCount"/> people of <paramref name="Level"/> or above on the shift ("at least 1 level 3"). Levels are a ladder (FR-066).</summary>
 public sealed record LevelRequirement(int Level, int MinCount);
 
 /// <param name="Level">1, 2 or 3; 3 is the most senior.</param>

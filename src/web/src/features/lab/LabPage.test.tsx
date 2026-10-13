@@ -58,8 +58,21 @@ const result: Schemas['GeneratorResult'] = {
     { shiftId: 'mon-open', memberId: 'p2' },
     { shiftId: 'mon-close', memberId: 'p1' },
   ],
-  issues: [],
-  score: 0,
+  issues: [
+    {
+      code: 'issue.below_headcount',
+      shiftIds: ['mon-close'],
+      memberIds: [],
+      parameters: { assigned: '1', headcount: '2' },
+    },
+    {
+      code: 'issue.double_shift',
+      shiftIds: ['mon-open', 'mon-close'],
+      memberIds: ['p1'],
+      parameters: { date: '2026-10-05', count: '2' },
+    },
+  ],
+  score: -1050,
   seed: 1,
 };
 
@@ -150,5 +163,24 @@ describe('LabPage', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(en.errors.common.too_many_requests);
     expect(alert).toHaveTextContent('abc123');
+  });
+
+  it('lists the issues with the score, and points at the shifts of an issue on the grid', async () => {
+    const user = userEvent.setup();
+    serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: result },
+    });
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: en.lab.generate }));
+
+    expect(await screen.findByText('Score: -1,050')).toBeInTheDocument();
+    expect(screen.getByText('2 issues')).toBeInTheDocument();
+    expect(screen.queryByText(en.scheduling.grid.highlighted)).not.toBeInTheDocument();
+
+    await user.click(screen.getByText(en.issues.double_shift.title));
+    await user.click(screen.getByRole('button', { name: 'Philippe N. works 2 shifts on Mon, Oct 5' }));
+
+    expect(screen.getAllByText(en.scheduling.grid.highlighted)).toHaveLength(2);
   });
 });

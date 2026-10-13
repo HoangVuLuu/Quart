@@ -93,3 +93,31 @@ export function fillOf(shift: GridShift): Fill {
   if (shift.people.length > shift.headcount) return 'over';
   return 'full';
 }
+
+/** The shift kind of every shift, by id: the same first-and-last rule as the grid (BR-034). */
+export function kindsById(shifts: GridShift[]): Map<string, ShiftKind> {
+  const byDate = new Map<string, GridShift[]>();
+  for (const shift of shifts) byDate.set(shift.date, [...(byDate.get(shift.date) ?? []), shift]);
+  return new Map(
+    [...byDate.values()].flatMap((day) => kindsOf(day).map(({ shift, kind }) => [shift.id, kind])),
+  );
+}
+
+/** What to point at on the grid, such as the shifts and people an issue concerns. */
+export interface GridHighlight {
+  shiftIds: string[];
+  memberIds: string[];
+}
+
+/**
+ * The cards to highlight: the named shifts, or, when the highlight names only people (someone's
+ * hours), every shift those people are on.
+ */
+export function highlightedShifts(shifts: GridShift[], highlight: GridHighlight | undefined): Set<string> {
+  if (!highlight) return new Set();
+  if (highlight.shiftIds.length > 0) return new Set(highlight.shiftIds);
+  const people = new Set(highlight.memberIds);
+  return new Set(
+    shifts.filter((shift) => shift.people.some((person) => people.has(person.id))).map((s) => s.id),
+  );
+}

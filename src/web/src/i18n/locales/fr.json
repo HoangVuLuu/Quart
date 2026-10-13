@@ -179,7 +179,8 @@
       "weeks": "Semaines de la période",
       "week": "Semaine {{number}}",
       "noShifts": "Aucun quart",
-      "fill": "{{filled}} sur {{headcount}} personnes"
+      "fill": "{{filled}} sur {{headcount}} personnes",
+      "highlighted": "Concerné par le problème choisi"
     }
   },
   "lab": {
@@ -198,6 +199,55 @@
     "generating": "Génération…",
     "naiveHint": "Pour l’instant, le générateur est naïf : la première personne disponible gagne.",
     "filled": "{{filled}} places remplies sur {{slots}}",
-    "seed": "Graine nº {{seed}}"
+    "seed": "Graine nº {{seed}}",
+    "score": "Score : {{score}}",
+    "scoreHint": "0, c’est parfait. Chaque problème enlève des points."
+  },
+  "issues": {
+    "title": "Problèmes",
+    "count_one": "{{count}} problème",
+    "count_other": "{{count}} problèmes",
+    "none": "Aucun problème",
+    "selectHint": "Ouvre un groupe, puis touche un problème pour le voir dans l’horaire.",
+    "below_headcount": {
+      "title": "Quarts en manque de personnel",
+      "item": "{{shift}} : {{assigned}} personnes sur {{headcount}}"
+    },
+    "missing_level": {
+      "title": "Niveau requis manquant",
+      "item": "{{shift}} : il faut {{required}} de niveau {{level}} ou plus, il y en a {{present}}"
+    },
+    "unavailable": {
+      "title": "Sur un quart sans être disponible",
+      "item": "{{person}} est sur {{shift}} sans être disponible"
+    },
+    "not_submitted": {
+      "title": "Sur un quart sans avoir envoyé ses dispos",
+      "item": "{{person}} est sur {{shift}} sans avoir envoyé ses dispos"
+    },
+    "under_hours": {
+      "title": "Sous les heures voulues",
+      "item": "{{person}} : {{hours}} h sur {{target}} h voulues"
+    },
+    "over_hours": {
+      "title": "Au-dessus des heures voulues",
+      "item": "{{person}} : {{hours}} h sur {{target}} h voulues"
+    },
+    "consecutive_shifts": {
+      "title": "Trop de quarts d’affilée",
+      "item": "{{person}} : {{total}} quarts d’affilée à partir de {{start}} (limite {{max}})"
+    },
+    "double_shift": {
+      "title": "Plusieurs quarts dans la même journée",
+      "item": "{{person}} fait {{total}} quarts le {{day}}"
+    },
+    "incompatible_pair": {
+      "title": "Ne peuvent pas travailler ensemble, sur le même quart",
+      "item": "{{first}} et {{second}} sont tous les deux sur {{shift}}"
+    },
+    "unknown": {
+      "title": "Autres problèmes",
+      "item": "Problème {{code}}"
+    }
   }
 }

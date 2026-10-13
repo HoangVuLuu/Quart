@@ -97,6 +97,30 @@ public sealed class LabEndpointsTests
     }
 
     [Fact]
+    public async Task The_naive_schedule_for_the_sample_shows_its_issues()
+    {
+        // M1-02's "done when": first available wins, so Philippe, available for everything, works all 28
+        // shifts. The evaluator must say so.
+        await using var factory = Lab();
+        using var client = factory.CreateClient();
+        var input = await SampleInputAsync(client);
+
+        using var response = await client.PostAsJsonAsync(Generate, input, TestContext.Current.CancellationToken);
+
+        var result = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.True(result.GetProperty("score").GetInt32() < 0);
+        var issues = result.GetProperty("issues").EnumerateArray().ToList();
+        static bool About(JsonElement issue, string code, string memberId) =>
+            issue.GetProperty("code").GetString() == code
+            && issue.GetProperty("memberIds").EnumerateArray().Select(id => id.GetString()).SequenceEqual([memberId]);
+        var run = Assert.Single(issues, issue => About(issue, "issue.consecutive_shifts", "p1"));
+        Assert.Equal("28", run.GetProperty("parameters").GetProperty("count").GetString());
+        Assert.Equal(14, issues.Count(issue => About(issue, "issue.double_shift", "p1")));
+        Assert.Single(issues, issue => About(issue, "issue.over_hours", "p1"));
+        Assert.Contains(issues, issue => issue.GetProperty("code").GetString() == "issue.under_hours");
+    }
+
+    [Fact]
     public async Task An_inconsistent_input_is_a_validation_problem_with_its_paths()
     {
         await using var factory = Lab();
