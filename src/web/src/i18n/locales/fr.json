@@ -214,6 +214,7 @@
     "seed": "Graine nº {{seed}}",
     "changedSinceRun": "Le scénario a changé depuis ce résultat. Génère à nouveau pour le voir.",
     "score": "Score : {{score}}",
+    "time": "généré en {{milliseconds}} ms",
     "scoreBefore": "Avant la recherche locale : {{score}}",
     "scoreHint": "0, c’est parfait. Chaque problème enlève des points.",
     "hours": {

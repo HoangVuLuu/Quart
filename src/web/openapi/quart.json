@@ -87,7 +87,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GeneratorResult"
+                  "$ref": "#/components/schemas/LabGeneration"
                 }
               }
             }
@@ -455,6 +455,22 @@
             "items": {
               "$ref": "#/components/schemas/LevelRequirement"
             }
+          }
+        }
+      },
+      "LabGeneration": {
+        "required": [
+          "result",
+          "milliseconds"
+        ],
+        "type": "object",
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/GeneratorResult"
+          },
+          "milliseconds": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

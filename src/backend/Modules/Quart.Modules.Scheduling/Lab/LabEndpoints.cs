@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -55,7 +56,7 @@ internal static class LabEndpoints
         lab.MapGet("/scenarios/presotea", () => LabScenarios.Presotea)
             .WithName("GetLabPresoteaScenario");
 
-        lab.MapPost("/generate", Results<Ok<GeneratorResult>, ProblemHttpResult> (GeneratorInput input, IScheduleGenerator generator) =>
+        lab.MapPost("/generate", Results<Ok<LabGeneration>, ProblemHttpResult> (GeneratorInput input, IScheduleGenerator generator) =>
             {
                 var errors = SizeErrors(input);
                 if (errors.Count == 0)
@@ -73,7 +74,10 @@ internal static class LabEndpoints
                         });
                 }
 
-                return TypedResults.Ok(generator.Generate(input));
+                var started = Stopwatch.GetTimestamp();
+                var result = generator.Generate(input);
+                var elapsed = Stopwatch.GetElapsedTime(started);
+                return TypedResults.Ok(new LabGeneration(result, (int)Math.Ceiling(elapsed.TotalMilliseconds)));
             })
             .WithName("GenerateLabSchedule")
             .WithMetadata(new RequestSizeLimitAttribute(MaxRequestBytes));

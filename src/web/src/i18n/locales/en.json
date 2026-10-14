@@ -214,6 +214,7 @@
     "seed": "Seed #{{seed}}",
     "changedSinceRun": "The scenario changed since this result. Generate again to see it.",
     "score": "Score: {{score}}",
+    "time": "generated in {{milliseconds}} ms",
     "scoreBefore": "Before local search: {{score}}",
     "scoreHint": "0 is perfect. Every issue takes points off.",
     "hours": {

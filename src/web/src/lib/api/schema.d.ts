@@ -147,6 +147,11 @@ export interface components {
       headcount: number;
       levelRequirements: components['schemas']['LevelRequirement'][];
     };
+    LabGeneration: {
+      result: components['schemas']['GeneratorResult'];
+      /** Format: int32 */
+      milliseconds: number;
+    };
     LabPerson: {
       id: string;
       name: string;
@@ -279,7 +284,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['GeneratorResult'];
+          'application/json': components['schemas']['LabGeneration'];
         };
       };
       /** @description Any error, as problem details with a machine-readable code (AD-023). */

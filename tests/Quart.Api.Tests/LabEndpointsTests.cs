@@ -88,7 +88,10 @@ public sealed class LabEndpointsTests
         using var response = await client.PostAsJsonAsync(Generate, scenario.GetProperty("input"), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var result = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        var run = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        // M1-08: the lab says how long the server took, for the 2-second budget (NFR-004).
+        Assert.InRange(run.GetProperty("milliseconds").GetInt32(), 0, 2_000);
+        var result = run.GetProperty("result");
         Assert.Equal(1, result.GetProperty("seed").GetInt32());
         // Philippe is available for everything, so every one of the 28 shifts gets at least him.
         var assignments = result.GetProperty("assignments").EnumerateArray().ToList();
@@ -107,7 +110,7 @@ public sealed class LabEndpointsTests
 
         using var response = await client.PostAsJsonAsync(Generate, input, TestContext.Current.CancellationToken);
 
-        var result = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        var result = (await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("result");
         Assert.True(result.GetProperty("score").GetInt32() < 0);
         var issues = result.GetProperty("issues").EnumerateArray().ToList();
         Assert.DoesNotContain(issues, issue => issue.GetProperty("hardRule").GetBoolean());

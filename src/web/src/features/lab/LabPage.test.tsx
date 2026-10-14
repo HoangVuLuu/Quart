@@ -112,6 +112,11 @@ const result: Schemas['GeneratorResult'] = {
   constructionScore: -2100,
 };
 
+// The lab's generate endpoint answers with the result and how long the server took (M1-08).
+function generated(generatorResult: Schemas['GeneratorResult'] = result): Schemas['LabGeneration'] {
+  return { result: generatorResult, milliseconds: 42 };
+}
+
 type Answer = { status: number; body: unknown };
 
 // Answers each API path with its own response, and remembers what was posted.
@@ -169,7 +174,7 @@ describe('LabPage', () => {
     const user = userEvent.setup();
     const fetch = serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: result },
+      '/api/lab/generate': { status: 200, body: generated() },
     });
     renderPage();
 
@@ -197,7 +202,10 @@ describe('LabPage', () => {
     };
     serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: { ...result, issues: [...result.issues, unavailable] } },
+      '/api/lab/generate': {
+        status: 200,
+        body: generated({ ...result, issues: [...result.issues, unavailable] }),
+      },
     });
     renderPage();
 
@@ -210,7 +218,7 @@ describe('LabPage', () => {
     const user = userEvent.setup();
     const fetch = serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: result },
+      '/api/lab/generate': { status: 200, body: generated() },
     });
     renderPage();
     const seed = await screen.findByRole('spinbutton', { name: en.lab.seedLabel });
@@ -255,7 +263,7 @@ describe('LabPage', () => {
     };
     serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: { ...result, issues: [...result.issues, under] } },
+      '/api/lab/generate': { status: 200, body: generated({ ...result, issues: [...result.issues, under] }) },
     });
     renderPage();
 
@@ -273,11 +281,24 @@ describe('LabPage', () => {
     expect(within(diego).queryByText(en.lab.hours.under)).not.toBeInTheDocument();
   });
 
+  it('shows how long the generation took next to the score (M1-08)', async () => {
+    const user = userEvent.setup();
+    serve({
+      '/api/lab/scenarios/presotea': { status: 200, body: scenario },
+      '/api/lab/generate': { status: 200, body: generated() },
+    });
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: en.lab.generate }));
+
+    expect(await screen.findByText('· generated in 42 ms', { exact: false })).toBeInTheDocument();
+  });
+
   it('shows the score before and after local search (M1-05)', async () => {
     const user = userEvent.setup();
     serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: result },
+      '/api/lab/generate': { status: 200, body: generated() },
     });
     renderPage();
 
@@ -291,7 +312,7 @@ describe('LabPage', () => {
     const user = userEvent.setup();
     const fetch = serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: result },
+      '/api/lab/generate': { status: 200, body: generated() },
     });
     renderPage();
     await openScenario(user);
@@ -317,7 +338,7 @@ describe('LabPage', () => {
     const user = userEvent.setup();
     const fetch = serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: result },
+      '/api/lab/generate': { status: 200, body: generated() },
     });
     renderPage();
     await openScenario(user);
@@ -342,7 +363,7 @@ describe('LabPage', () => {
     const user = userEvent.setup();
     const fetch = serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: result },
+      '/api/lab/generate': { status: 200, body: generated() },
     });
     renderPage();
     await openScenario(user);
@@ -367,7 +388,7 @@ describe('LabPage', () => {
     const user = userEvent.setup();
     const fetch = serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: result },
+      '/api/lab/generate': { status: 200, body: generated() },
     });
     renderPage();
     await openScenario(user);
@@ -389,7 +410,7 @@ describe('LabPage', () => {
     const user = userEvent.setup();
     const fetch = serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: result },
+      '/api/lab/generate': { status: 200, body: generated() },
     });
     renderPage();
     await openScenario(user);
@@ -475,7 +496,10 @@ describe('LabPage', () => {
     };
     serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: { ...result, issues: [...result.issues, missing] } },
+      '/api/lab/generate': {
+        status: 200,
+        body: generated({ ...result, issues: [...result.issues, missing] }),
+      },
     });
     renderPage();
 
@@ -488,7 +512,7 @@ describe('LabPage', () => {
     const user = userEvent.setup();
     const fetch = serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: result },
+      '/api/lab/generate': { status: 200, body: generated() },
     });
     renderPage();
     await user.click(await screen.findByRole('button', { name: en.lab.generate }));
@@ -540,7 +564,7 @@ describe('LabPage', () => {
     const user = userEvent.setup();
     serve({
       '/api/lab/scenarios/presotea': { status: 200, body: scenario },
-      '/api/lab/generate': { status: 200, body: result },
+      '/api/lab/generate': { status: 200, body: generated() },
     });
     renderPage();
     await user.click(await screen.findByRole('button', { name: en.lab.generate }));
