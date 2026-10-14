@@ -77,7 +77,7 @@ function Lab({ sample }: { sample: LabScenario }) {
   const [picked, setPicked] = useState<ScheduleIssue>();
   const [seedText, setSeedText] = useState(String(sample.input.seed));
   const [tab, setTab] = useState('schedule');
-  const result = generate.data;
+  const result = generate.data?.result;
   const shown = (result && ran) ?? scenario;
   // An issue from an earlier generation is not one of the current result's.
   const selected = picked && result?.issues.includes(picked) ? picked : undefined;
@@ -97,7 +97,7 @@ function Lab({ sample }: { sample: LabScenario }) {
 
   return (
     <>
-      <Summary scenario={scenario} ran={ran} result={result} />
+      <Summary scenario={scenario} ran={ran} result={result} milliseconds={generate.data?.milliseconds} />
 
       <SeedControls
         seedText={seedText}
@@ -199,10 +199,13 @@ function Summary({
   scenario,
   ran,
   result,
+  milliseconds,
 }: {
   scenario: LabScenario;
   ran: LabScenario | undefined;
   result: GeneratorResult | undefined;
+  /** How long the server took to generate it (M1-08). */
+  milliseconds: number | undefined;
 }) {
   const { t, i18n } = useTranslation();
   const { input } = scenario;
@@ -248,7 +251,16 @@ function Summary({
             </StatusChip>
           </div>
           <p className="mt-2 text-sm text-muted">{t('lab.hardRulesHint')}</p>
-          <p className="mt-2 font-bold">{t('lab.score', { score: number(result.score) })}</p>
+          <p className="mt-2 font-bold">
+            {t('lab.score', { score: number(result.score) })}
+            {/* M1-08: next to the score, against the 2-second budget (NFR-004). */}
+            {milliseconds !== undefined && (
+              <span className="font-semibold text-muted">
+                {' '}
+                · {t('lab.time', { milliseconds: number(milliseconds) })}
+              </span>
+            )}
+          </p>
           {/* M1-05: what local search added to the greedy schedule. */}
           <p className="text-sm text-muted">
             {t('lab.scoreBefore', { score: number(result.constructionScore) })}
