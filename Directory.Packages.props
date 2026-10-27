@@ -21,6 +21,6 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <!-- Property tests for the generator's hard rules (M1-03, AD-005). -->
-    <PackageVersion Include="CsCheck" Version="4.9.1" />
+    <PackageVersion Include="CsCheck" Version="5.0.0" />
   </ItemGroup>
 </Project>
