@@ -9,6 +9,7 @@ import { HeroCard } from '../../ui/HeroCard';
 import { PageHeader } from '../../ui/PageHeader';
 import { useDecisionCount } from '../alerts/data';
 import { useMe } from '../identity/session';
+import { InstallCard } from '../install/InstallCard';
 import { useMarketplace } from '../marketplace/data';
 import {
   useCurrentPeriods,
@@ -68,6 +69,8 @@ export function HomePage() {
         )}
         title={t('home.hello', { name: me?.displayName.split(' ')[0] ?? '' })}
       />
+
+      <InstallCard />
 
       {manages && <PeriodHero />}
 

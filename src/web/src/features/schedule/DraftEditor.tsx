@@ -144,9 +144,12 @@ export function DraftEditor({ periodId, onDone }: DraftEditorProps) {
         </div>
       )}
 
-      {byDay(data.shifts.filter((shift) => weekOf(data.period, shift.date) === week)).map((day) => (
-        <DayRow key={day.date} draft={data} date={day.date} shifts={day.shifts} onOpen={setOpenShift} />
-      ))}
+      {/* Phones list the days one under the other; wider screens show two days side by side (NFR-003). */}
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-x-6">
+        {byDay(data.shifts.filter((shift) => weekOf(data.period, shift.date) === week)).map((day) => (
+          <DayRow key={day.date} draft={data} date={day.date} shifts={day.shifts} onOpen={setOpenShift} />
+        ))}
+      </div>
 
       {selected && (
         <ShiftEditor draft={data} shift={selected} periodId={periodId} onClose={() => setOpenShift(null)} />

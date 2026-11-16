@@ -172,6 +172,19 @@
 }
 
 @layer base {
+  /* Touch: no grey flash on tap and no double-tap zoom delay, so buttons answer at once on phones.
+     Fields are 16 px (see TextField) because iPhone zooms the page when a smaller one is focused. */
+  a,
+  button,
+  [role='button'],
+  [role='radio'],
+  [role='switch'],
+  select,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
   html {
     background-color: var(--color-bg);
     color: var(--color-ink);

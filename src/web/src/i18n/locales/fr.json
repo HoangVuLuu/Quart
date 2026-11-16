@@ -931,5 +931,16 @@
     "leave": "Quitter ce lieu de travail",
     "leaveTitle": "Quitter {{workplace}}?",
     "leaveText": "Tu perds l’accès tout de suite et tes prochains quarts deviennent libres."
+  },
+  "install": {
+    "title": "Ajoute Quart à ton écran d’accueil",
+    "text": "Ouvre-le comme une application, en plein écran, à partir de son icône.",
+    "install": "Installer",
+    "notNow": "Plus tard",
+    "ios": {
+      "share": "Dans Safari, touche le bouton Partager (le carré avec une flèche).",
+      "add": "Choisis « Sur l’écran d’accueil ».",
+      "open": "Ouvre Quart à partir de sa nouvelle icône."
+    }
   }
 }

@@ -158,9 +158,9 @@ function WholeTeam({ schedule }: { schedule: ScheduleView }) {
         <section
           key={week}
           aria-label={t('scheduling.grid.week', { number: week + 1 })}
-          className="flex flex-col gap-3"
+          className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-x-4"
         >
-          <h2 className="text-xs font-bold tracking-[0.06em] text-muted uppercase">
+          <h2 className="text-xs font-bold tracking-[0.06em] text-muted uppercase lg:col-span-2">
             {t('scheduling.grid.week', { number: week + 1 })}
           </h2>
           {days.map((day) => {

@@ -931,5 +931,16 @@
     "leave": "Leave this workplace",
     "leaveTitle": "Leave {{workplace}}?",
     "leaveText": "You lose access at once and your future shifts become open shifts."
+  },
+  "install": {
+    "title": "Put Quart on your home screen",
+    "text": "Open it like an app, full screen, from its own icon.",
+    "install": "Install",
+    "notNow": "Not now",
+    "ios": {
+      "share": "In Safari, tap the Share button (the square with an arrow).",
+      "add": "Choose “Add to Home Screen”.",
+      "open": "Open Quart from its new icon."
+    }
   }
 }
