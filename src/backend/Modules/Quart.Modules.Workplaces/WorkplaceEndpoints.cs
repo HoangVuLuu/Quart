@@ -49,6 +49,7 @@ internal static class WorkplaceEndpoints
         one.MapGet("/members", ListMembersAsync).AllowAnyMember().WithName("ListMembers");
         one.MapPatch("/members/{membershipId:guid}", UpdateMemberAsync).RequirePermission(Permission.ManageLevels).WithName("UpdateMember");
         one.MapDelete("/members/{membershipId:guid}", RemoveMemberAsync).RequirePermission(Permission.ManageMembers).WithName("RemoveMember");
+        one.MapPatch("/me", UpdateMyselfAsync).AllowAnyMember().WithName("UpdateMyMembership");
         one.MapPost("/leave", LeaveAsync).AllowAnyMember().WithName("LeaveWorkplace");
     }
 
@@ -251,7 +252,7 @@ internal static class WorkplaceEndpoints
         return TypedResults.Ok(views);
     }
 
-    /// <summary>Levels, "works shifts" and hours are set only by people who manage levels, never by oneself as an employee (5.4).</summary>
+    /// <summary>Levels, "works shifts" and the maximum are set only by people who manage levels (5.4). They can set wanted hours too; so can the person (UpdateMyselfAsync).</summary>
     private static async Task<Results<NoContent, ProblemHttpResult>> UpdateMemberAsync(
         Guid workplaceId, Guid membershipId, UpdateMemberRequest request, WorkplacesDb db, CancellationToken cancellationToken)
     {
@@ -297,6 +298,25 @@ internal static class WorkplaceEndpoints
         Guid workplaceId, Guid membershipId, WorkplacesDb db, IWorkplaceDirectory directory, IUserDirectory users, INotifier notifier,
         IEnumerable<IMemberLeftHandler> handlers, IClock clock, CancellationToken cancellationToken) =>
         EndMembershipAsync(workplaceId, membershipId, db, directory, users, notifier, handlers, clock, cancellationToken);
+
+    /// <summary>
+    /// The hours a person wants each week are theirs to say (FR-037). Level, "works shifts" and the
+    /// maximum stay with admins, and the wish can never go above that maximum.
+    /// </summary>
+    private static async Task<Results<NoContent, ProblemHttpResult>> UpdateMyselfAsync(
+        Guid workplaceId, UpdateMyMembershipRequest request, HttpContext http, WorkplacesDb db, CancellationToken cancellationToken)
+    {
+        var membershipId = http.Member().MembershipId;
+        var membership = await db.Memberships.SingleAsync(x => x.Id == membershipId && x.WorkplaceId == workplaceId, cancellationToken);
+        var desired = request.DesiredWeeklyHours;
+        if (desired is < 0 or > 80 || desired > membership.MaxWeeklyHours)
+        {
+            return Problems.Validation(new FieldError(HoursInvalid, "desiredWeeklyHours"));
+        }
+        membership.DesiredWeeklyHours = desired;
+        await db.SaveChangesAsync(cancellationToken);
+        return TypedResults.NoContent();
+    }
 
     private static Task<Results<NoContent, ProblemHttpResult>> LeaveAsync(
         Guid workplaceId, HttpContext http, WorkplacesDb db, IWorkplaceDirectory directory, IUserDirectory users, INotifier notifier,
@@ -391,5 +411,7 @@ public sealed record MemberView(
     bool? WorksShifts,
     decimal? DesiredWeeklyHours,
     decimal? MaxWeeklyHours);
+
+public sealed record UpdateMyMembershipRequest(decimal DesiredWeeklyHours);
 
 public sealed record UpdateMemberRequest(int? Level, bool? WorksShifts, decimal? DesiredWeeklyHours, decimal? MaxWeeklyHours, bool? ClearMaxWeeklyHours);

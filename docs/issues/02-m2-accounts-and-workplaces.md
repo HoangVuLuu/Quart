@@ -255,7 +255,7 @@ spec: FR-035, FR-036, FR-037, FR-040, 5.4
 
 **Goal.** Philippe sets what the generator needs to know about each person.
 
-**You will see.** A team list with each person's name, level and email. Admins can edit level (1–3), "works shifts", desired weekly hours and an optional maximum.
+**You will see.** A team list with each person's name, level and email. Admins can edit level (1–3), "works shifts", desired weekly hours and an optional maximum. Each person can also change their own desired weekly hours from Profile (mockup 1g), up to that maximum.
 
 **Backend**
 - [ ] Only ManageLevels holders change levels; employees can never change any level, including their own (5.4).

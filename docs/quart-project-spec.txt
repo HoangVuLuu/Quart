@@ -299,6 +299,9 @@ FR-036  Each membership has an "I work shifts too" flag. When on, that member
         scheduled. Philippe has this on.
 FR-037  Each member who works shifts has a weekly desired hours target, and an
         optional maximum set by an admin. There is no minimum-hours concept.
+        The target is set by the member from Profile, or by an admin from the
+        team list; it can never be above the maximum. Level, "works shifts"
+        and the maximum stay with admins.
 FR-038  A member can leave a workplace. An admin can remove a member. In both
         cases every future shift held by that person becomes an open slot and
         the admins are notified. Past shifts are left intact.
@@ -1792,6 +1795,10 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             no reload gesture of its own, and staff expect the other two.
             Taps still do everything, so NFR-002 holds; it now says so.
             (NFR-002, AD-031)
+2026-11-16  Staff set their own desired weekly hours from Profile, as mockup
+            1g shows ("Edit"). Admins can still set them, and the admin-set
+            maximum caps the wish. Mockup conflict 4 is closed.  (FR-037,
+            BR-032, M2-12)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

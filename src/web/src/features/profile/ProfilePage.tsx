@@ -12,6 +12,8 @@ import { Card } from '../../ui/Card';
 import { Dialog } from '../../ui/Dialog';
 import { PageHeader } from '../../ui/PageHeader';
 import { Select } from '../../ui/Select';
+import { Sheet } from '../../ui/Sheet';
+import { Stepper } from '../../ui/Stepper';
 import { Switch } from '../../ui/Switch';
 import { TextField } from '../../ui/TextField';
 import { useToast } from '../../ui/toast-context';
@@ -27,8 +29,8 @@ function GroupLabel({ children }: { children: string }) {
 const rowLink =
   'flex min-h-12 items-center justify-between gap-3 border-b border-line py-2 font-bold last:border-b-0';
 
-// Mockups 1g (staff) and 1o (admins). Wanted hours are read-only for staff until Hoang decides
-// otherwise (known conflict 4, FR-037). Email and push switches, Google Calendar, changing the password
+// Mockups 1g (staff) and 1o (admins). Staff change their own wanted hours from the "Edit" link, as on
+// 1g (FR-037). Email and push switches, Google Calendar, changing the password
 // while signed in and deleting the account arrive with M2-07, M2-16, M8 and M9.
 export function ProfilePage() {
   const { t, i18n } = useTranslation();
@@ -43,7 +45,24 @@ export function ProfilePage() {
   const [dark, setDark] = useState(currentTheme() === 'dark');
   const [name, setName] = useState(me?.displayName ?? '');
   const [leaving, setLeaving] = useState(false);
+  const [editingHours, setEditingHours] = useState(false);
+  const [hours, setHours] = useState(view.me.desiredWeeklyHours ?? 0);
   const path = { workplaceId: id };
+
+  const updateHours = useMutation({
+    mutationFn: () =>
+      unwrap(
+        api.PATCH('/api/workplaces/{workplaceId}/me', {
+          params: { path },
+          body: { desiredWeeklyHours: hours },
+        }),
+      ),
+    onSuccess: async () => {
+      await refresh();
+      setEditingHours(false);
+      toast(t('profile.saved'));
+    },
+  });
 
   const updateMember = useMutation({
     mutationFn: (worksShifts: boolean) =>
@@ -137,10 +156,41 @@ export function ProfilePage() {
             <p className="mt-1 text-2xl font-bold">
               {formatNumber(view.me.desiredWeeklyHours, i18n.language)} <span className="text-sm">h</span>
             </p>
-            <p className="text-xs text-muted">{t('profile.wantsHint')}</p>
+            <button
+              type="button"
+              className="-my-2 min-h-11 text-sm font-bold text-link"
+              onClick={() => {
+                setHours(view.me.desiredWeeklyHours ?? 0);
+                updateHours.reset();
+                setEditingHours(true);
+              }}
+            >
+              {t('profile.wantsEdit')}
+            </button>
           </Card>
         </div>
       )}
+
+      <Sheet
+        open={editingHours}
+        onOpenChange={setEditingHours}
+        title={t('profile.hoursSheet.title')}
+        description={t('profile.hoursSheet.text')}
+      >
+        <div className="flex flex-col gap-4">
+          <Stepper
+            label={t('profile.hoursSheet.label')}
+            value={hours}
+            min={0}
+            max={view.me.maxWeeklyHours ?? 60}
+            onChange={setHours}
+          />
+          <FormError message={updateHours.error ? t(messageKeyFor(updateHours.error)) : undefined} />
+          <Button onClick={() => updateHours.mutate()} disabled={updateHours.isPending}>
+            {t('profile.hoursSheet.save')}
+          </Button>
+        </div>
+      </Sheet>
 
       {can('ManageLevels') && (
         <Card className="p-3">

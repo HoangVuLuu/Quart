@@ -153,6 +153,23 @@ describe('the schedule tab', () => {
     await i18n.changeLanguage('en');
   });
 
+  it('lets staff change the hours they want from Profile (FR-037, mockup 1g)', async () => {
+    const calls = signedIn('employee', { [`PATCH ${base}/me`]: status(204) });
+    renderApp('/profile');
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Edit →' }));
+    const sheet = within(await screen.findByRole('dialog', { name: 'Hours you want per week' }));
+    await user.click(sheet.getByRole('button', { name: /Increase|More|\+/ }));
+    await user.click(sheet.getByRole('button', { name: 'Save' }));
+
+    await screen.findByText('Saved');
+    const sent = calls.find((call) => call.method === 'PATCH' && call.path === `${base}/me`);
+    expect(sent?.body).toEqual({
+      desiredWeeklyHours: (workplace('employee').me.desiredWeeklyHours ?? 0) + 1,
+    });
+  });
+
   it('shows staff their own shifts and never asks for a draft', async () => {
     const calls = signedIn('employee', {
       [`GET ${base}/periods/current`]: { live: published, next: null },

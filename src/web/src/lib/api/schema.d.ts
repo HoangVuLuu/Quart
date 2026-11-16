@@ -308,6 +308,22 @@ export interface paths {
     patch: operations['UpdateMember'];
     trace?: never;
   };
+  '/api/workplaces/{workplaceId}/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['UpdateMyMembership'];
+    trace?: never;
+  };
   '/api/workplaces/{workplaceId}/leave': {
     parameters: {
       query?: never;
@@ -1433,6 +1449,10 @@ export interface components {
       displayName: null | string;
       language: null | string;
     };
+    UpdateMyMembershipRequest: {
+      /** Format: double */
+      desiredWeeklyHours: number;
+    };
     UpdateSettingsRequest: {
       claimsNeedApproval: null | boolean;
       tradesNeedApproval: null | boolean;
@@ -2121,6 +2141,39 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['UpdateMemberRequest'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  UpdateMyMembership: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMyMembershipRequest'];
       };
     };
     responses: {

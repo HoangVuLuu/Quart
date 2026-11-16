@@ -144,6 +144,32 @@ public sealed class WorkplaceTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task Staff_set_their_own_wanted_hours_but_never_above_the_maximum_or_for_someone_else()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var owner = await app.PersonAsync("Philippe Roy");
+        var workplaceId = await app.WorkplaceAsync(owner, withTemplate: false);
+        var sophie = await app.JoinAsync(owner, workplaceId, "Sophie Tran", desiredHours: 13);
+        var kevin = await app.JoinAsync(owner, workplaceId, "Kevin Tremblay");
+        await owner.SendAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/members/{sophie.MembershipId}", new { maxWeeklyHours = 24 });
+
+        // FR-037: the wish is the person's own; the maximum and everyone else's hours are not.
+        var (saved, _) = await sophie.TryAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/me", new { desiredWeeklyHours = 18 });
+        var (aboveMax, aboveMaxCode) = await sophie.TryAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/me", new { desiredWeeklyHours = 30 });
+        var (negative, _) = await sophie.TryAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/me", new { desiredWeeklyHours = -1 });
+        var (someoneElse, _) = await sophie.TryAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/members/{kevin.MembershipId}", new { desiredWeeklyHours = 5 });
+        var members = (await owner.GetAsync($"/api/workplaces/{workplaceId}/members")).AsArray();
+        decimal HoursOf(string name) => members.Single(x => x!["displayName"]!.GetValue<string>() == name)!["desiredWeeklyHours"]!.GetValue<decimal>();
+
+        Assert.Equal(HttpStatusCode.NoContent, saved);
+        Assert.Equal((HttpStatusCode.BadRequest, "workplace.hours_invalid"), (aboveMax, aboveMaxCode));
+        Assert.Equal(HttpStatusCode.BadRequest, negative);
+        Assert.Equal(HttpStatusCode.Forbidden, someoneElse);
+        Assert.Equal(18m, HoursOf("Sophie T."));
+        Assert.Equal(20m, HoursOf("Kevin T."));
+    }
+
+    [Fact]
     public async Task A_removed_member_loses_access_on_the_next_request_and_the_owner_cannot_leave()
     {
         await using var app = await TestApp.StartAsync(postgres);

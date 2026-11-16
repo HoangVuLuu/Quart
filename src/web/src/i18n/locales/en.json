@@ -897,7 +897,6 @@
     "level": "Barista level",
     "levelHint": "Set by your manager",
     "wants": "Wants per week",
-    "wantsHint": "Ask your manager to change it",
     "worksShifts": "I work shifts too",
     "worksShiftsText": "Be scheduled and send availability",
     "workplace": "Workplace",
@@ -931,7 +930,14 @@
     "signOut": "Log out",
     "leave": "Leave this workplace",
     "leaveTitle": "Leave {{workplace}}?",
-    "leaveText": "You lose access at once and your future shifts become open shifts."
+    "leaveText": "You lose access at once and your future shifts become open shifts.",
+    "wantsEdit": "Edit →",
+    "hoursSheet": {
+      "title": "Hours you want per week",
+      "text": "Your manager sees this when building the schedule. It is a wish, not a promise.",
+      "label": "Hours per week",
+      "save": "Save"
+    }
   },
   "install": {
     "title": "Put Quart on your home screen",
