@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSwipe } from '../../lib/gestures';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router';
 import { SubPage } from '../../app/SubPage';
@@ -54,6 +55,11 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
     () => new Set(mine.shifts.filter((shift) => shift.selected).map((shift) => shift.id)),
   );
   const [week, setWeek] = useState(0);
+  // A sideways swipe on the week's card changes the week, like the pills above it.
+  const swipeWeeks = useSwipe({
+    onNext: () => setWeek((current) => Math.min(mine.period.weeks - 1, current + 1)),
+    onPrevious: () => setWeek((current) => Math.max(0, current - 1)),
+  });
   const [note, setNote] = useState('');
   const locked = !mine.canEdit;
   const sent = mine.status === 'sent';
@@ -126,7 +132,7 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
           </div>
         )}
 
-        <Card className="flex flex-col gap-3 p-4">
+        <Card className="flex flex-col gap-3 p-4" {...swipeWeeks}>
           {days
             .filter((day) => weekOf(mine.period, day.date) === week)
             .map((day) => (

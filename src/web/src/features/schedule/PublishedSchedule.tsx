@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { useSwipe } from '../../lib/gestures';
 import { useTranslation } from 'react-i18next';
 import { messageKeyFor } from '../../i18n/errors';
 import { formatDayHeading, formatDayShort, formatNumber, formatShortDate } from '../../i18n/format';
@@ -36,6 +37,7 @@ export function PublishedSchedule({ periodId, action }: PublishedScheduleProps) 
   const schedule = usePublishedSchedule(periodId);
   const [view, setView] = useState<'mine' | 'team'>('mine');
   const [openShift, setOpenShift] = useState<string | null>(null);
+  const swipeViews = useSwipe({ onNext: () => setView('team'), onPrevious: () => setView('mine') });
 
   if (schedule.error) throw schedule.error;
   if (!schedule.data) return <Skeleton className="h-48" />;
@@ -53,11 +55,14 @@ export function PublishedSchedule({ periodId, action }: PublishedScheduleProps) 
         <div className="flex-1" />
         {action}
       </div>
-      {view === 'mine' ? (
-        <MyShifts schedule={schedule.data} onOpen={setOpenShift} />
-      ) : (
-        <WholeTeam schedule={schedule.data} />
-      )}
+      {/* Swipe left for the whole team, right to come back to my shifts: the same as the two pills. */}
+      <div className="flex flex-col gap-4" {...swipeViews}>
+        {view === 'mine' ? (
+          <MyShifts schedule={schedule.data} onOpen={setOpenShift} />
+        ) : (
+          <WholeTeam schedule={schedule.data} />
+        )}
+      </div>
       {selected && (
         <ShiftSheet schedule={schedule.data} shift={selected} onClose={() => setOpenShift(null)} />
       )}

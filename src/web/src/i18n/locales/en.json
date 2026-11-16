@@ -256,7 +256,8 @@
     "hidePassword": "Hide",
     "decrease": "Decrease",
     "increase": "Increase",
-    "notification": "Notifications"
+    "notification": "Notifications",
+    "refreshing": "Refreshing…"
   },
   "gallery": {
     "context": "For developers",

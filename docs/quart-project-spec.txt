@@ -1325,6 +1325,10 @@ NFR-001  Works on desktop, iPad and iPhone. iOS Safari is a first-class target,
 NFR-002  Phone and iPad interfaces are tap-only. No drag interaction is ever
          required to complete a task. Drag exists on desktop as an accelerator
          for building the template, never as the only way.
+         Swipes exist on touch screens as shortcuts only, each next to a tap
+         path: pull down from the top of a screen to refresh, swipe a sheet
+         down to close it, and swipe sideways to change the week or the
+         Schedule view.
 NFR-003  Week view on desktop and iPad. On phones the Schedule tab lists the
          whole current period: "My shifts" (upcoming and completed) or "Whole
          team" (a table by day, grouped by week). It shows the period that is
@@ -1782,6 +1786,12 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
 2026-11-16  Text fields are 16 px, not the 15 px of the design tokens: iPhone
             zooms the whole page when a smaller field is focused.  (19.4,
             NFR-001)
+2026-11-16  Three swipe shortcuts on touch screens: pull to refresh, swipe a
+            sheet down to close, swipe sideways between weeks and between
+            "My shifts" and "Whole team". An app on the iPhone home screen has
+            no reload gesture of its own, and staff expect the other two.
+            Taps still do everything, so NFR-002 holds; it now says so.
+            (NFR-002, AD-031)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

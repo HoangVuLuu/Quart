@@ -256,7 +256,8 @@
     "hidePassword": "Masquer",
     "decrease": "Diminuer",
     "increase": "Augmenter",
-    "notification": "Notifications"
+    "notification": "Notifications",
+    "refreshing": "Actualisation…"
   },
   "gallery": {
     "context": "Pour l’équipe de dev",

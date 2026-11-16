@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router';
+import { PullToRefresh } from './PullToRefresh';
 import { router } from './router';
 
 // There is no live connection in v1 (AD-031): data stays fresh by refetching when the app
@@ -17,7 +18,9 @@ const queryClient = new QueryClient({
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <PullToRefresh>
+        <RouterProvider router={router} />
+      </PullToRefresh>
     </QueryClientProvider>
   );
 }

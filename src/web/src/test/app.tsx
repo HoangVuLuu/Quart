@@ -1,3 +1,4 @@
+import { PullToRefresh } from '../app/PullToRefresh';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
@@ -143,7 +144,9 @@ export function renderApp(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   render(
     <QueryClientProvider client={client}>
-      <RouterProvider router={router} />
+      <PullToRefresh>
+        <RouterProvider router={router} />
+      </PullToRefresh>
     </QueryClientProvider>,
   );
   return router;

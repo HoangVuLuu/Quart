@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSwipe } from '../../lib/gestures';
 import { useTranslation } from 'react-i18next';
 import { messageKeyFor } from '../../i18n/errors';
 import { formatDayHeading, formatNumber, formatShortDate } from '../../i18n/format';
@@ -58,6 +59,11 @@ export function DraftEditor({ periodId, onDone }: DraftEditorProps) {
   const draft = useDraft(periodId);
   const actions = useDraftActions(periodId);
   const [week, setWeek] = useState(0);
+  const lastWeek = (draft.data?.period.weeks ?? 1) - 1;
+  const swipeWeeks = useSwipe({
+    onNext: () => setWeek((current) => Math.min(lastWeek, current + 1)),
+    onPrevious: () => setWeek((current) => Math.max(0, current - 1)),
+  });
   const [openShift, setOpenShift] = useState<string | null>(null);
   const [showIssues, setShowIssues] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -144,8 +150,9 @@ export function DraftEditor({ periodId, onDone }: DraftEditorProps) {
         </div>
       )}
 
-      {/* Phones list the days one under the other; wider screens show two days side by side (NFR-003). */}
-      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-x-6">
+      {/* Phones list the days one under the other; wider screens show two days side by side (NFR-003).
+          A sideways swipe changes the week, like the pills above. */}
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-x-6" {...swipeWeeks}>
         {byDay(data.shifts.filter((shift) => weekOf(data.period, shift.date) === week)).map((day) => (
           <DayRow key={day.date} draft={data} date={day.date} shifts={day.shifts} onOpen={setOpenShift} />
         ))}
