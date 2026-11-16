@@ -17,8 +17,15 @@ using Quart.Modules.Workplaces;
 using Quart.SharedKernel;
 
 // `dotnet Quart.Api.dll migrate` applies database migrations and exits; `tick` runs the background jobs
-// that are due and exits (decision 0009). No argument starts the web server.
-var command = args is [var only and (DatabaseMigrations.Command or TickCommand.Command)] ? only : null;
+// that are due and exits (decision 0009); `grant-platform-admin <email>` makes one verified account the
+// platform admin and exits (M2-09). No argument starts the web server.
+const string GrantPlatformAdmin = "grant-platform-admin";
+var command = args switch
+{
+    [var only and (DatabaseMigrations.Command or TickCommand.Command)] => only,
+    [GrantPlatformAdmin, _] => GrantPlatformAdmin,
+    _ => null,
+};
 var builder = WebApplication.CreateBuilder(command is null ? args : []);
 
 builder.AddQuartLogging();
@@ -53,7 +60,7 @@ builder.Services.Configure<ExceptionHandlerOptions>(options => options.StatusCod
 builder.Services.AddRateLimiter(options => options.RejectionStatusCode = StatusCodes.Status429TooManyRequests);
 
 builder.Services
-    .AddIdentityModule()
+    .AddIdentityModule(persistKeys: !QuartOpenApi.IsGeneratingDocument)
     .AddWorkplacesModule()
     .AddSchedulingModule()
     .AddMarketplaceModule()
@@ -66,9 +73,13 @@ var app = builder.Build();
 
 if (command is not null)
 {
-    Environment.ExitCode = command == TickCommand.Command
-        ? await TickCommand.RunCommandAsync(app.Services)
-        : await DatabaseMigrations.RunCommandAsync(app.Services);
+    Environment.ExitCode = command switch
+    {
+        TickCommand.Command => await TickCommand.RunCommandAsync(app.Services),
+        // The email stays out of the log (decision 0012); the exit code says whether an account matched.
+        GrantPlatformAdmin => await app.Services.GrantPlatformAdminAsync(args[1]) ? 0 : 1,
+        _ => await DatabaseMigrations.RunCommandAsync(app.Services),
+    };
     return;
 }
 
@@ -91,6 +102,7 @@ app.UseQuartSecurity();
 app.UseQuartRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseIdentityModule();
 app.UseRateLimiter();
 
 // Production only: the React build is copied into wwwroot by the Dockerfile.

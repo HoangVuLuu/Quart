@@ -1,21 +1,131 @@
+using System.Text.Json;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using NodaTime;
+using Npgsql;
+using Quart.Modules.Notifications.Email;
+using Quart.Modules.Notifications.Persistence;
+using Quart.SharedKernel.Access;
+using Quart.SharedKernel.Jobs;
+using Quart.SharedKernel.Notifications;
 
 namespace Quart.Modules.Notifications;
 
 /// <summary>
-/// Entry point of the Notifications module: the only two things the API host calls.
-/// In-app, email and push notifications, the outbox, bundling. Starts in M2.
+/// Entry point of the Notifications module: the only things the API host calls.
+/// The in-app inbox (M2-14) and the email outbox (M2-03, AD-030). Push arrives in M8.
+/// Other modules notify through <see cref="INotifier"/> and <see cref="IEmailOutbox"/>.
 /// </summary>
 public static class NotificationsModule
 {
+    /// <summary>Needs an <see cref="NpgsqlDataSource"/> (with NodaTime enabled) registered by the host.</summary>
     public static IServiceCollection AddNotificationsModule(this IServiceCollection services)
     {
+        services.AddDbContext<NotificationsDbContext>((provider, options) =>
+            Configure(options, provider.GetRequiredService<NpgsqlDataSource>()));
+        services.TryAddSingleton<IClock>(SystemClock.Instance);
+        services.AddOptions<EmailOptions>().BindConfiguration(EmailOptions.Section);
+        services.TryAddSingleton<IEmailTransport, SmtpEmailTransport>();
+        services.AddSingleton<EmailOutbox>();
+        services.AddSingleton<IEmailOutbox>(provider => provider.GetRequiredService<EmailOutbox>());
+        services.AddScoped<IJobHandler, SendEmailHandler>();
+        services.AddScoped<INotifier, Notifier>();
         return services;
     }
 
     public static IEndpointRouteBuilder MapNotificationsModule(this IEndpointRouteBuilder endpoints)
     {
+        var group = endpoints.MapGroup("/api/workplaces/{workplaceId:guid}/notifications");
+
+        // A member only ever sees their own notifications (M2-14).
+        group.MapGet("/", async (HttpContext http, NotificationsDbContext db, CancellationToken cancellationToken) =>
+            {
+                var member = http.Member();
+                var rows = await db.Notifications.AsNoTracking()
+                    .Where(x => x.MembershipId == member.MembershipId)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Take(100)
+                    .ToListAsync(cancellationToken);
+                var items = rows
+                    .Select(x => new NotificationItem(
+                        x.Id,
+                        x.Type,
+                        JsonSerializer.Deserialize<Dictionary<string, string>>(x.Parameters) ?? [],
+                        x.CreatedAt.ToDateTimeOffset(),
+                        x.ReadAt is not null))
+                    .ToList();
+                return TypedResults.Ok(new NotificationInbox(items.Count(item => !item.Read), items));
+            })
+            .AllowAnyMember()
+            .WithName("GetNotifications");
+
+        group.MapPost("/read-all", async (HttpContext http, NotificationsDbContext db, IClock clock, CancellationToken cancellationToken) =>
+            {
+                var member = http.Member();
+                var now = clock.GetCurrentInstant();
+                await db.Notifications
+                    .Where(x => x.MembershipId == member.MembershipId && x.ReadAt == null)
+                    .ExecuteUpdateAsync(update => update.SetProperty(x => x.ReadAt, now), cancellationToken);
+                return TypedResults.NoContent();
+            })
+            .AllowAnyMember()
+            .WithName("MarkNotificationsRead");
+
         return endpoints;
+    }
+
+    /// <summary>Applies this module's pending migrations.</summary>
+    public static async Task MigrateNotificationsModuleAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
+    {
+        await using var scope = services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync(cancellationToken);
+    }
+
+    internal static void Configure(DbContextOptionsBuilder options, NpgsqlDataSource dataSource) =>
+        options.UseNpgsql(dataSource, npgsql => npgsql
+            .UseNodaTime()
+            .MigrationsHistoryTable("__ef_migrations", NotificationsDbContext.Schema));
+}
+
+/// <param name="Unread">How many of the member's notifications are unread; the tab's badge.</param>
+public sealed record NotificationInbox(int Unread, IReadOnlyList<NotificationItem> Items);
+
+/// <param name="Type">A code such as <c>schedule.published</c>; the web app renders the sentence.</param>
+public sealed record NotificationItem(Guid Id, string Type, IReadOnlyDictionary<string, string> Parameters, DateTimeOffset CreatedAt, bool Read);
+
+internal sealed class Notifier(NotificationsDbContext db, IClock clock) : INotifier
+{
+    public async Task NotifyAsync(IReadOnlyCollection<NotificationRequest> notifications, CancellationToken cancellationToken)
+    {
+        var now = clock.GetCurrentInstant();
+        foreach (var request in notifications)
+        {
+            // FR-216 in one place: a type carries only the parameter names it declared.
+            if (!NotificationTypes.AllowedParameters.TryGetValue(request.Type, out var allowed))
+            {
+                throw new ArgumentException($"Unknown notification type '{request.Type}'.", nameof(notifications));
+            }
+            var parameters = request.Parameters ?? new Dictionary<string, string>();
+            if (parameters.Keys.FirstOrDefault(name => !allowed.Contains(name)) is { } refused)
+            {
+                throw new ArgumentException($"Notification type '{request.Type}' may not carry '{refused}'.", nameof(notifications));
+            }
+
+            db.Notifications.Add(new Notification
+            {
+                Id = Guid.NewGuid(),
+                WorkplaceId = request.WorkplaceId,
+                MembershipId = request.MembershipId,
+                UserId = request.UserId,
+                Type = request.Type,
+                Parameters = JsonSerializer.Serialize(parameters),
+                CreatedAt = now,
+            });
+        }
+        await db.SaveChangesAsync(cancellationToken);
     }
 }

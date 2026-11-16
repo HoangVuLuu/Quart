@@ -27,6 +27,20 @@ public sealed class QuartApiFactory(
         IReadOnlyDictionary<string, string?>? settings = null) =>
         new("Host=127.0.0.1;Port=1;Database=quart;Username=quart;Password=none;Timeout=2", environment, webRoot, settings: settings);
 
+    /// <summary>
+    /// Every client behaves like the web app: it sends the anti-forgery cookie back as a header (AD-025).
+    /// <see cref="CreateForeignClient"/> is the one that does not.
+    /// </summary>
+    protected override void ConfigureClient(HttpClient client)
+    {
+        base.ConfigureClient(client);
+        client.DefaultRequestHeaders.Add(Quart.Modules.Identity.IdentityModule.AntiforgeryHeader, "test-token");
+        client.DefaultRequestHeaders.Add("Cookie", $"{Quart.Modules.Identity.IdentityModule.AntiforgeryCookie}=test-token");
+    }
+
+    /// <summary>A request as another website would make it: no anti-forgery cookie and no header.</summary>
+    public HttpClient CreateForeignClient() => new(Server.CreateHandler()) { BaseAddress = Server.BaseAddress };
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("ConnectionStrings:Quart", connectionString);

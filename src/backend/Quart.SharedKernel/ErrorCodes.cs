@@ -15,6 +15,9 @@ public static class ErrorCodes
     public const string TooManyRequests = "common.too_many_requests";
     public const string Unexpected = "common.unexpected";
 
+    /// <summary>An unsafe request arrived without the anti-forgery header (AD-025).</summary>
+    public const string Antiforgery = "auth.antiforgery";
+
     /// <summary>Maps an HTTP status to the generic code used when an endpoint did not set its own.</summary>
     public static string ForStatus(int? status) => status switch
     {

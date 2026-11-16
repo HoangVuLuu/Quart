@@ -8,7 +8,7 @@ namespace Quart.Api.Tests;
 public sealed class MigrationTests(PostgresFixture postgres)
 {
     /// <summary>Every module that owns tables. Add the new schema here when a module gets its first migration.</summary>
-    private static readonly string[] ModuleSchemas = ["jobs"];
+    private static readonly string[] ModuleSchemas = ["identity", "jobs", "marketplace", "notifications", "scheduling", "workplaces"];
 
     [Fact]
     public async Task Migrations_apply_to_an_empty_database_and_every_table_lands_in_a_module_schema()

@@ -1,4 +1,9 @@
+using Quart.Modules.Identity;
 using Quart.Modules.Jobs;
+using Quart.Modules.Marketplace;
+using Quart.Modules.Notifications;
+using Quart.Modules.Scheduling;
+using Quart.Modules.Workplaces;
 
 namespace Quart.Api.Migrations;
 
@@ -20,7 +25,12 @@ public static class DatabaseMigrations
     // ever depends on another's; AD-015 forbids cross-schema foreign keys, so keep it alphabetical.
     private static readonly (string Module, Func<IServiceProvider, CancellationToken, Task> Migrate)[] Modules =
     [
+        ("identity", (services, cancellationToken) => services.MigrateIdentityModuleAsync(cancellationToken)),
         ("jobs", (services, cancellationToken) => services.MigrateJobsModuleAsync(cancellationToken)),
+        ("marketplace", (services, cancellationToken) => services.MigrateMarketplaceModuleAsync(cancellationToken)),
+        ("notifications", (services, cancellationToken) => services.MigrateNotificationsModuleAsync(cancellationToken)),
+        ("scheduling", (services, cancellationToken) => services.MigrateSchedulingModuleAsync(cancellationToken)),
+        ("workplaces", (services, cancellationToken) => services.MigrateWorkplacesModuleAsync(cancellationToken)),
     ];
 
     /// <summary>
