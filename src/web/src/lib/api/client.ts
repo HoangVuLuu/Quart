@@ -33,6 +33,24 @@ export const api = createClient<paths>({
   fetch: (request) => globalThis.fetch(request),
 });
 
+/** The cookie the API sets and expects back in a header on every unsafe request (AD-025). */
+function antiforgeryToken(): string | undefined {
+  const match = /(?:^|;\s*)XSRF-TOKEN=([^;]+)/.exec(globalThis.document?.cookie ?? '');
+  return match?.[1] ? decodeURIComponent(match[1]) : undefined;
+}
+
+// Another site can make the browser send our cookies, but it can neither read this cookie nor set this
+// header, so the API refuses any change that arrives without it.
+api.use({
+  onRequest({ request }) {
+    const token = antiforgeryToken();
+    if (token && !['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+      request.headers.set('X-XSRF-TOKEN', token);
+    }
+    return request;
+  },
+});
+
 /**
  * Turns an openapi-fetch call into its data, or throws an ApiError carrying the problem's code and
  * trace ID. Usage: `unwrap(api.GET('/api/meta', { signal }))`.

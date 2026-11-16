@@ -1,0 +1,65 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ApiError, api, unwrap, type Schemas } from '../../lib/api/client';
+
+export type Me = Schemas['Me'];
+
+export const meKey = ['me'] as const;
+
+/** The signed-in account, or null when nobody is signed in. */
+export function useMe() {
+  return useQuery({
+    queryKey: meKey,
+    queryFn: async ({ signal }): Promise<Me | null> => {
+      try {
+        return await unwrap(api.GET('/api/me', { signal }));
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) return null;
+        throw error;
+      }
+    },
+    retry: false,
+  });
+}
+
+export function useSignIn() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Schemas['SignInRequest']) => unwrap(api.POST('/api/auth/sign-in', { body })),
+    onSuccess: (me) => {
+      // Nothing cached for a previous account may leak into this one.
+      client.clear();
+      client.setQueryData(meKey, me);
+    },
+  });
+}
+
+export function useSignOut(everywhere = false) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      unwrap(everywhere ? api.POST('/api/auth/sign-out-everywhere') : api.POST('/api/auth/sign-out')),
+    onSuccess: () => {
+      client.clear();
+      client.setQueryData(meKey, null);
+    },
+  });
+}
+
+export function useUpdateMe() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Partial<Schemas['UpdateMeRequest']>) =>
+      unwrap(api.PATCH('/api/me', { body: { displayName: null, language: null, ...body } })),
+    onSuccess: (me) => client.setQueryData(meKey, me),
+  });
+}
+
+/** The two-letter initials shown in avatars: "Sophie Lapointe" gives "SL". */
+export function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const letters = parts.length > 1 ? [parts[0], parts[parts.length - 1]] : parts;
+  return letters
+    .map((part) => part?.[0] ?? '')
+    .join('')
+    .toUpperCase();
+}

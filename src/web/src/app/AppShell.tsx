@@ -1,15 +1,16 @@
 import { useTranslation } from 'react-i18next';
-import { Outlet } from 'react-router';
-import { LanguageSwitcher } from './LanguageSwitcher';
+import { Link, Outlet } from 'react-router';
+import { useWaitingCount } from '../features/alerts/data';
 import { ToastProvider } from '../ui/Toast';
 import { MainNav } from './MainNav';
 import { tabs } from './navigation';
 
-// The frame every screen lives in, from docs/prototype/quart-design-prototype.html (spec 19.6):
-// the top row, the screen, and the main navigation (a floating tab bar on phones, a sidebar from md).
-// Desktop and dark mode are extrapolated from the phone-sized, light-only prototype (19.7, Q-14).
+// The frame of the five tabs (spec 19.6, mockup 1a): the logo and the team icon in the top row, the
+// screen, and the main navigation (a floating tab bar on phones, a sidebar from md).
+// Desktop and dark mode are extrapolated from the phone-sized, light-only mockups (19.7, Q-14).
 export function AppShell() {
   const { t } = useTranslation();
+  const waiting = useWaitingCount();
 
   return (
     <ToastProvider>
@@ -27,21 +28,22 @@ export function AppShell() {
               <span className="font-display text-lg text-white">{t('app.name')}</span>
             </div>
             <div className="flex-1" />
-            <LanguageSwitcher />
-            {/* M2 replaces this with the person's initials, and adds the settings circle for admins (NFR-016). */}
-            <span
-              role="img"
-              aria-label={t('shell.account')}
+            <Link
+              to="/team"
+              aria-label={t('shell.team')}
               className="flex size-12 items-center justify-center rounded-full bg-surface shadow-press"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="size-6 fill-current text-muted">
-                <circle cx="12" cy="8" r="4" />
-                <path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5z" />
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="size-6 fill-none stroke-current stroke-[1.8] [stroke-linecap:round] [stroke-linejoin:round]"
+              >
+                <path d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6.5 19c.5-2.8 2.700-4.500 5.500-4.500s5 1.700 5.500 4.500M5.500 11.500a2.200 2.200 0 1 0 0-4.400M18.500 11.500a2.200 2.200 0 1 1 0-4.400M2.500 17c.2-1.500 1.200-2.600 2.600-3M21.500 17c-.2-1.500-1.200-2.600-2.600-3" />
               </svg>
-            </span>
+            </Link>
           </header>
 
-          <MainNav tabs={tabs} />
+          <MainNav tabs={tabs.map((tab) => (tab.icon === 'alerts' ? { ...tab, count: waiting } : tab))} />
 
           {/* Phones keep room under the content for the floating tab bar, so it never covers anything. */}
           <main

@@ -3,13 +3,13 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../../i18n';
 import en from '../../i18n/locales/en.json';
-import { HomePage } from './HomePage';
+import { StatusPage } from './StatusPage';
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <HomePage />
+      <StatusPage />
     </QueryClientProvider>,
   );
 }
@@ -23,7 +23,7 @@ function answerWith(status: number, body: unknown, contentType = 'application/js
   );
 }
 
-describe('HomePage', () => {
+describe('StatusPage', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en');
   });

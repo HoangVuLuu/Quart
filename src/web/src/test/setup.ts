@@ -14,3 +14,8 @@ globalThis.ResizeObserver ??= class {
   unobserve() {}
   disconnect() {}
 };
+
+afterEach(() => {
+  // Which workplace is open and the theme override live in localStorage; no test may inherit them.
+  globalThis.localStorage.clear();
+});

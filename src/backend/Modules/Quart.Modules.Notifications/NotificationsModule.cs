@@ -42,8 +42,10 @@ public static class NotificationsModule
         var group = endpoints.MapGroup("/api/workplaces/{workplaceId:guid}/notifications");
 
         // A member only ever sees their own notifications (M2-14).
-        group.MapGet("/", async (HttpContext http, NotificationsDbContext db, CancellationToken cancellationToken) =>
+        // The workplace is named in the route so the API description lists it; the guard has already resolved it.
+        group.MapGet("/", async (Guid workplaceId, HttpContext http, NotificationsDbContext db, CancellationToken cancellationToken) =>
             {
+                _ = workplaceId;
                 var member = http.Member();
                 var rows = await db.Notifications.AsNoTracking()
                     .Where(x => x.MembershipId == member.MembershipId)
@@ -63,8 +65,9 @@ public static class NotificationsModule
             .AllowAnyMember()
             .WithName("GetNotifications");
 
-        group.MapPost("/read-all", async (HttpContext http, NotificationsDbContext db, IClock clock, CancellationToken cancellationToken) =>
+        group.MapPost("/read-all", async (Guid workplaceId, HttpContext http, NotificationsDbContext db, IClock clock, CancellationToken cancellationToken) =>
             {
+                _ = workplaceId;
                 var member = http.Member();
                 var now = clock.GetCurrentInstant();
                 await db.Notifications

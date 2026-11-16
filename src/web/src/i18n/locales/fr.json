@@ -24,7 +24,40 @@
     "serverTime": "Heure du serveur",
     "lastTick": "Dernier passage des tâches de fond",
     "lastTickNever": "Pas encore",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "hello": "Salut {{name}}!",
+    "nextShift": "Prochain quart",
+    "viewShift": "Voir le quart",
+    "today": "Aujourd’hui",
+    "tomorrow": "Demain",
+    "with": "Avec {{names}}",
+    "alone": "En solo",
+    "workingNext": "Ton prochain quart",
+    "hours": "Heures cette semaine",
+    "grabs": "À prendre",
+    "grabsDetail": "{{open}} libres · {{trades}} échange",
+    "availability": "Disponibilités · {{range}}",
+    "availabilitySent": "Envoyées. Tu peux les modifier jusqu’à la création de l’horaire.",
+    "availabilityDue": "Pas encore envoyées",
+    "availabilityLocked": "Verrouillées : l’horaire est en préparation.",
+    "view": "Voir",
+    "fillIn": "Remplir",
+    "nothing": "Rien de prévu pour l’instant. Tes quarts s’afficheront ici dès qu’un horaire sera publié.",
+    "waiting": "En attente de toi",
+    "period": {
+      "none": "Prochaine période",
+      "noneTitle": "Aucune période ouverte",
+      "open": "Ouvrir la prochaine période",
+      "next": "Prochaine période · {{range}}",
+      "building": "Horaire en préparation",
+      "collected": "Disponibilités reçues",
+      "collecting": "Collecte des disponibilités",
+      "sent": "{{sent}} sur {{total}} envoyées",
+      "ready": "Prêt à créer l’horaire",
+      "build": "Créer l’horaire",
+      "continue": "Ouvrir le brouillon",
+      "who": "Qui a envoyé"
+    }
   },
   "notFound": {
     "title": "Page introuvable",
@@ -45,44 +78,177 @@
     "page": {
       "title": "Un problème est survenu",
       "home": "Retour à l'accueil"
+    },
+    "auth": {
+      "antiforgery": "Ta session doit être actualisée. Recharge la page et réessaie.",
+      "email_invalid": "Entre une adresse courriel valide.",
+      "email_not_verified": "Vérifie d’abord ton courriel : ouvre le lien que nous t’avons envoyé.",
+      "invalid_credentials": "Courriel ou mot de passe incorrect.",
+      "language_invalid": "Choisis le français ou l’anglais.",
+      "link_expired": "Ce lien a expiré. Demandes-en un nouveau.",
+      "link_invalid": "Ce lien n’est pas valide. Demandes-en un nouveau.",
+      "link_used": "Ce lien a déjà été utilisé.",
+      "locked_out": "Trop de mots de passe incorrects. Réessaie dans 15 minutes ou réinitialise ton mot de passe.",
+      "name_invalid": "Entre ton nom avec des lettres, des espaces, des traits d’union et des apostrophes.",
+      "password_breached": "Ce mot de passe figure dans une fuite de données. Choisis-en un autre.",
+      "password_too_short": "Utilise au moins 8 caractères."
+    },
+    "availability": {
+      "locked": "Les disponibilités sont verrouillées : l’horaire est en préparation.",
+      "not_shift_worker": "Tu n’es pas configuré pour faire des quarts ici.",
+      "note_empty": "Écris d’abord quelque chose.",
+      "note_too_long": "Une note peut contenir 500 caractères au maximum.",
+      "too_many_notes": "Tu as atteint le nombre de notes pour cette période.",
+      "unknown_shift": "Un de ces quarts n’existe plus. Recharge et réessaie."
+    },
+    "marketplace": {
+      "already_offered": "Tu donnes déjà ce quart.",
+      "already_requested": "Tu l’as déjà demandé.",
+      "missing_level": "Refusé : un quart n’aurait plus le niveau requis.",
+      "no_longer_pending": "Cette demande n’est plus en attente.",
+      "not_shift_worker": "Tu n’es pas configuré pour faire des quarts ici.",
+      "not_your_shift": "Ce quart n’est pas à toi.",
+      "nothing_to_claim": "Ce quart n’a plus de place libre.",
+      "overlap": "Tu fais déjà un quart à ce moment-là.",
+      "own_shift": "C’est ton propre quart.",
+      "shift_started": "Ce quart a déjà commencé.",
+      "shift_taken": "Ce quart vient d’être pris.",
+      "trade_invalid": "Ces deux quarts ne peuvent pas être échangés."
+    },
+    "period": {
+      "overlaps": "Ces dates chevauchent une autre période.",
+      "start_not_monday": "Une période commence un lundi.",
+      "template_empty": "Ajoute d’abord tes quarts dans la page Modifier le générateur.",
+      "unfinished_exists": "Publie la période en cours avant d’en ouvrir une autre.",
+      "weeks_invalid": "Une période dure de 1 à 4 semaines."
+    },
+    "schedule": {
+      "already_on_shift": "Cette personne est déjà sur le quart.",
+      "double_booking": "Quelqu’un a déjà un quart au même moment ailleurs. Vérifie la liste des problèmes.",
+      "not_building": "Commence d’abord la création de l’horaire.",
+      "not_on_shift": "Cette personne n’est pas sur le quart.",
+      "not_published": "Cet horaire n’est pas encore publié.",
+      "nothing_to_publish": "Rien n’a changé depuis la dernière publication.",
+      "publish_blocked": "Des problèmes bloquent la publication. Ouvre la liste des problèmes.",
+      "publish_needs_confirmation": "Des problèmes demandent ta confirmation avant de publier.",
+      "shift_full": "Ce quart est complet.",
+      "unknown_member": "Cette personne ne fait plus de quarts ici.",
+      "unknown_shift": "Ce quart n’existe plus."
+    },
+    "settings": {
+      "max_consecutive_invalid": "Choisis de 1 à 4 quarts de suite, ou sans limite.",
+      "period_weeks_invalid": "Une période dure de 1 à 4 semaines."
+    },
+    "template": {
+      "conflict_duplicate": "Ce duo est déjà dans la liste.",
+      "conflict_invalid": "Choisis deux personnes différentes de l’équipe.",
+      "crosses_midnight": "Un quart doit finir après son début, le même jour.",
+      "headcount_invalid": "Un quart a besoin de 1 à 20 personnes.",
+      "no_days": "Choisis au moins un jour.",
+      "off_grid": "Les heures vont par 15 minutes : 10 h, 10 h 15, 10 h 30…",
+      "requirement_exceeds_headcount": "Une règle demande plus de personnes que le quart n’en a.",
+      "requirement_invalid": "Une règle de niveau exige un niveau de 1 à 3 et au moins 1 personne.",
+      "time_invalid": "Entre les heures en heures et minutes.",
+      "too_many_blocks": "C’est plus de quarts qu’un modèle peut en contenir."
+    },
+    "workplace": {
+      "already_member": "Tu fais déjà partie de ce lieu de travail.",
+      "hours_invalid": "Les heures vont de 0 à 80.",
+      "invitation_invalid": "Cette invitation n’est pas valide, a déjà été utilisée ou a expiré.",
+      "join_code_unknown": "Aucun lieu de travail n’a ce code. Vérifie-le avec ton gérant.",
+      "level_invalid": "Un niveau va de 1 à 3.",
+      "name_required": "Entre un nom.",
+      "owner_cannot_leave": "Le propriétaire ne peut pas quitter. Transfère d’abord la propriété.",
+      "time_zone_unknown": "Fuseau horaire inconnu."
     }
   },
   "shell": {
     "skipToContent": "Aller au contenu",
-    "account": "Ton compte"
+    "back": "Retour",
+    "team": "Toute l’équipe"
   },
   "nav": {
     "label": "Navigation principale",
     "home": "Accueil",
     "schedule": "Horaire",
-    "availability": "Dispos",
-    "requests": "Demandes",
-    "news": "Nouvelles",
-    "count": "{{count}} en attente"
+    "count": "{{count}} en attente",
+    "trade": "Échanges",
+    "alerts": "Alertes",
+    "profile": "Profil"
   },
   "schedule": {
-    "context": "Ton horaire",
     "title": "Horaire",
+    "state": {
+      "draft": "Brouillon · visible par toi seulement",
+      "collecting": "Collecte des disponibilités",
+      "published": "publié"
+    },
+    "which": "Quel horaire",
+    "published": "Publié",
+    "next": "Prochaine période",
+    "fillAvailability": "Remplir mes dispos",
+    "edit": "Modifier",
     "emptyTitle": "Pas encore d’horaire",
-    "emptyText": "Tes quarts apparaîtront ici dès que l’horaire sera publié."
+    "emptyText": "Tes quarts s’afficheront ici dès qu’un horaire sera publié.",
+    "emptyCollecting": "Ton gérant recueille les disponibilités pour le prochain horaire.",
+    "editGenerator": "Modifier le générateur",
+    "mine": "Mes quarts",
+    "team": "Toute l’équipe",
+    "noShiftsTitle": "Aucun quart pour toi",
+    "noShiftsText": "Tu n’es pas à cet horaire. Les quarts libres sont dans l’onglet Échanges.",
+    "offered": "À prendre · à toi tant que personne ne le prend",
+    "completedChip": "Terminé",
+    "upcoming": "À venir",
+    "completed": "Terminés",
+    "you": "Toi",
+    "openSlots_one": "{{count}} place libre",
+    "openSlots_other": "{{count}} places libres",
+    "sheet": {
+      "offeredText": "Ce quart est à prendre. Il reste à toi tant que personne ne le prend.",
+      "keep": "Le garder",
+      "giveAway": "Donner",
+      "trade": "Échanger",
+      "offeredToast": "Offert à l’équipe. À toi tant que personne ne le prend."
+    },
+    "ready": {
+      "title": "Prêt à créer l’horaire?",
+      "sent": "{{sent}} sur {{total}} envoyées.",
+      "locks": "La génération verrouille les disponibilités de tous.",
+      "generate": "Générer l’horaire",
+      "byHand": "À la main",
+      "allSentLabel": "Envoyées",
+      "notSent": "Pas encore envoyées",
+      "allSent": "Tout le monde a envoyé ses disponibilités",
+      "team": "Voir les disponibilités de l’équipe"
+    },
+    "open": {
+      "title": "Ouvrir la prochaine période",
+      "text": "Tous ceux qui font des quarts reçoivent une demande de disponibilités.",
+      "start": "Début",
+      "startHint": "Un lundi.",
+      "weeks": "Semaines",
+      "submit": "Ouvrir la période"
+    }
   },
   "availability": {
-    "context": "Quand peux-tu travailler?",
     "title": "Disponibilités",
-    "emptyTitle": "Rien à remplir pour l’instant",
-    "emptyText": "Quand Philippe demandera tes disponibilités, tu les rempliras ici."
-  },
-  "requests": {
-    "context": "Échanges et quarts à donner",
-    "title": "Demandes",
-    "emptyTitle": "Aucune demande",
-    "emptyText": "Les quarts à donner, à échanger ou à prendre apparaîtront ici."
-  },
-  "news": {
-    "context": "De la boutique",
-    "title": "Nouvelles",
-    "emptyTitle": "Pas de nouvelles",
-    "emptyText": "Les annonces et les recettes de l’équipe apparaîtront ici."
+    "hint": "Touche les quarts que tu peux faire.",
+    "locked": "Les quarts sont verrouillés : l’horaire est en préparation. Tu peux encore envoyer une note.",
+    "sent": "Envoyées",
+    "notSent": "Pas envoyées",
+    "sentToast": "Disponibilités envoyées",
+    "counter_one": "{{count}} quart · {{hours}} h sélectionnées",
+    "counter_other": "{{count}} quarts · {{hours}} h sélectionnées",
+    "sameAsLast": "Comme la dernière période",
+    "copyWeek": "Copier la semaine 1 → toutes",
+    "note": "Note pour ton gérant",
+    "noteHint_one": "Facultatif, visible par les gérants seulement. {{count}} caractère restant.",
+    "noteHint_other": "Facultatif, visible par les gérants seulement. {{count}} caractères restants.",
+    "notePlaceholder": "p. ex. Examens du 12 au 16 oct., soirs seulement cette semaine-là",
+    "noteSent": "Note envoyée",
+    "sendNote": "Envoyer la note",
+    "send": "Envoyer",
+    "sendAgain": "Envoyer à nouveau"
   },
   "ui": {
     "close": "Fermer",
@@ -387,5 +553,383 @@
       "title": "Autres problèmes",
       "item": "Problème {{code}}"
     }
+  },
+  "roles": {
+    "owner": "Propriétaire",
+    "admin": "Gérant",
+    "employee": "Barista"
+  },
+  "auth": {
+    "back": "Retour",
+    "email": "Courriel",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "fullName": "Nom complet",
+    "passwordHint_one": "Au moins {{count}} caractère.",
+    "passwordHint_other": "Au moins {{count}} caractères.",
+    "errors": {
+      "nameRequired": "Entre ton nom complet.",
+      "passwordsDiffer": "Les deux mots de passe ne sont pas identiques."
+    },
+    "signIn": {
+      "title": "Content de te revoir",
+      "subtitle": "Connecte-toi pour voir tes quarts.",
+      "forgot": "Mot de passe oublié?",
+      "submit": "Se connecter",
+      "new": "Nouveau ici?",
+      "create": "Créer un compte",
+      "resend": "Renvoyer le courriel de vérification"
+    },
+    "signUp": {
+      "title": "Créer un compte",
+      "subtitle": "Configure Quart pour voir et échanger tes quarts.",
+      "submit": "Créer le compte",
+      "have": "Tu as déjà un compte?",
+      "signIn": "Se connecter"
+    },
+    "checkEmail": {
+      "title": "Vérifie tes courriels",
+      "sentTo": "Nous avons envoyé un lien à <strong>{{email}}</strong>. Ouvre-le pour terminer la création de ton compte.",
+      "sent": "Nous t’avons envoyé un lien. Ouvre-le pour terminer la création de ton compte.",
+      "spam": "Rien reçu? Regarde dans tes pourriels. Le lien fonctionne pendant 24 heures.",
+      "resend": "Renvoyer le courriel",
+      "resent": "Courriel renvoyé"
+    },
+    "verify": {
+      "working": "Vérification du lien…",
+      "done": "Courriel vérifié",
+      "doneText": "Ton compte est prêt. Connecte-toi pour continuer.",
+      "failed": "Ce lien n’a pas fonctionné"
+    },
+    "forgot": {
+      "title": "Mot de passe oublié?",
+      "subtitle": "Entre ton courriel et nous t’enverrons un lien pour le réinitialiser.",
+      "submit": "Envoyer le lien",
+      "sent": "Lien envoyé à <strong>{{email}}</strong>. Vérifie ta boîte de réception et tes pourriels.",
+      "remembered": "Tu t’en souviens?",
+      "back": "Retour à la connexion"
+    },
+    "reset": {
+      "title": "Choisis un nouveau mot de passe",
+      "subtitle": "Tu seras déconnecté partout ailleurs.",
+      "password": "Nouveau mot de passe",
+      "submit": "Enregistrer le mot de passe"
+    }
+  },
+  "workplaces": {
+    "signOut": "Se déconnecter",
+    "hello": "Salut {{name}}",
+    "pick": "Choisis un lieu de travail pour continuer.",
+    "yours": "Tes lieux de travail",
+    "none": "Tu ne fais partie d’aucun lieu de travail. Rejoins-en un avec le code de ton gérant.",
+    "open": "Ouvrir",
+    "openNamed": "Ouvrir {{name}}",
+    "joinTitle": "Rejoindre un lieu de travail",
+    "code": "Code d’accès",
+    "codeHint_one": "Le code de {{count}} caractère de ton gérant.",
+    "codeHint_other": "Le code de {{count}} caractères de ton gérant.",
+    "join": "Rejoindre",
+    "create": {
+      "title": "Créer un lieu de travail",
+      "text": "Toi seul, l’administrateur de la plateforme, vois ceci. Tu obtiens un lien à envoyer au futur propriétaire.",
+      "name": "Nom",
+      "address": "Adresse",
+      "submit": "Créer le lieu de travail",
+      "done": "Créé. Envoie ce lien au propriétaire. Il fonctionne une seule fois, pendant 7 jours :"
+    },
+    "invitation": {
+      "title": "Devenir propriétaire",
+      "text": "En acceptant, ce compte devient propriétaire du lieu de travail auquel tu as été invité.",
+      "accept": "Accepter l’invitation"
+    }
+  },
+  "draft": {
+    "generate": "Générer",
+    "generateAgain": "Générer à nouveau",
+    "publish": "Publier",
+    "update": "Mettre à jour",
+    "back": "Retour à l’horaire publié",
+    "hint": "Les personnes gardées restent en place quand tu génères à nouveau.",
+    "seed": "Graine no {{seed}}.",
+    "openSlots_one": "{{count}} place libre.",
+    "openSlots_other": "{{count}} places libres.",
+    "same": "Rien à mettre à jour : c’est ce que l’équipe voit.",
+    "updated": "Horaire mis à jour",
+    "publishedToast": "Horaire publié",
+    "blocked": "Corrige les problèmes marqués « Bloque » avant de publier.",
+    "severity": {
+      "block": "Bloque",
+      "confirm": "Demande",
+      "show": "Info"
+    },
+    "confirm": {
+      "title": "Publier avec ces problèmes?",
+      "text": "Les places vides deviennent des quarts libres que l’équipe peut prendre.",
+      "publish": "Publier quand même",
+      "update": "Mettre à jour quand même",
+      "back": "Revenir"
+    },
+    "editor": {
+      "onShift": "Sur ce quart",
+      "nobody": "Personne pour l’instant.",
+      "thisWeek": "{{hours}} cette semaine",
+      "keep": "Garder",
+      "remove": "Retirer",
+      "removeNamed": "Retirer {{name}}",
+      "add": "Ajouter quelqu’un",
+      "full": "Ce quart est complet. Retire quelqu’un pour en ajouter un autre.",
+      "addButton": "Ajouter",
+      "addNamed": "Ajouter {{name}}",
+      "available": "Disponible",
+      "unavailable": "Pas disponible",
+      "noAnswer": "Pas de réponse",
+      "notes_one": "{{count}} note",
+      "notes_other": "{{count}} notes"
+    }
+  },
+  "teamAvailability": {
+    "title": "Disponibilités de l’équipe",
+    "mine": "Remplir mes disponibilités",
+    "offers": "Offre {{offered}} h/sem. · veut {{wanted}} h/sem.",
+    "noAnswer": "Pas encore de réponse · veut {{wanted}} h/sem.",
+    "reopened": "Rouvertes",
+    "remind": "Rappeler",
+    "remindNamed": "Rappeler {{name}}",
+    "reminded_one": "{{count}} rappel envoyé",
+    "reminded_other": "{{count}} rappels envoyés",
+    "reopen": "Rouvrir",
+    "reopenNamed": "Rouvrir les disponibilités de {{name}}",
+    "reopenedToast": "Rouvertes pour {{name}}",
+    "remindAll": "Rappeler tous ceux qui manquent"
+  },
+  "team": {
+    "title": "Toute l’équipe",
+    "context_one": "{{count}} membre · {{workplace}}",
+    "context_other": "{{count}} membres · {{workplace}}",
+    "count_one": "{{count}} personne",
+    "count_other": "{{count}} personnes",
+    "you": "toi",
+    "former": "Ancien employé",
+    "barista": "Barista · Niveau {{level}}",
+    "edit": "Modifier",
+    "editNamed": "Modifier {{name}}",
+    "sheet": {
+      "title": "Modifier le niveau",
+      "level": "Niveau",
+      "worksShifts": "Fait des quarts",
+      "worksShiftsText": "Envoie ses disponibilités et peut être mis à l’horaire.",
+      "hours": "Heures voulues par semaine",
+      "hoursText": "Le générateur vise ce nombre.",
+      "save": "Enregistrer",
+      "remove": "Retirer du lieu de travail"
+    },
+    "remove": {
+      "title": "Retirer {{name}}?",
+      "text": "La personne perd l’accès tout de suite et ses prochains quarts deviennent libres.",
+      "confirm": "Retirer",
+      "cancel": "Annuler"
+    }
+  },
+  "marketplace": {
+    "claims": "Demandes pour prendre un quart",
+    "claimFrom": "{{name}} veut le quart que {{from}} donne",
+    "claimOpen": "{{name}} veut cette place libre",
+    "giveTo": "Donner à {{name}}",
+    "decline": "Refuser",
+    "open": "Quarts libres",
+    "openSlots_one": "{{count}} place libre",
+    "openSlots_other": "{{count}} places libres",
+    "waiting": "En attente du gérant",
+    "claim": "Prendre",
+    "claimed": "Le quart est à toi",
+    "requested": "Demande envoyée à ton gérant",
+    "offeredByMe": "Tu donnes ce quart. À toi tant que personne ne le prend.",
+    "offeredBy": "Offert par {{name}}",
+    "onShift": "Tu fais déjà ce quart.",
+    "wouldMissLevel": "Le quart n’aurait plus le niveau requis",
+    "keep": "Le garder",
+    "trades": "Échanges",
+    "trade": {
+      "youAsked": "Tu as proposé un échange à {{name}}",
+      "wants": "{{name}} veut échanger",
+      "between": "{{first}} et {{second}} veulent échanger",
+      "gives": "{{name}} donne",
+      "youGive": "Tu donnes",
+      "youGet": "Tu reçois",
+      "missesLevel": "Un quart n’aurait plus le niveau requis. L’approbation sera refusée.",
+      "levelsOk": "Les niveaux restent couverts sur les deux quarts.",
+      "waitingApproval": "En attente du gérant",
+      "accept": "Accepter",
+      "cancel": "Annuler la demande",
+      "approve": "Approuver"
+    }
+  },
+  "trade": {
+    "title": "Échanges",
+    "context": "Quarts libres et échanges",
+    "empty": "Rien à prendre et aucun échange en attente.",
+    "fromSchedule": "Donner ou échanger un de mes quarts",
+    "sheet": {
+      "title": "Échanger ton quart : {{shift}}",
+      "text": "Choisis un quart à échanger contre le tien. Un pour un.",
+      "none": "Personne n’a de quart à échanger avec le tien.",
+      "ask": "Demander",
+      "askNamed": "Demander à {{name}}",
+      "asked": "Demande envoyée à {{name}}"
+    }
+  },
+  "alerts": {
+    "title": "Notifications",
+    "context": "Rappels, quarts et échanges",
+    "waiting_one": "{{count}} en attente de toi",
+    "waiting_other": "{{count}} en attente de toi",
+    "reminders": "Rappels",
+    "fillAvailability": "Remplis tes disponibilités",
+    "recent": "Récentes",
+    "markRead": "Tout marquer comme lu",
+    "empty": "Rien pour l’instant.",
+    "unread": "Non lue",
+    "unknown": "Quelque chose a changé.",
+    "types": {
+      "member": {
+        "joined": "{{name}} a rejoint l’équipe",
+        "left": "{{name}} a quitté l’équipe. Ses prochains quarts sont libres."
+      },
+      "availability": {
+        "requested": "Les disponibilités sont ouvertes pour la période du {{periodStart}}",
+        "reminder": "Rappel : envoie tes disponibilités pour la période du {{periodStart}}",
+        "reopened": "Tes disponibilités ont été rouvertes pour la période du {{periodStart}}",
+        "sent": "{{name}} a envoyé ses disponibilités",
+        "note_added": "{{name}} a ajouté une note à ses disponibilités"
+      },
+      "schedule": {
+        "published": "L’horaire du {{periodStart}} est publié",
+        "changed": "Ton horaire a changé : {{added}} ajouté, {{removed}} retiré"
+      },
+      "shift": {
+        "offered": "{{name}} donne son quart du {{date}}, {{start}}–{{end}}",
+        "claimed": "{{name}} a pris le quart du {{date}}, {{start}}–{{end}}"
+      },
+      "claim": {
+        "requested": "{{name}} demande le quart du {{date}}, {{start}}–{{end}}",
+        "approved": "Le quart du {{date}}, {{start}}–{{end}} est à toi",
+        "declined": "Ta demande pour le {{date}}, {{start}}–{{end}} a été refusée"
+      },
+      "trade": {
+        "requested": "{{name}} veut échanger son quart du {{date}}, {{start}}–{{end}}",
+        "accepted": "{{name}} a accepté ton échange. En attente du gérant.",
+        "declined": "{{name}} a refusé ou annulé l’échange du {{date}}, {{start}}–{{end}}",
+        "awaiting_approval": "Un échange pour le {{date}}, {{start}}–{{end}} attend ton approbation",
+        "applied": "L’échange du {{date}}, {{start}}–{{end}} est fait",
+        "rejected": "L’échange du {{date}}, {{start}}–{{end}} n’a pas été appliqué",
+        "expired": "L’échange du {{date}}, {{start}}–{{end}} a expiré"
+      }
+    }
+  },
+  "generator": {
+    "title": "Modifier le générateur",
+    "general": "Général",
+    "shifts": "Quarts",
+    "tabs": "Sections",
+    "saved": "Enregistré",
+    "period": {
+      "title": "Période de disponibilités",
+      "text": "Combien de semaines couvre la prochaine période.",
+      "weeks_one": "{{count}} semaine",
+      "weeks_other": "{{count}} semaines"
+    },
+    "row": {
+      "title": "Quarts de suite, maximum",
+      "text": "Nombre maximal de quarts de suite pour une personne. Deux quarts le même jour comptent pour deux.",
+      "noLimit": "Sans limite"
+    },
+    "fairness": {
+      "title": "Équité",
+      "opening": "Répartir les ouvertures",
+      "closing": "Répartir les fermetures",
+      "text": "Selon les heures et les disponibilités de chacun."
+    },
+    "blocks": {
+      "text": "Chaque quart se répète les jours choisis. Touche-en un pour changer ses règles.",
+      "none": "Aucun quart. Ajoute le premier.",
+      "everyDay": "Tous les jours",
+      "people_one": "{{count}} personne",
+      "people_other": "{{count}} personnes",
+      "rule_one": "au moins {{count}} de niveau {{level}}",
+      "rule_other": "au moins {{count}} de niveau {{level}}",
+      "pairs_one": "{{count}} duo séparé",
+      "pairs_other": "{{count}} duos séparés",
+      "add": "Ajouter un quart"
+    },
+    "save": "Enregistrer",
+    "saveHint": "Les changements s’appliquent à la prochaine période ouverte, jamais à une période déjà ouverte ou publiée.",
+    "leave": {
+      "title": "Veux-tu vraiment revenir en arrière?",
+      "text": "Tes changements ne seront pas enregistrés.",
+      "stay": "Continuer à modifier",
+      "leave": "Quitter la page"
+    },
+    "block": {
+      "new": "Nouveau quart",
+      "edit": "Modifier le quart",
+      "start": "Début",
+      "end": "Fin",
+      "days": "Jours",
+      "headcount": "Personnes requises",
+      "atLeast": "Exige au moins",
+      "atLeastText": "Compté parmi les personnes requises, pas en plus.",
+      "level": "De niveau, ou plus",
+      "pairs": "Ne peuvent pas travailler ensemble",
+      "pairsText": "Le générateur ne met jamais ces deux personnes ensemble sur ce quart.",
+      "removePair": "Retirer le duo {{first}} et {{second}}",
+      "first": "Première personne",
+      "second": "Deuxième personne",
+      "pick": "Choisir…",
+      "addPair": "Ajouter le duo",
+      "done": "Terminé",
+      "applyAll": "Appliquer ces règles à tous les quarts",
+      "delete": "Supprimer ce quart"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "level": "Niveau de barista",
+    "levelHint": "Défini par ton gérant",
+    "wants": "Heures voulues",
+    "wantsHint": "Demande à ton gérant de les changer",
+    "worksShifts": "Je fais aussi des quarts",
+    "worksShiftsText": "Être à l’horaire et envoyer mes disponibilités",
+    "workplace": "Lieu de travail",
+    "joinCode": "Code d’accès",
+    "joinCodeText": "À partager avec les nouveaux",
+    "copyCode": "Copier le code d’accès {{code}}",
+    "codeCopied": "Code copié",
+    "codeChanged": "Nouveau code. L’ancien ne fonctionne plus.",
+    "newCode": "Obtenir un nouveau code",
+    "members": "Membres et niveaux",
+    "generatorText": "Quarts, personnes requises, règles d’horaire",
+    "claimsApproval": "Approuver les prises de quart",
+    "claimsApprovalText": "Prendre un quart libre ou offert attend l’accord d’un gérant",
+    "tradesApproval": "Approuver les échanges",
+    "tradesApprovalText": "Un échange accepté par les deux attend l’accord d’un gérant",
+    "preferences": "Préférences",
+    "language": "Langue",
+    "languages": {
+      "fr": "Français",
+      "en": "English"
+    },
+    "dark": "Mode sombre",
+    "darkText": "Plus doux pour les yeux le soir",
+    "shortName": "Nom court",
+    "shortNameHint": "Ce que ton équipe voit à l’horaire.",
+    "save": "Enregistrer",
+    "saved": "Enregistré",
+    "account": "Compte",
+    "switch": "Changer de lieu de travail",
+    "signOutEverywhere": "Se déconnecter de tous les appareils",
+    "signOut": "Se déconnecter",
+    "leave": "Quitter ce lieu de travail",
+    "leaveTitle": "Quitter {{workplace}}?",
+    "leaveText": "Tu perds l’accès tout de suite et tes prochains quarts deviennent libres."
   }
 }
