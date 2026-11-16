@@ -146,7 +146,9 @@ internal static class AvailabilityEndpoints
         {
             return Problems.Conflict(TooManyNotes);
         }
-        availability.Notes.Add(new AvailabilityNote { Id = Guid.NewGuid(), AvailabilityId = availability.Id, Body = body, CreatedAt = clock.GetCurrentInstant() });
+        // Added through the set, not the collection: a new row with its key already set would otherwise be
+        // taken for an existing one and updated instead of inserted.
+        db.AvailabilityNotes.Add(new AvailabilityNote { Id = Guid.NewGuid(), AvailabilityId = availability.Id, Body = body, CreatedAt = clock.GetCurrentInstant() });
         await db.SaveChangesAsync(cancellationToken);
 
         await NotifyAdminsAsync(directory, notifier, workplaceId, member.MembershipId, NotificationTypes.AvailabilityNoteAdded, period, cancellationToken);

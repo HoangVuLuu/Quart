@@ -47,7 +47,8 @@ builder.Services.AddProblemDetails(options =>
 var connectionString = builder.Configuration.GetConnectionString("Quart")
     ?? (QuartOpenApi.IsGeneratingDocument ? "Host=localhost" : null)
     ?? throw new InvalidOperationException("Connection string 'Quart' is missing. Set ConnectionStrings__Quart.");
-builder.Services.AddSingleton(new NpgsqlDataSourceBuilder(connectionString).UseNodaTime().Build());
+// Registered through a factory so the container owns it and closes its connections when the app stops.
+builder.Services.AddSingleton(_ => new NpgsqlDataSourceBuilder(connectionString).UseNodaTime().Build());
 // Numbers are numbers: no quoted "42" accepted, and the OpenAPI types say plain "integer".
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict);
 builder.Services.AddQuartOpenApi();
