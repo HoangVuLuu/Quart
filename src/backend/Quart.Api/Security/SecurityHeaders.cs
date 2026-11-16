@@ -25,9 +25,13 @@ public static class SecurityHeaders
         // Container Apps terminates HTTPS at its ingress and forwards plain HTTP. Trust its X-Forwarded-Proto
         // so the app knows the request was HTTPS (HSTS, secure cookies). The ingress's address is not
         // fixed, so the known-proxy lists are cleared; the app is not reachable except through it.
+        // X-Forwarded-For matters as much: without it every visitor has the ingress's address, so the
+        // per-address limits on sign-in and join codes (FR-007) would put the whole shop in one bucket, and
+        // one person guessing passwords would lock everyone out. Only the last address is taken (the
+        // default limit of 1): that is the one the ingress itself appended, which a client cannot forge.
         builder.Services.Configure<ForwardedHeadersOptions>(options =>
         {
-            options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor;
             options.KnownIPNetworks.Clear();
             options.KnownProxies.Clear();
         });

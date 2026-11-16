@@ -163,6 +163,28 @@ public sealed class AccountTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task Behind_the_ingress_each_visitor_has_their_own_rate_limit()
+    {
+        await using var app = await TestApp.StartAsync(postgres, settings: new Dictionary<string, string?> { ["Auth:RequestsPerMinute"] = "2" });
+        using var client = app.Browser();
+        async Task<HttpStatusCode> SignInFromAsync(string address)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/sign-in") { Content = JsonContent.Create(new { email = "nobody@quart.test", password = "whatever it is" }) };
+            // What Container Apps adds: the visitor's address, after anything the visitor sent themselves.
+            request.Headers.Add("X-Forwarded-For", $"203.0.113.250, {address}");
+            using var response = await client.SendAsync(request, Cancellation);
+            return response.StatusCode;
+        }
+
+        var first = new[] { await SignInFromAsync("198.51.100.1"), await SignInFromAsync("198.51.100.1"), await SignInFromAsync("198.51.100.1") };
+        var other = await SignInFromAsync("198.51.100.2");
+
+        // One person out of attempts does not lock the rest of the shop out (FR-007).
+        Assert.Equal([HttpStatusCode.Unauthorized, HttpStatusCode.Unauthorized, HttpStatusCode.TooManyRequests], first);
+        Assert.Equal(HttpStatusCode.Unauthorized, other);
+    }
+
+    [Fact]
     public async Task Signing_out_everywhere_ends_the_other_browser_on_its_next_request()
     {
         await using var app = await TestApp.StartAsync(postgres);
