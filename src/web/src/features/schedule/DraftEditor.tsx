@@ -221,19 +221,19 @@ function DayRow({
                 type="button"
                 onClick={() => onOpen(shift.id)}
                 className={cx(
-                  'flex h-full w-full flex-col gap-1 rounded-chip bg-surface p-3 text-left shadow-card',
+                  'flex h-full w-full flex-col gap-1 rounded-chip bg-surface p-2.5 text-left shadow-card',
                   blocked && 'outline-2 outline-danger',
                 )}
               >
-                <span className="flex items-start gap-2">
-                  <Cup flavour={flavourOf(shift.part)} className="w-5 shrink-0" />
+                <span className="flex items-start gap-1.5">
+                  <Cup flavour={flavourOf(shift.part)} className="w-4 shrink-0" />
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-bold">{shiftName(shift.part)}</span>
                     <span className="block text-xs text-muted">
                       {shift.start}–{shift.end}
                     </span>
                   </span>
-                  <StatusChip tone={full ? 'success' : 'danger'}>
+                  <StatusChip tone={full ? 'success' : 'danger'} className="shrink-0 px-1.5 text-[11px]">
                     <span
                       aria-label={t('scheduling.grid.fill', {
                         filled: shift.people.length,

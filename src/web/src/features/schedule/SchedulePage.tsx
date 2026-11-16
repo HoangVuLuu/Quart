@@ -54,7 +54,7 @@ export function SchedulePage() {
 
   return (
     <section className="flex flex-col gap-4 px-5">
-      <PageHeader title={t('schedule.title')} context={range ? `${range} · ${state}` : undefined} />
+      <PageHeader title={t('schedule.title')} subtitle={range ? `${range} · ${state}` : undefined} />
 
       {manages && live && next && (
         <div role="group" aria-label={t('schedule.which')} className="flex gap-2">

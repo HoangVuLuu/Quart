@@ -11,7 +11,7 @@ export function TradePage() {
   const { t } = useTranslation();
   return (
     <section className="flex flex-col gap-4 px-5">
-      <PageHeader title={t('trade.title')} context={t('trade.context')} />
+      <PageHeader title={t('trade.title')} subtitle={t('trade.context')} />
       <MarketplaceSections emptyText={t('trade.empty')} />
       <Link to="/schedule" className={buttonClassName('white', 'self-start')}>
         {t('trade.fromSchedule')}

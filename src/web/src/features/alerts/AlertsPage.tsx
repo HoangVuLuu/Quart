@@ -9,7 +9,7 @@ import { PageHeader } from '../../ui/PageHeader';
 import { MarketplaceSections } from '../marketplace/MarketplaceSections';
 import { useCurrentPeriods } from '../scheduling/data';
 import { useWorkplace } from '../workplaces/workplace';
-import { useMarkAllRead, useNotifications, useWaitingCount } from './data';
+import { useDecisionCount, useMarkAllRead, useNotifications } from './data';
 import { notificationText } from './notification-text';
 
 // Mockups 1f (staff) and 1n (admins): what waits on you first (reminders, open shifts, trades), then
@@ -17,7 +17,7 @@ import { notificationText } from './notification-text';
 export function AlertsPage() {
   const { t, i18n } = useTranslation();
   const { view } = useWorkplace();
-  const waiting = useWaitingCount();
+  const waiting = useDecisionCount();
   const notifications = useNotifications();
   const markRead = useMarkAllRead();
   const next = useCurrentPeriods().data?.next;
@@ -30,7 +30,7 @@ export function AlertsPage() {
     <section className="flex flex-col gap-4 px-5">
       <PageHeader
         title={t('alerts.title')}
-        context={waiting > 0 ? t('alerts.waiting', { count: waiting }) : t('alerts.context')}
+        subtitle={waiting > 0 ? t('alerts.waiting', { count: waiting }) : t('alerts.context')}
       />
 
       {remind && (

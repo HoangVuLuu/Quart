@@ -1728,6 +1728,39 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             the whole period (BR-033). Fairness is scored on the square of
             the distance from each person's fair share, so evening two
             people out always wins.  (BR-012, BR-013, BR-014, BR-033, M1-05)
+2026-11-16  The core loop is built end to end (M2 to M5, simplified) with give
+            away, claim and trade (M7). Left for later, on purpose: Google
+            sign-in (M2-17), two-factor (M2-08), step-up (M2-06), email change,
+            ownership transfer (M2-13), account deletion (M2-16), social links
+            (M2-18), scheduled requests and reminders (M4-05), applying
+            template changes to an open period (M4-08), reuse of a past
+            schedule (M5-08), exports (M5-09), cross-workplace conflicts
+            (M5-11), the audit log (M5-12), the unclaimed-offer alert (M7-05)
+            and everything in M6, M8 and M9.
+2026-11-16  The admin's draft follows every claim and trade applied to the
+            published schedule, so an Update can never undo one. This replaces
+            the conflict screen FR-162 describes: there is nothing left to
+            conflict.  (FR-162, AD-012, M5-07, M7-03)
+2026-11-16  Two people claiming the same slot are served one after the other by
+            locking the shift's row, instead of a version column on each row.
+            The outcome is the one AD-013 asks for: one wins, the other is told
+            the shift was just taken.  (AD-013, M7-03)
+2026-11-16  Pending trades, offers and claims expire when the marketplace is
+            next read or used, not by a scheduled job. Nobody is notified of an
+            expiry yet.  (FR-191, M7-08)
+2026-11-16  With trade approval off, an accepted trade applies at once without
+            the level check, as a claim does (FR-185); with approval on, the
+            level check of FR-192 runs when the admin approves.  (FR-189,
+            FR-192)
+2026-11-16  The Trade tab shows the open-shift and trade sections of Alerts.
+            The mockups have the tab but no screen for it; a dedicated layout
+            is still to be designed.  (NFR-016, mockups known conflict 1)
+2026-11-16  The Edit Generator page is built as a tap-only editor of shift
+            blocks (times, days, people needed, level rule, pairs), not the
+            per-date calendar of mockups 1k3 to 1k5. Rules are per block, as
+            the data model has them.  (FR-067, NFR-002, M3-02)
+2026-11-16  In Development the sign-in limit is 300 requests a minute instead
+            of 20, so the demo data script can create its accounts.  (FR-007)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

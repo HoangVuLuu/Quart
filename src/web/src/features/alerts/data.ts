@@ -35,16 +35,20 @@ export function useMarkAllRead() {
   });
 }
 
-/** The number on the Alerts tab: unread notifications plus the requests waiting on this person. */
-export function useWaitingCount(): number {
-  const unread = useNotifications().data?.unread ?? 0;
+/** How many requests wait for this person to decide: claims to approve, trades to answer or approve. */
+export function useDecisionCount(): number {
   const board = useMarketplace().data;
-  const decisions =
+  return (
     (board?.claims.length ?? 0) +
     (board?.trades.filter(
       (trade) =>
         (trade.role === 'coworker' && trade.status === 'requested') ||
         (trade.role === 'approver' && trade.status === 'awaiting_approval'),
-    ).length ?? 0);
-  return unread + decisions;
+    ).length ?? 0)
+  );
+}
+
+/** The number on the Alerts tab: unread notifications plus the requests waiting on this person. */
+export function useWaitingCount(): number {
+  return (useNotifications().data?.unread ?? 0) + useDecisionCount();
 }

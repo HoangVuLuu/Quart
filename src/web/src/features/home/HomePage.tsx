@@ -7,7 +7,7 @@ import { Card } from '../../ui/Card';
 import { Cup } from '../../ui/Cup';
 import { HeroCard } from '../../ui/HeroCard';
 import { PageHeader } from '../../ui/PageHeader';
-import { useWaitingCount } from '../alerts/data';
+import { useDecisionCount } from '../alerts/data';
 import { useMe } from '../identity/session';
 import { useMarketplace } from '../marketplace/data';
 import {
@@ -262,7 +262,7 @@ function PeriodHero() {
 
 function WaitingCard() {
   const { t } = useTranslation();
-  const waiting = useWaitingCount();
+  const waiting = useDecisionCount();
   if (waiting === 0) return null;
   return (
     <Card>
