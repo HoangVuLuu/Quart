@@ -26,6 +26,11 @@ three addresses:
 No real email is ever sent. Verification and password-reset emails land in Mailpit; open them there
 and tap the link. From a phone, Mailpit is at `http://<your Mac's address>:8025`.
 
+Notification emails (schedule published or changed, availability requested, claims and trades,
+FR-211) are sent by a background job, and nothing runs jobs on a schedule locally. To see them in
+Mailpit, run one tick: `curl -X POST http://localhost:5080/internal/tick`
+([background-jobs.md](background-jobs.md)).
+
 Stop everything with Ctrl+C.
 
 ## Demo data (once)

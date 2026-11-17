@@ -14,4 +14,5 @@ public interface IUserDirectory
 
 /// <param name="DisplayName">The short name, "Jasmine K." (FR-001).</param>
 /// <param name="Language">"fr" or "en" (FR-261).</param>
-public sealed record UserSummary(Guid Id, string FullName, string DisplayName, string Email, string Language);
+/// <param name="EmailConfirmed">Only a confirmed address receives anything but the verification email.</param>
+public sealed record UserSummary(Guid Id, string FullName, string DisplayName, string Email, string Language, bool EmailConfirmed);

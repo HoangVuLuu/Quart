@@ -153,10 +153,14 @@ internal static class EmailRenderer
         }),
     };
 
-    public static bool Knows(string template) => Templates.ContainsKey(template);
+    public static bool Knows(string template) => Templates.ContainsKey(template) || NotificationEmails.Knows(template);
 
     public static (string Subject, string Body) Render(string template, string language, IReadOnlyDictionary<string, string> parameters, string publicUrl)
     {
+        if (NotificationEmails.Knows(template))
+        {
+            return NotificationEmails.Render(template, language, parameters, publicUrl);
+        }
         var (path, text) = Templates[template];
         var (subject, body) = text.TryGetValue(language, out var found) ? found : text["en"];
         var token = parameters.TryGetValue("token", out var value) ? Uri.EscapeDataString(value) : string.Empty;
