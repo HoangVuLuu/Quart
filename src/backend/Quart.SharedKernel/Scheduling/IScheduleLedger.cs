@@ -15,6 +15,12 @@ public interface IScheduleLedger
     Task<LiveShift?> FindAsync(Guid workplaceId, Guid shiftId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Does this member hold a shift that has not started yet, in a draft or a published schedule? Used to
+    /// refuse turning "works shifts" off while they still do (FR-036).
+    /// </summary>
+    Task<bool> HasUpcomingAsync(Guid workplaceId, Guid membershipId, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Puts <paramref name="to"/> on the shift: in place of <paramref name="from"/> when given (a give-away),
     /// otherwise in an empty slot (an open shift).
     /// </summary>

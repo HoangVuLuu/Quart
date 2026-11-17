@@ -152,6 +152,7 @@
     },
     "workplace": {
       "already_member": "You are already in this workplace.",
+      "has_upcoming_shifts": "This person still has upcoming shifts. Take them off those shifts first, then try again.",
       "hours_invalid": "Hours go from 0 to 80.",
       "invitation_invalid": "This invitation is not valid, was already used, or has expired.",
       "join_code_unknown": "No workplace has this code. Check it with your manager.",

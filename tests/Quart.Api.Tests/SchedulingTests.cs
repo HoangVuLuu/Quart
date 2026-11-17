@@ -577,6 +577,80 @@ public sealed class SchedulingTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task Leaving_saves_a_new_version_of_the_schedule_without_the_person()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        var schedule = await team.PublishAsync();
+        var paul = team.Staff[4];
+        var before = schedule["period"]!["version"]!.GetValue<int>();
+
+        await team.Owner.SendAsync(HttpMethod.Delete, $"{team.Base}/members/{paul.MembershipId}");
+
+        // FR-164: the change is history, like any other change to the live schedule.
+        var after = await team.ScheduleAsync();
+        Assert.Equal(before + 1, after["period"]!["version"]!.GetValue<int>());
+        var source = (NpgsqlDataSource)app.Factory.Services.GetService(typeof(NpgsqlDataSource))!;
+        await using var connection = await source.OpenConnectionAsync(TestContext.Current.CancellationToken);
+        await using var command = new NpgsqlCommand(
+            "SELECT snapshot::text FROM scheduling.schedule_version WHERE period_id = @period ORDER BY version DESC LIMIT 1", connection);
+        command.Parameters.AddWithValue("period", Guid.Parse(after["period"]!["id"]!.GetValue<string>()));
+        var snapshot = (string)(await command.ExecuteScalarAsync(TestContext.Current.CancellationToken))!;
+        Assert.DoesNotContain(paul.MembershipId.ToString(), snapshot, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(team.Owner.MembershipId.ToString(), snapshot, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Works_shifts_cannot_be_turned_off_while_the_person_holds_a_published_shift()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        await team.PublishAsync();
+        var paul = team.Staff[4];
+
+        // D1: refused, and nothing else in the same request is saved either.
+        var refused = await team.Owner.TryAsync(HttpMethod.Patch, $"{team.Base}/members/{paul.MembershipId}", new { worksShifts = false, level = 3 });
+
+        Assert.Equal((HttpStatusCode.Conflict, "workplace.has_upcoming_shifts"), refused);
+        var row = (await team.Owner.GetAsync($"{team.Base}/members")).AsArray().Single(x => x!["membershipId"]!.GetValue<string>() == paul.MembershipId.ToString())!;
+        Assert.True(row["worksShifts"]!.GetValue<bool>());
+        Assert.Equal(1, row["level"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public async Task Works_shifts_can_be_turned_off_once_the_person_is_taken_off_every_upcoming_shift()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        await team.OpenPeriodAsync();
+        foreach (var person in team.Everyone)
+        {
+            await team.SendAvailabilityAsync(person);
+        }
+        var draft = await team.Owner.PostAsync($"{team.Period}/draft/generate", new { seed = 7 });
+        var paul = team.Staff[4];
+        var member = $"{team.Base}/members/{paul.MembershipId}";
+
+        // A draft shift counts too: the person would vanish from the draft tools but stay on it.
+        Assert.Equal((HttpStatusCode.Conflict, "workplace.has_upcoming_shifts"), await team.Owner.TryAsync(HttpMethod.Patch, member, new { worksShifts = false }));
+        // Wanted hours and level still change while the person has shifts.
+        await team.Owner.SendAsync(HttpMethod.Patch, member, new { worksShifts = true, desiredWeeklyHours = 12 });
+        // A member of another workplace cannot reach Paul at all (1.6).
+        var stranger = await app.PersonAsync("Sam Other");
+        var elsewhere = await app.WorkplaceAsync(stranger);
+        Assert.Equal(HttpStatusCode.NotFound, (await stranger.TryAsync(HttpMethod.Patch, $"/api/workplaces/{elsewhere}/members/{paul.MembershipId}", new { worksShifts = false })).Status);
+
+        foreach (var shift in draft["shifts"]!.AsArray().Where(x => Team.Holds(x!, paul)))
+        {
+            await team.Owner.SendAsync(HttpMethod.Delete, $"{team.Period}/draft/assignments/{Team.Id(shift!)}/{paul.MembershipId}");
+        }
+        await team.Owner.SendAsync(HttpMethod.Patch, member, new { worksShifts = false });
+
+        var row = (await team.Owner.GetAsync($"{team.Base}/members")).AsArray().Single(x => x!["membershipId"]!.GetValue<string>() == paul.MembershipId.ToString())!;
+        Assert.False(row["worksShifts"]!.GetValue<bool>());
+    }
+
+    [Fact]
     public async Task Same_as_last_period_offers_the_previous_answers_by_weekday_and_block()
     {
         await using var app = await TestApp.StartAsync(postgres);
