@@ -41,12 +41,16 @@ export function HomePage() {
   const me = useMe().data;
   const periods = useCurrentPeriods().data;
   const schedule = usePublishedSchedule(periods?.live?.id).data;
+  // The next shift may be in a period published ahead of time, once this one has no shift left.
+  const later = usePublishedSchedule(periods?.upcoming?.[0]?.id).data;
   const board = useMarketplace().data;
   const shiftName = useShiftName();
   const manages = can('ManageSchedule');
   const now = new Date();
 
-  const mine = (schedule?.shifts ?? []).filter((shift) => shift.people.some((person) => person.isMe));
+  const mine = [...(schedule?.shifts ?? []), ...(later?.shifts ?? [])].filter((shift) =>
+    shift.people.some((person) => person.isMe),
+  );
   const next = mine.find((shift) => new Date(shift.startsAt) > now);
   const monday = mondayOf(now);
   const sunday = isoDate(new Date(Date.parse(`${monday}T00:00:00Z`) + 6 * 86_400_000));

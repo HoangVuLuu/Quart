@@ -131,7 +131,6 @@
       "nothing_to_publish": "Rien n’a changé depuis la dernière publication.",
       "publish_blocked": "Des problèmes bloquent la publication. Ouvre la liste des problèmes.",
       "publish_needs_confirmation": "Des problèmes demandent ta confirmation avant de publier.",
-      "shift_full": "Ce quart est complet.",
       "unknown_member": "Cette personne ne fait plus de quarts ici.",
       "unknown_shift": "Ce quart n’existe plus."
     },
@@ -678,7 +677,7 @@
       "remove": "Retirer",
       "removeNamed": "Retirer {{name}}",
       "add": "Ajouter quelqu’un",
-      "full": "Ce quart est complet. Retire quelqu’un pour en ajouter un autre.",
+      "full": "Ce quart a tout son monde. Tu peux quand même ajouter quelqu’un en plus.",
       "addButton": "Ajouter",
       "addNamed": "Ajouter {{name}}",
       "available": "Disponible",
@@ -863,7 +862,7 @@
       "add": "Ajouter un quart"
     },
     "save": "Enregistrer",
-    "saveHint": "Les changements s’appliquent à la prochaine période ouverte, jamais à une période déjà ouverte ou publiée.",
+    "saveHint": "Les règles (équité, quarts de suite, personnes à ne pas mettre ensemble) s’appliquent à toute période pas encore publiée. Les changements de quarts (heures, jours, nombre de personnes) s’appliquent à la prochaine période ouverte.",
     "leave": {
       "title": "Veux-tu vraiment revenir en arrière?",
       "text": "Tes changements ne seront pas enregistrés.",

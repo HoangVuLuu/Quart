@@ -131,7 +131,6 @@
       "nothing_to_publish": "Nothing changed since the last publish.",
       "publish_blocked": "Some issues block publishing. Open the issues list.",
       "publish_needs_confirmation": "Some issues need your confirmation before publishing.",
-      "shift_full": "This shift is full.",
       "unknown_member": "This person no longer works shifts here.",
       "unknown_shift": "This shift no longer exists."
     },
@@ -678,7 +677,7 @@
       "remove": "Remove",
       "removeNamed": "Remove {{name}}",
       "add": "Add someone",
-      "full": "This shift is full. Remove someone to add another.",
+      "full": "This shift has everyone it needs. You can still add someone extra.",
       "addButton": "Add",
       "addNamed": "Add {{name}}",
       "available": "Available",
@@ -863,7 +862,7 @@
       "add": "Add a shift"
     },
     "save": "Save changes",
-    "saveHint": "Changes apply to the next period you open, never to one already open or published.",
+    "saveHint": "Rules (fairness, shifts in a row, who cannot work together) apply to any period not yet published. Shift changes (times, days, people needed) apply from the next period you open.",
     "leave": {
       "title": "Are you sure you want to go back?",
       "text": "Your changes will not be saved.",

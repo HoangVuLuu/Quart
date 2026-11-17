@@ -610,18 +610,48 @@ internal static class MarketplaceEndpoints
             {
                 trade.Status = Trade.Expired;
             }
-            var upcoming = Shifts.Keys.ToList();
-            var staleOffers = await db.GiveAways
-                .Where(x => x.WorkplaceId == workplaceId && x.Status == GiveAway.Open && !upcoming.Contains(x.ShiftId))
+            // The schedule also changes under a request: an admin updates it, a trade goes through, someone
+            // leaves the workplace. A request that can no longer happen is closed instead of sitting on the
+            // board until its shift starts.
+            bool Holds(Guid shiftId, Guid membershipId) =>
+                Shifts.TryGetValue(shiftId, out var shift) && Members.ContainsKey(membershipId) && shift.Holders.Any(x => x.MembershipId == membershipId);
+
+            var pendingTrades = await db.Trades
+                .Where(x => x.WorkplaceId == workplaceId && (x.Status == Trade.Requested || x.Status == Trade.AwaitingApproval))
                 .ToListAsync(cancellationToken);
+            var deadTrades = pendingTrades
+                .Where(x => !Holds(x.AShiftId, x.AMembershipId) || !Holds(x.BShiftId, x.BMembershipId)
+                    || Holds(x.AShiftId, x.BMembershipId) || Holds(x.BShiftId, x.AMembershipId))
+                .Except(due)
+                .ToList();
+            deadTrades.ForEach(x => x.Status = Trade.Expired);
+
+            var openOffers = await db.GiveAways.Where(x => x.WorkplaceId == workplaceId && x.Status == GiveAway.Open).ToListAsync(cancellationToken);
+            var staleOffers = openOffers.Where(x => !Holds(x.ShiftId, x.FromMembershipId)).ToList();
             staleOffers.ForEach(x => x.Status = GiveAway.Cancelled);
-            var staleClaims = await db.Claims
-                .Where(x => x.WorkplaceId == workplaceId && x.Status == Claim.Pending && !upcoming.Contains(x.ShiftId))
-                .ToListAsync(cancellationToken);
+            var liveOffers = openOffers.Except(staleOffers).Select(x => x.Id).ToHashSet();
+
+            var pendingClaims = await db.Claims.Where(x => x.WorkplaceId == workplaceId && x.Status == Claim.Pending).ToListAsync(cancellationToken);
+            var staleClaims = pendingClaims
+                .Where(x => !Shifts.TryGetValue(x.ShiftId, out var shift)
+                    || !Members.ContainsKey(x.MembershipId)
+                    || shift.Holders.Any(h => h.MembershipId == x.MembershipId)
+                    || (x.GiveAwayId is { } offerId ? !liveOffers.Contains(offerId) : shift.OpenSlots == 0))
+                .ToList();
             staleClaims.ForEach(x => x.Status = Claim.Cancelled);
-            if (due.Count + staleOffers.Count + staleClaims.Count > 0)
+            if (due.Count + deadTrades.Count + staleOffers.Count + staleClaims.Count > 0)
             {
                 await db.SaveChangesAsync(cancellationToken);
+            }
+            // Both people learn their trade is off, as they would had it been refused at the last step.
+            foreach (var trade in deadTrades)
+            {
+                if ((Shifts.GetValueOrDefault(trade.AShiftId) ?? Shifts.GetValueOrDefault(trade.BShiftId)) is { } shift)
+                {
+                    await NotifyAsync(
+                        Members.Values.Where(x => x.MembershipId == trade.AMembershipId || x.MembershipId == trade.BMembershipId),
+                        NotificationTypes.TradeRejected, shift, trade.AMembershipId, cancellationToken, "stale");
+                }
             }
         }
     }

@@ -22,10 +22,13 @@ export function SchedulePage() {
   const manages = can('ManageSchedule');
   const live = periods.data?.live ?? null;
   const next = periods.data?.next ?? null;
+  // Published ahead of time: staff read them, and admins edit them, before the current one ends.
+  const published = [...(live ? [live] : []), ...(periods.data?.upcoming ?? [])];
   // Admins land on the period that needs them: the next one while it is being prepared.
-  const [chosen, setChosen] = useState<'live' | 'next' | null>(null);
-  const [editingLive, setEditingLive] = useState(false);
-  const showing = chosen ?? (manages && next ? 'next' : 'live');
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const showingNext = manages && next !== null && (chosen === null || chosen === next.period.id);
+  const shown = showingNext ? null : (published.find((period) => period.id === chosen) ?? live);
 
   if (periods.isPending) {
     return (
@@ -37,11 +40,10 @@ export function SchedulePage() {
   }
   if (periods.error) throw periods.error;
 
-  const period = showing === 'next' && manages && next ? next.period : live;
+  const period = showingNext && next ? next.period : shown;
   const range = period ? formatDateRange(period.startDate, period.endDate, i18n.language) : undefined;
-  const draft =
-    manages &&
-    ((showing === 'next' && next?.period.status === 'building') || (showing === 'live' && editingLive));
+  const editingShown = manages && shown !== null && editing === shown.id;
+  const draft = manages && ((showingNext && next?.period.status === 'building') || editingShown);
   const state = !period
     ? undefined
     : draft
@@ -56,29 +58,40 @@ export function SchedulePage() {
     <section className="flex flex-col gap-4 px-5">
       <PageHeader title={t('schedule.title')} subtitle={range ? `${range} · ${state}` : undefined} />
 
-      {manages && live && next && (
-        <div role="group" aria-label={t('schedule.which')} className="flex gap-2">
-          <Pill selected={showing === 'live'} onClick={() => setChosen('live')}>
-            {t('schedule.published')}
-          </Pill>
-          <Pill selected={showing === 'next'} onClick={() => setChosen('next')}>
-            {t('schedule.next')}
-          </Pill>
+      {published.length + (manages && next ? 1 : 0) > 1 && (
+        <div role="group" aria-label={t('schedule.which')} className="flex flex-wrap gap-2">
+          {published.map((option) => (
+            <Pill
+              key={option.id}
+              selected={!showingNext && shown?.id === option.id}
+              onClick={() => setChosen(option.id)}
+            >
+              {published.length === 1
+                ? t('schedule.published')
+                : formatDateRange(option.startDate, option.endDate, i18n.language)}
+            </Pill>
+          ))}
+          {manages && next && (
+            <Pill selected={showingNext} onClick={() => setChosen(next.period.id)}>
+              {t('schedule.next')}
+            </Pill>
+          )}
         </div>
       )}
 
-      {showing === 'next' && manages && next ? (
+      {showingNext && next ? (
         next.period.status === 'collecting' ? (
           <ReadyToBuild periodId={next.period.id} />
         ) : (
           <DraftEditor periodId={next.period.id} />
         )
-      ) : live ? (
-        editingLive && manages ? (
-          <DraftEditor periodId={live.id} onDone={() => setEditingLive(false)} />
+      ) : shown ? (
+        editingShown ? (
+          <DraftEditor key={shown.id} periodId={shown.id} onDone={() => setEditing(null)} />
         ) : (
           <PublishedSchedule
-            periodId={live.id}
+            key={shown.id}
+            periodId={shown.id}
             action={
               <>
                 {next?.canEditAvailability && view.me.worksShifts && (
@@ -92,7 +105,7 @@ export function SchedulePage() {
                 {manages && (
                   <button
                     type="button"
-                    onClick={() => setEditingLive(true)}
+                    onClick={() => setEditing(shown.id)}
                     className={buttonClassName('white', 'min-h-11 px-4 text-sm')}
                   >
                     {t('schedule.edit')}

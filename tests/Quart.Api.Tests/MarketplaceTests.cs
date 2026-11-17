@@ -28,6 +28,36 @@ public sealed class MarketplaceTests(PostgresFixture postgres)
         (await team.ScheduleAsync())["shifts"]!.AsArray().Single(x => Team.Id(x!) == shiftId)!;
 
     [Fact]
+    public async Task Requests_the_schedule_has_moved_past_leave_the_board()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var (team, schedule) = await PublishedAsync(app);
+        var (nora, omar, paul) = (team.Staff[2], team.Staff[3], team.Staff[4]);
+        var offered = Team.Id(ShiftOf(schedule, nora, omar, paul));
+        var hers = Team.Id(Team.ShiftsOf(schedule, nora).First(x => Team.Id(x) != offered && !Team.Holds(x, omar)));
+        var his = Team.Id(ShiftOf(schedule, omar, nora));
+        await team.Owner.SendAsync(HttpMethod.Patch, $"{team.Base}/settings", new { claimsNeedApproval = true });
+        await nora.PostAsync($"{team.Base}/marketplace/give-aways", new { shiftId = offered });
+        var offer = (await omar.GetAsync($"{team.Base}/marketplace"))["offers"]!.AsArray().Single()!;
+        await omar.PostAsync($"{team.Base}/marketplace/claims", new { shiftId = offered, giveAwayId = Team.Id(offer) });
+        await nora.PostAsync($"{team.Base}/marketplace/trades", new { myShiftId = hers, theirShiftId = his, theirMembershipId = omar.MembershipId });
+        Assert.Single((await team.Owner.GetAsync($"{team.Base}/marketplace"))["claims"]!.AsArray());
+        Assert.Single((await omar.GetAsync($"{team.Base}/marketplace"))["trades"]!.AsArray());
+
+        // The manager takes Nora off both shifts and updates the schedule: her offer and her trade are moot.
+        await team.Owner.SendAsync(HttpMethod.Delete, $"{team.Period}/draft/assignments/{offered}/{nora.MembershipId}");
+        await team.Owner.SendAsync(HttpMethod.Delete, $"{team.Period}/draft/assignments/{hers}/{nora.MembershipId}");
+        await team.Owner.PostAsync($"{team.Period}/draft/publish", new { confirmed = true });
+
+        var board = await team.Owner.GetAsync($"{team.Base}/marketplace");
+        Assert.Empty(board["offers"]!.AsArray());
+        Assert.Empty(board["claims"]!.AsArray());
+        Assert.Empty((await omar.GetAsync($"{team.Base}/marketplace"))["trades"]!.AsArray());
+        // The place she left is now simply open.
+        Assert.Contains((await paul.GetAsync($"{team.Base}/marketplace"))["openShifts"]!.AsArray(), x => Team.Id(x!["shift"]!) == offered);
+    }
+
+    [Fact]
     public async Task Giving_a_shift_away_keeps_its_holder_until_someone_claims_it()
     {
         await using var app = await TestApp.StartAsync(postgres);
@@ -275,7 +305,10 @@ public sealed class MarketplaceTests(PostgresFixture postgres)
 
         var result = await omar.TryAsync(Post, $"{team.Base}/marketplace/trades/{trade}/accept");
 
-        Assert.Equal((HttpStatusCode.Conflict, "marketplace.shift_taken"), result);
+        // The trade was closed the moment the shift changed hands, and both were told.
+        Assert.Equal((HttpStatusCode.Conflict, "marketplace.no_longer_pending"), result);
+        Assert.Contains("trade.rejected", await team.NotificationTypesAsync(nora));
+        Assert.Contains("trade.rejected", await team.NotificationTypesAsync(omar));
         Assert.True(Team.Holds(await ShiftAsync(team, his), omar));
         Assert.True(Team.Holds(await ShiftAsync(team, hers), paul));
         Assert.Empty((await omar.GetAsync($"{team.Base}/marketplace"))["trades"]!.AsArray());

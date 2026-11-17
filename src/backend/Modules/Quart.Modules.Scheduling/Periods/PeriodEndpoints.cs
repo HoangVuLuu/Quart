@@ -43,7 +43,10 @@ internal static class PeriodEndpoints
             .Where(x => x.WorkplaceId == workplaceId)
             .OrderBy(x => x.StartDate)
             .ToListAsync(cancellationToken);
-        var live = periods.FirstOrDefault(x => x.Version > 0 && x.EndDate >= Support.Today(clock, x.TimeZone));
+        // Published and not over yet, soonest first. The first is the one being worked now; the others were
+        // published ahead of time and staff must be able to read them before the current one ends.
+        var published = periods.Where(x => x.Version > 0 && x.EndDate >= Support.Today(clock, x.TimeZone)).ToList();
+        var live = published.FirstOrDefault();
         var next = periods.FirstOrDefault(x => x.Status != Period.Published);
 
         // The home cards and the tab bar need the open period's progress without a second request.
@@ -63,13 +66,18 @@ internal static class PeriodEndpoints
                 member.WorksShifts && (next.LockedAt is null || mine?.ReopenedAt is not null),
                 sent);
         }
-        return TypedResults.Ok(new CurrentPeriods(live is null ? null : Support.Summarize(live), nextView));
+        return TypedResults.Ok(new CurrentPeriods(live is null ? null : Support.Summarize(live), nextView, published.Skip(1).Select(Support.Summarize).ToList()));
     }
 
     /// <summary>
     /// Copies the template into dated shifts and asks everyone who works shifts for their availability
     /// (FR-091, FR-092). One unpublished period at a time keeps "the next period" unambiguous.
     /// </summary>
+    internal static string RulesJson(WorkplaceTemplate template) =>
+        JsonSerializer.Serialize(
+            new PeriodRules(template.Rules.MaxConsecutiveShifts, template.Rules.OpeningFairness, template.Rules.ClosingFairness, template.Rules.PublishChecks.ToDictionary()),
+            JsonSerializerOptions.Web);
+
     private static async Task<Results<Ok<PeriodSummary>, ProblemHttpResult>> CreateAsync(
         Guid workplaceId, CreatePeriodRequest request, SchedulingDb db, IWorkplaceDirectory directory, INotifier notifier, IClock clock, CancellationToken cancellationToken)
     {
@@ -107,9 +115,7 @@ internal static class PeriodEndpoints
             Weeks = request.Weeks,
             Status = Period.Collecting,
             TimeZone = template.TimeZone.Id,
-            Rules = JsonSerializer.Serialize(
-                new PeriodRules(template.Rules.MaxConsecutiveShifts, template.Rules.OpeningFairness, template.Rules.ClosingFairness, template.Rules.PublishChecks.ToDictionary()),
-                JsonSerializerOptions.Web),
+            Rules = RulesJson(template),
             CreatedAt = clock.GetCurrentInstant(),
         };
         db.Periods.Add(period);
@@ -164,7 +170,8 @@ public sealed record PeriodSummary(Guid Id, DateOnly StartDate, DateOnly EndDate
 
 /// <param name="Live">The published period that is running or coming up; null when there is none.</param>
 /// <param name="Next">The period still collecting availability or being built; null when there is none.</param>
-public sealed record CurrentPeriods(PeriodSummary? Live, NextPeriod? Next);
+/// <param name="Upcoming">Periods already published that start after <paramref name="Live"/>, soonest first.</param>
+public sealed record CurrentPeriods(PeriodSummary? Live, NextPeriod? Next, IReadOnlyList<PeriodSummary> Upcoming);
 
 /// <param name="MyAvailability">"not_sent" or "sent".</param>
 /// <param name="CanEditAvailability">False once building has started, unless an admin reopened it for the caller.</param>

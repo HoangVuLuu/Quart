@@ -31,15 +31,17 @@ internal static class DraftEndpoints
     public const string UnknownShift = "schedule.unknown_shift";
     public const string UnknownMember = "schedule.unknown_member";
     public const string AlreadyOnShift = "schedule.already_on_shift";
-    public const string ShiftFull = "schedule.shift_full";
     public const string NotOnShift = "schedule.not_on_shift";
     public const string PublishBlocked = "schedule.publish_blocked";
     public const string PublishNeedsConfirmation = "schedule.publish_needs_confirmation";
     public const string NothingToPublish = "schedule.nothing_to_publish";
     public const string DoubleBooking = "schedule.double_booking";
 
-    /// <summary>Whatever the settings say, these can never be published: the database would refuse them (AD-011).</summary>
-    private static readonly HashSet<string> AlwaysBlocking = [IssueCodes.OverlappingShifts, IssueCodes.AboveHeadcount];
+    /// <summary>
+    /// Whatever the settings say, this can never be published: the database refuses one person in two places
+    /// at once (AD-011). More people than a shift asks for is the manager's choice and is only shown (FR-144).
+    /// </summary>
+    private static readonly HashSet<string> AlwaysBlocking = [IssueCodes.OverlappingShifts];
 
     public static void MapDrafts(this IEndpointRouteBuilder endpoints)
     {
@@ -66,13 +68,14 @@ internal static class DraftEndpoints
 
     /// <summary>A build by hand locks availability exactly as Generate does (FR-100).</summary>
     private static async Task<Results<Ok<DraftView>, ProblemHttpResult>> StartAsync(
-        Guid workplaceId, Guid periodId, HttpContext http, SchedulingDb db, DraftBuilder builder, IClock clock, CancellationToken cancellationToken)
+        Guid workplaceId, Guid periodId, HttpContext http, SchedulingDb db, DraftBuilder builder, IWorkplaceDirectory directory, IClock clock, CancellationToken cancellationToken)
     {
         if (await AvailabilityEndpoints.FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
         {
             return Problems.NotFound();
         }
         Lock(period, clock);
+        await RefreshRulesAsync(db, directory, period, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         return TypedResults.Ok(await ViewAsync(db, builder, period, http.Member(), cancellationToken));
     }
@@ -83,7 +86,7 @@ internal static class DraftEndpoints
     /// </summary>
     private static async Task<Results<Ok<DraftView>, ProblemHttpResult>> GenerateAsync(
         Guid workplaceId, Guid periodId, GenerateRequest request, HttpContext http, SchedulingDb db, DraftBuilder builder,
-        IScheduleGenerator generator, IClock clock, CancellationToken cancellationToken)
+        IScheduleGenerator generator, IWorkplaceDirectory directory, IClock clock, CancellationToken cancellationToken)
     {
         if (await AvailabilityEndpoints.FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
         {
@@ -91,14 +94,20 @@ internal static class DraftEndpoints
         }
         var member = http.Member();
         Lock(period, clock);
+        await RefreshRulesAsync(db, directory, period, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
 
         var data = await builder.LoadAsync(period, cancellationToken);
         var draft = await builder.AssignmentsAsync(period.Id, draft: true, cancellationToken);
-        var kept = draft.Where(x => x.IsLocked).ToList();
+        // Shifts that have already started are history: generating again in the middle of a published
+        // period must not reshuffle the days people have already worked.
+        var now = clock.GetCurrentInstant();
+        bool Started(Instant startsAt) => period.Version > 0 && startsAt <= now;
+        var kept = draft.Where(x => x.IsLocked || Started(x.StartsAt)).ToList();
         var seed = request.Seed ?? Random.Shared.Next(1, int.MaxValue);
         var result = generator.Generate(DraftBuilder.ToInput(data, kept, seed));
 
-        db.Assignments.RemoveRange(draft.Where(x => !x.IsLocked));
+        db.Assignments.RemoveRange(draft.Except(kept));
         var keptKeys = kept.Select(x => (x.ShiftId, x.MembershipId)).ToHashSet();
         var shifts = data.Shifts.ToDictionary(x => x.Id);
         var members = data.Members.ToDictionary(x => x.MembershipId);
@@ -106,7 +115,7 @@ internal static class DraftEndpoints
         {
             var shiftId = Guid.Parse(assignment.ShiftId);
             var membershipId = Guid.Parse(assignment.MemberId);
-            if (!keptKeys.Contains((shiftId, membershipId)))
+            if (!keptKeys.Contains((shiftId, membershipId)) && !Started(shifts[shiftId].StartsAt))
             {
                 db.Assignments.Add(NewDraft(period, shifts[shiftId], members[membershipId], Assignment.Generated));
             }
@@ -127,8 +136,9 @@ internal static class DraftEndpoints
     }
 
     /// <summary>
-    /// Places someone by hand. Anyone who works shifts can be placed, available or not: the evaluator flags
-    /// it (FR-121). Only a full shift or a duplicate is refused.
+    /// Places someone by hand. Anyone who works shifts can be placed, available or not, and a manager who
+    /// wants an extra pair of hands can go past the headcount: the evaluator shows it (FR-121, FR-142). Only
+    /// a duplicate is refused. The generator itself never goes past the headcount (BR-003).
     /// </summary>
     private static async Task<Results<Ok<DraftView>, ProblemHttpResult>> AddAsync(
         Guid workplaceId, Guid periodId, AssignRequest request, HttpContext http, SchedulingDb db, DraftBuilder builder, CancellationToken cancellationToken)
@@ -155,13 +165,16 @@ internal static class DraftEndpoints
         {
             return Problems.Conflict(AlreadyOnShift);
         }
-        if (onShift.Count >= shift.Headcount)
-        {
-            return Problems.Conflict(ShiftFull);
-        }
-
         db.Assignments.Add(NewDraft(period, shift, person, Assignment.Manual));
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // The same tap arrived twice.
+            return Problems.Conflict(AlreadyOnShift);
+        }
         return TypedResults.Ok(await ViewAsync(db, builder, period, http.Member(), cancellationToken));
     }
 
@@ -281,6 +294,12 @@ internal static class DraftEndpoints
             await transaction.RollbackAsync(cancellationToken);
             return Problems.Conflict(DoubleBooking);
         }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // Publish was tapped twice, or the schedule changed in the same instant: the other one won.
+            await transaction.RollbackAsync(cancellationToken);
+            return Problems.Conflict(NothingToPublish);
+        }
 
         var members = await directory.GetMembersAsync(workplaceId, cancellationToken);
         var start = Support.IsoDate(period.StartDate);
@@ -314,6 +333,28 @@ internal static class DraftEndpoints
         JsonSerializer.Serialize(
             assignments.OrderBy(x => x.StartsAt).ThenBy(x => x.MembershipId).Select(x => new { shiftId = x.ShiftId, membershipId = x.MembershipId }),
             JsonSerializerOptions.Web);
+
+    /// <summary>
+    /// The period takes the rules as they are in Edit Generator now: fairness, the limit on shifts in a row,
+    /// what publishing does about each issue, and who cannot work together. They were copied when the
+    /// period was opened; without this, a rule changed since then would be silently ignored (FR-068).
+    /// The shifts themselves (times, headcount, levels) stay as they were when the period was opened.
+    /// </summary>
+    private static async Task RefreshRulesAsync(SchedulingDb db, IWorkplaceDirectory directory, Period period, CancellationToken cancellationToken)
+    {
+        // FR-068: only until the period is published. A published schedule keeps the rules it was built with.
+        if (period.Version > 0 || await directory.GetTemplateAsync(period.WorkplaceId, cancellationToken) is not { } template)
+        {
+            return;
+        }
+        period.Rules = PeriodEndpoints.RulesJson(template);
+        var blockIds = await db.Shifts.Where(x => x.PeriodId == period.Id).Select(x => x.SourceBlockId).Distinct().ToListAsync(cancellationToken);
+        await db.PeriodConflicts.Where(x => x.PeriodId == period.Id).ExecuteDeleteAsync(cancellationToken);
+        db.PeriodConflicts.AddRange(template.Conflicts.Where(x => blockIds.Contains(x.BlockId)).Select(x => new PeriodConflict
+        {
+            Id = Guid.NewGuid(), PeriodId = period.Id, BlockId = x.BlockId, MembershipA = x.MembershipA, MembershipB = x.MembershipB,
+        }));
+    }
 
     private static void Lock(Period period, IClock clock)
     {

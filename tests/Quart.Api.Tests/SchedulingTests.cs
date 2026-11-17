@@ -339,15 +339,25 @@ public sealed class SchedulingTests(PostgresFixture postgres)
             && x["memberIds"]!.AsArray().Any(id => id!.GetValue<string>() == rita.MembershipId.ToString()));
         Assert.Equal(6m, draft["people"]!.AsArray().Single(x => x!["membershipId"]!.GetValue<string>() == lea.MembershipId.ToString())!["weeklyHours"]![0]!.GetValue<decimal>());
         Assert.Equal("schedule.already_on_shift", (await team.Owner.TryAsync(HttpMethod.Post, assignments, new { shiftId = shift, membershipId = lea.MembershipId })).Code);
-        Assert.Equal("schedule.shift_full", (await team.Owner.TryAsync(HttpMethod.Post, assignments, new { shiftId = shift, membershipId = team.Staff[1].MembershipId })).Code);
+
+        // FR-142: the manager can go past the headcount for an extra pair of hands. It is shown, never blocked.
+        draft = await team.Owner.PostAsync(assignments, new { shiftId = shift, membershipId = team.Staff[1].MembershipId });
+        Assert.Equal(3, draft["shifts"]![0]!["people"]!.AsArray().Count);
+        Assert.Equal(2, draft["shifts"]![0]!["headcount"]!.GetValue<int>());
+        Assert.Contains(draft["issues"]!.AsArray(), x => x!["code"]!.GetValue<string>() == "issue.above_headcount" && x["severity"]!.GetValue<string>() == "show");
+        var published = await team.Owner.PostAsync($"{team.Period}/draft/publish", new { confirmed = true });
+        Assert.Equal(1, published["version"]!.GetValue<int>());
+        Assert.Equal(3, (await team.ScheduleAsync())["shifts"]![0]!["people"]!.AsArray().Count);
+        // An overstaffed shift has nothing to claim.
+        Assert.DoesNotContain((await team.Staff[2].GetAsync($"{team.Base}/marketplace"))["openShifts"]!.AsArray(), x => Team.Id(x!["shift"]!) == shift);
 
         draft = await team.Owner.SendAsync(HttpMethod.Delete, $"{assignments}/{shift}/{rita.MembershipId}");
-        Assert.Single(draft["shifts"]![0]!["people"]!.AsArray());
+        Assert.Equal(2, draft["shifts"]![0]!["people"]!.AsArray().Count);
         Assert.Equal("schedule.not_on_shift", (await team.Owner.TryAsync(HttpMethod.Delete, $"{assignments}/{shift}/{rita.MembershipId}")).Code);
     }
 
     [Fact]
-    public async Task Publishing_stops_on_blocking_issues_asks_about_the_others_and_then_tells_everyone()
+    public async Task Publishing_asks_about_a_missing_level_or_an_empty_place_and_then_tells_everyone()
     {
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
@@ -365,20 +375,22 @@ public sealed class SchedulingTests(PostgresFixture postgres)
         Assert.Equal((HttpStatusCode.Conflict, "schedule.not_published"), await sophie.TryAsync(HttpMethod.Get, $"{team.Period}/schedule"));
         Assert.DoesNotContain(draft["issues"]!.AsArray(), x => x!["severity"]!.GetValue<string>() != "show");
 
-        // Take every level 3 off the first shift: "missing required level" blocks by default (FR-144).
+        // Take every level 3 off the first shift: "missing required level" asks, it does not block (FR-144).
         var first = draft["shifts"]![0]!;
         var level3 = team.Everyone.Where(x => x == team.Owner || x == team.Staff[0] || x == team.Staff[1]).Select(x => x.MembershipId.ToString()).ToHashSet();
         foreach (var person in first["people"]!.AsArray().Where(x => level3.Contains(x!["membershipId"]!.GetValue<string>())).ToList())
         {
             await team.Owner.SendAsync(HttpMethod.Delete, $"{team.Period}/draft/assignments/{Team.Id(first)}/{person!["membershipId"]!.GetValue<string>()}");
         }
-        using (var blocked = await team.Owner.RawAsync(HttpMethod.Post, $"{team.Period}/draft/publish", new { confirmed = true }))
+        using (var asked = await team.Owner.RawAsync(HttpMethod.Post, $"{team.Period}/draft/publish", new { confirmed = false }))
         {
-            var problem = await System.Net.Http.Json.HttpContentJsonExtensions.ReadFromJsonAsync<JsonNode>(blocked.Content, TestContext.Current.CancellationToken);
-            Assert.Equal(HttpStatusCode.Conflict, blocked.StatusCode);
-            Assert.Equal("schedule.publish_blocked", problem!["code"]!.GetValue<string>());
+            var problem = await System.Net.Http.Json.HttpContentJsonExtensions.ReadFromJsonAsync<JsonNode>(asked.Content, TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Conflict, asked.StatusCode);
+            Assert.Equal("schedule.publish_needs_confirmation", problem!["code"]!.GetValue<string>());
             Assert.Contains(problem["issues"]!.AsArray(), x => x!.GetValue<string>() == "issue.missing_level");
         }
+        Assert.Contains((await team.Owner.GetAsync($"{team.Period}/draft"))["issues"]!.AsArray(),
+            x => x!["code"]!.GetValue<string>() == "issue.missing_level" && x["severity"]!.GetValue<string>() == "confirm");
 
         // Put a level 3 back, leaving one slot empty: "below headcount" only asks (FR-144, FR-165).
         var remaining = first["people"]!.AsArray().Select(x => x!["membershipId"]!.GetValue<string>()).Where(x => !level3.Contains(x)).ToList();
@@ -413,6 +425,67 @@ public sealed class SchedulingTests(PostgresFixture postgres)
         var current = await sophie.GetAsync($"{team.Base}/periods/current");
         Assert.Equal(team.PeriodId.ToString(), current["live"]!["id"]!.GetValue<string>());
         Assert.Null(current["next"]);
+    }
+
+    [Fact]
+    public async Task A_rule_changed_in_Edit_Generator_after_the_period_was_opened_still_applies_when_building()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        await team.OpenPeriodAsync();
+        var (lea, mia) = (team.Staff[0], team.Staff[1]);
+
+        // The period is already open when the manager says these two cannot work together (BR-036).
+        var setup = await team.Owner.GetAsync($"{team.Base}/generator");
+        foreach (var block in setup["blocks"]!.AsArray())
+        {
+            block!["conflicts"] = new JsonArray(new JsonObject { ["membershipA"] = lea.MembershipId, ["membershipB"] = mia.MembershipId });
+        }
+        await team.Owner.SendAsync(HttpMethod.Put, $"{team.Base}/generator", setup);
+
+        var draft = await team.Owner.PostAsync($"{team.Period}/draft/start");
+        var shift = Team.Id(draft["shifts"]![0]!);
+        await team.Owner.PostAsync($"{team.Period}/draft/assignments", new { shiftId = shift, membershipId = lea.MembershipId });
+        draft = await team.Owner.PostAsync($"{team.Period}/draft/assignments", new { shiftId = shift, membershipId = mia.MembershipId });
+
+        Assert.Contains(draft["issues"]!.AsArray(), x => x!["code"]!.GetValue<string>() == "issue.incompatible_pair");
+    }
+
+    [Fact]
+    public async Task Generating_again_in_the_middle_of_a_published_period_leaves_the_days_already_worked_alone()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        var before = await team.PublishAsync();
+        static string Roster(JsonNode shift) => string.Join(",", shift["people"]!.AsArray().Select(x => x!["membershipId"]!.GetValue<string>()).Order());
+
+        // Wednesday noon of the week that was published: Monday and Tuesday are done.
+        app.Clock.Advance(Instant.FromUtc(2026, 11, 11, 17, 0) - app.Clock.GetCurrentInstant());
+        var draft = await team.Owner.PostAsync($"{team.Period}/draft/generate", new { seed = 99 });
+
+        var worked = before["shifts"]!.AsArray().Where(x => string.CompareOrdinal(x!["date"]!.GetValue<string>(), "2026-11-11") < 0).ToList();
+        Assert.Equal(4, worked.Count);
+        Assert.All(worked, shift => Assert.Equal(Roster(shift!), Roster(draft["shifts"]!.AsArray().Single(x => Team.Id(x!) == Team.Id(shift!))!)));
+    }
+
+    [Fact]
+    public async Task A_period_published_ahead_of_time_can_be_read_before_the_current_one_ends()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        var thisMonday = app.Clock.GetCurrentInstant().InZone(DateTimeZoneProviders.Tzdb["America/Toronto"]).Date.With(DateAdjusters.PreviousOrSame(IsoDayOfWeek.Monday));
+        await team.PublishAsync(monday: thisMonday);
+        var first = team.PeriodId;
+        await team.PublishAsync(monday: thisMonday.PlusWeeks(1));
+        var second = team.PeriodId;
+        var sophie = team.Staff[3];
+
+        var current = await sophie.GetAsync($"{team.Base}/periods/current");
+
+        Assert.Equal(first.ToString(), current["live"]!["id"]!.GetValue<string>());
+        Assert.Equal(second.ToString(), current["upcoming"]!.AsArray().Single()!["id"]!.GetValue<string>());
+        Assert.Null(current["next"]);
+        Assert.Equal(14, (await team.ScheduleAsync(sophie))["shifts"]!.AsArray().Count);
     }
 
     [Fact]
