@@ -137,7 +137,8 @@ without touching logic. Final brand name: see section 16.
     one-way posting by admins, not chat.
   - Multiple physical locations under one business entity
   - Any payment or billing system
-  - Native iOS/Android app store applications (see NFR-012 for the PWA route)
+  - A native iOS app or an App Store listing. Android is distributed through
+    Google Play as a wrapper around the web app, not as a native app (NFR-012).
   - Labour law compliance rules encoded in the product. Rules are configurable
     per workplace; the app does not claim to enforce any legislation.
 
@@ -298,6 +299,9 @@ FR-036  Each membership has an "I work shifts too" flag. When on, that member
         scheduled. Philippe has this on.
 FR-037  Each member who works shifts has a weekly desired hours target, and an
         optional maximum set by an admin. There is no minimum-hours concept.
+        The target is set by the member from Profile, or by an admin from the
+        team list; it can never be above the maximum. Level, "works shifts"
+        and the maximum stay with admins.
 FR-038  A member can leave a workplace. An admin can remove a member. In both
         cases every future shift held by that person becomes an open slot and
         the admins are notified. Past shifts are left intact.
@@ -1324,6 +1328,10 @@ NFR-001  Works on desktop, iPad and iPhone. iOS Safari is a first-class target,
 NFR-002  Phone and iPad interfaces are tap-only. No drag interaction is ever
          required to complete a task. Drag exists on desktop as an accelerator
          for building the template, never as the only way.
+         Swipes exist on touch screens as shortcuts only, each next to a tap
+         path: pull down from the top of a screen to refresh, swipe a sheet
+         down to close it, and swipe sideways to change the week or the
+         Schedule view.
 NFR-003  Week view on desktop and iPad. On phones the Schedule tab lists the
          whole current period: "My shifts" (upcoming and completed) or "Whole
          team" (a table by day, grouped by week). It shows the period that is
@@ -1343,15 +1351,25 @@ NFR-009  Contrast meets WCAG 2.2 AA. Tap targets at least 44x44 px.
 NFR-010  prefers-reduced-motion is respected.
 NFR-011  Light and dark mode, following the device setting.
 NFR-012  The app targets desktop browsers, iPhone via Add to Home Screen, and
-         Android via the browser's install prompt. No App Store or Play Store
-         app is planned.
+         Android via Google Play (changed 2026-11-16). Most staff use it from
+         an icon on their phone; the owner uses his iPhone and a computer.
+         One web app serves all three: it is a PWA (manifest, icons, the
+         iPhone home-screen tags), and the Android app in Google Play is that
+         same PWA inside a Trusted Web Activity, built with Bubblewrap or
+         PWABuilder. It is not a second codebase. It needs the production
+         domain (the store app is bound to it through
+         /.well-known/assetlinks.json), a Google Play developer account
+         (US$25 once) and Play's review; a new personal developer account
+         must also run a closed test with at least 12 testers for 14 days
+         before it can publish to production. Android people can install
+         from the browser's prompt in the meantime.
          Push notifications on iPhone require the site to be added to the Home
          Screen. First login on an iPhone walks the person through: Share ->
          Add to Home Screen -> open from the icon -> enable notifications.
-         People who skip it still receive in-app and email notifications. A
-         native app is not planned; if it is ever needed, the same React code
-         can be wrapped with Capacitor, at the cost of a $99/year Apple
-         developer account and App Store review.
+         People who skip it still receive in-app and email notifications. No
+         App Store app is planned for iPhone; if it is ever needed, the same
+         React code can be wrapped with Capacitor, at the cost of a $99/year
+         Apple developer account and App Store review.
 NFR-013  Every user-facing string exists in both French and English before a
          feature is considered done. A missing translation fails CI.
 NFR-014  Test coverage is required on the generator, the evaluator, and every
@@ -1507,7 +1525,7 @@ M7 — Give away, claim, trade  (8 issues)
   M7-07  Trade approval with re-validation
   M7-08  Trade expiry and automatic cancellation
 
-M8 — News and push  (9 issues)
+M8 — News and push  (10 issues)
   M8-01  News page with text posts
   M8-02  Stored files: one model, one validation path, short-lived links
   M8-03  Photos on posts, re-encoded on the server
@@ -1517,6 +1535,7 @@ M8 — News and push  (9 issues)
   M8-07  Notification bundling and preferences
   M8-08  File access test suite and link leak checks
   M8-09  Back up storage files and review payslip readiness
+  M8-10  Publish the Android app on Google Play
 
 M9 — Google and calendar feed  (4 issues)
   M9-01  Add the Calendar permission to the Google sign-in
@@ -1728,6 +1747,58 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             the whole period (BR-033). Fairness is scored on the square of
             the distance from each person's fair share, so evening two
             people out always wins.  (BR-012, BR-013, BR-014, BR-033, M1-05)
+2026-11-16  The core loop is built end to end (M2 to M5, simplified) with give
+            away, claim and trade (M7). Left for later, on purpose: Google
+            sign-in (M2-17), two-factor (M2-08), step-up (M2-06), email change,
+            ownership transfer (M2-13), account deletion (M2-16), social links
+            (M2-18), scheduled requests and reminders (M4-05), applying
+            template changes to an open period (M4-08), reuse of a past
+            schedule (M5-08), exports (M5-09), cross-workplace conflicts
+            (M5-11), the audit log (M5-12), the unclaimed-offer alert (M7-05)
+            and everything in M6, M8 and M9.
+2026-11-16  The admin's draft follows every claim and trade applied to the
+            published schedule, so an Update can never undo one. This replaces
+            the conflict screen FR-162 describes: there is nothing left to
+            conflict.  (FR-162, AD-012, M5-07, M7-03)
+2026-11-16  Two people claiming the same slot are served one after the other by
+            locking the shift's row, instead of a version column on each row.
+            The outcome is the one AD-013 asks for: one wins, the other is told
+            the shift was just taken.  (AD-013, M7-03)
+2026-11-16  Pending trades, offers and claims expire when the marketplace is
+            next read or used, not by a scheduled job. Nobody is notified of an
+            expiry yet.  (FR-191, M7-08)
+2026-11-16  With trade approval off, an accepted trade applies at once without
+            the level check, as a claim does (FR-185); with approval on, the
+            level check of FR-192 runs when the admin approves.  (FR-189,
+            FR-192)
+2026-11-16  The Trade tab shows the open-shift and trade sections of Alerts.
+            The mockups have the tab but no screen for it; a dedicated layout
+            is still to be designed.  (NFR-016, mockups known conflict 1)
+2026-11-16  The Edit Generator page is built as a tap-only editor of shift
+            blocks (times, days, people needed, level rule, pairs), not the
+            per-date calendar of mockups 1k3 to 1k5. Rules are per block, as
+            the data model has them.  (FR-067, NFR-002, M3-02)
+2026-11-16  In Development the sign-in limit is 300 requests a minute instead
+            of 20, so the demo data script can create its accounts.  (FR-007)
+2026-11-16  Android is distributed through Google Play, as the PWA inside a
+            Trusted Web Activity: staff expect to find a work app in the store.
+            iPhone stays on Add to Home Screen. The web app is now installable
+            (manifest, icons, iPhone tags, an install card on Home); the
+            service worker and offline allowlist remain M8-05, and the store
+            listing is M8-10.  (NFR-012, 3.4, M8-05, M8-10)
+2026-11-16  Text fields are 16 px, not the 15 px of the design tokens: iPhone
+            zooms the whole page when a smaller field is focused.  (19.4,
+            NFR-001)
+2026-11-16  Three swipe shortcuts on touch screens: pull to refresh, swipe a
+            sheet down to close, swipe sideways between weeks and between
+            "My shifts" and "Whole team". An app on the iPhone home screen has
+            no reload gesture of its own, and staff expect the other two.
+            Taps still do everything, so NFR-002 holds; it now says so.
+            (NFR-002, AD-031)
+2026-11-16  Staff set their own desired weekly hours from Profile, as mockup
+            1g shows ("Edit"). Admins can still set them, and the admin-set
+            maximum caps the wish. Mockup conflict 4 is closed.  (FR-037,
+            BR-032, M2-12)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

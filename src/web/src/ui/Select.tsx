@@ -27,7 +27,7 @@ export function Select({ label, hint, error, className, children, ...rest }: Sel
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           className={cx(
-            'min-h-12 w-full appearance-none rounded-field bg-surface-3 pr-12 pl-4 text-[15px] text-ink disabled:opacity-50',
+            'min-h-12 w-full appearance-none rounded-field bg-surface-3 pr-12 pl-4 text-base text-ink disabled:opacity-50',
             'aria-[invalid=true]:bg-danger-soft aria-[invalid=true]:outline-2 aria-[invalid=true]:outline-danger',
           )}
           {...rest}

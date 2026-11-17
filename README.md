@@ -53,6 +53,16 @@ Module rules are enforced by `tests/Quart.ArchitectureTests`: a module reference
 
 You need the [.NET 10 SDK](https://dotnet.microsoft.com/download), Node 22 (see `.nvmrc`) and Docker.
 
+The quickest way, which also works from a phone on the same Wi-Fi, is one script
+([docs/runbooks/local.md](docs/runbooks/local.md)):
+
+```bash
+scripts/dev/start.sh            # everything; Ctrl+C stops it
+node scripts/dev/seed.mjs       # once, in a second terminal: a demo Presotea to click through
+```
+
+Or each piece by hand:
+
 ```bash
 docker compose up -d                              # Postgres on 5432, Mailpit on 8025
 dotnet run --project src/backend/Quart.Api        # API on http://localhost:5080

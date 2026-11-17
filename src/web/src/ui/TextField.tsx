@@ -19,7 +19,7 @@ type TextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> & {
 };
 
 const fieldClassName =
-  'min-h-12 w-full rounded-field bg-surface-3 px-4 text-[15px] text-ink placeholder:text-muted disabled:opacity-50 aria-[invalid=true]:bg-danger-soft aria-[invalid=true]:outline-2 aria-[invalid=true]:outline-danger';
+  'min-h-12 w-full rounded-field bg-surface-3 px-4 text-base text-ink placeholder:text-muted disabled:opacity-50 aria-[invalid=true]:bg-danger-soft aria-[invalid=true]:outline-2 aria-[invalid=true]:outline-danger';
 
 // A label above the input, and the hint and the error below it, tied together with aria-describedby.
 export function TextField({ label, hint, error, trailing, className, ...rest }: TextFieldProps) {

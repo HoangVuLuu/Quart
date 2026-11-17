@@ -20,6 +20,598 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetMe'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['UpdateMe'];
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/schedule': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetPublishedSchedule'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/sign-up': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['SignUp'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/verify-email': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['VerifyEmail'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/resend-verification': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ResendVerification'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/sign-in': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['SignIn'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/sign-out': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['SignOut'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/sign-out-everywhere': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['SignOutEverywhere'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/forgot-password': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ForgotPassword'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/reset-password': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ResetPassword'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ListMyWorkplaces'];
+    put?: never;
+    post: operations['CreateWorkplace'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/owner-invitations/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AcceptOwnerInvitation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/join': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['JoinWorkplace'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetWorkplace'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['UpdateWorkplaceSettings'];
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/join-code/regenerate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['RegenerateJoinCode'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/members': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ListMembers'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/members/{membershipId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations['RemoveMember'];
+    options?: never;
+    head?: never;
+    patch: operations['UpdateMember'];
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['UpdateMyMembership'];
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/leave': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['LeaveWorkplace'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/generator': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetGeneratorSetup'];
+    put: operations['SaveGeneratorSetup'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/current': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetCurrentPeriods'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CreatePeriod'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/availability/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetMyAvailability'];
+    put: operations['SaveMyAvailability'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/availability/me/send': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['SendMyAvailability'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/availability/me/notes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AddAvailabilityNote'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/availability/me/previous': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetPreviousAvailability'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/availability': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetTeamAvailability'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/availability/{membershipId}/reopen': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ReopenAvailability'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/availability/remind': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['RemindAvailability'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetDraft'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/start': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['StartBuilding'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/generate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['GenerateDraft'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/assignments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AddDraftAssignment'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/assignments/{shiftId}/{membershipId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations['RemoveDraftAssignment'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/assignments/{shiftId}/{membershipId}/lock': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['LockDraftAssignment'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/publish': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['PublishDraft'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/lab/scenarios/presotea': {
     parameters: {
       query?: never;
@@ -52,10 +644,237 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/workplaces/{workplaceId}/marketplace': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetMarketplace'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/marketplace/give-aways': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['GiveAwayShift'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/marketplace/give-aways/{giveAwayId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations['CancelGiveAway'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/marketplace/claims': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ClaimShift'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/marketplace/claims/{claimId}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ApproveClaim'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/marketplace/claims/{claimId}/decline': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DeclineClaim'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/marketplace/trades': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['RequestTrade'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/marketplace/trades/{tradeId}/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AcceptTrade'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/marketplace/trades/{tradeId}/decline': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DeclineTrade'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/marketplace/trades/{tradeId}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CancelTrade'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/marketplace/trades/{tradeId}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ApproveTrade'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/marketplace/trades/{tradeId}/reject': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['RejectTrade'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/notifications': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetNotifications'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/notifications/read-all': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['MarkNotificationsRead'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AcceptInvitationRequest: {
+      token: null | string;
+    };
     ApiProblem: {
       code: string;
       traceId: string;
@@ -76,6 +895,46 @@ export interface components {
       shiftId: string;
       memberId: string;
     };
+    AssignRequest: {
+      /** Format: uuid */
+      shiftId: string;
+      /** Format: uuid */
+      membershipId: string;
+    };
+    AvailabilityNoteView: {
+      /** Format: uuid */
+      id: string;
+      body: string;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    AvailabilityRequest: {
+      shiftIds: null | string[];
+    };
+    AvailabilityShift: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      blockId: string;
+      /** Format: date */
+      date: string;
+      start: string;
+      end: string;
+      /** Format: double */
+      hours: number;
+      selected: boolean;
+    };
+    BlockSetup: {
+      /** Format: uuid */
+      id: null | string;
+      days: number[];
+      start: string;
+      end: string;
+      /** Format: int32 */
+      headcount: number;
+      requirements: null | components['schemas']['RequirementSetup'][];
+      conflicts: null | components['schemas']['ConflictSetup'][];
+    };
     BusyTime: {
       memberId: string;
       /** Format: date-time */
@@ -83,10 +942,127 @@ export interface components {
       /** Format: date-time */
       end: string;
     };
+    ClaimRequest: {
+      /** Format: uuid */
+      shiftId: string;
+      /** Format: uuid */
+      giveAwayId: null | string;
+    };
+    ClaimResult: {
+      applied: boolean;
+    };
+    ClaimView: {
+      /** Format: uuid */
+      id: string;
+      shift: components['schemas']['ShiftRef'];
+      /** Format: uuid */
+      membershipId: string;
+      name: string;
+      fromName: null | string;
+    };
     ConflictPair: {
       blockId: string;
       memberA: string;
       memberB: string;
+    };
+    ConflictSetup: {
+      /** Format: uuid */
+      membershipA: string;
+      /** Format: uuid */
+      membershipB: string;
+    };
+    CreatedWorkplace: {
+      /** Format: uuid */
+      workplaceId: string;
+      invitationToken: string;
+    };
+    CreatePeriodRequest: {
+      /** Format: date */
+      startDate: string;
+      /** Format: int32 */
+      weeks: number;
+    };
+    CreateWorkplaceRequest: {
+      name: null | string;
+      address: null | string;
+      timeZone: null | string;
+    };
+    CurrentPeriods: {
+      live: null | components['schemas']['PeriodSummary'];
+      next: null | components['schemas']['NextPeriod'];
+    };
+    DraftAssignment: {
+      /** Format: uuid */
+      membershipId: string;
+      locked: boolean;
+    };
+    DraftIssue: {
+      code: string;
+      severity: string;
+      shiftIds: string[];
+      memberIds: string[];
+      parameters: {
+        [key: string]: string;
+      };
+    };
+    DraftPerson: {
+      /** Format: uuid */
+      membershipId: string;
+      name: string;
+      /** Format: int32 */
+      level: number;
+      /** Format: double */
+      desiredWeeklyHours: number;
+      /** Format: double */
+      maxWeeklyHours: null | number;
+      availability: string;
+      weeklyHours: number[];
+      /** Format: int32 */
+      noteCount: number;
+    };
+    DraftRequirement: {
+      /** Format: int32 */
+      level: number;
+      /** Format: int32 */
+      minCount: number;
+    };
+    DraftShift: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      blockId: string;
+      /** Format: date */
+      date: string;
+      start: string;
+      end: string;
+      /** Format: double */
+      hours: number;
+      /** Format: int32 */
+      headcount: number;
+      part: string;
+      requirements: components['schemas']['DraftRequirement'][];
+      people: components['schemas']['DraftAssignment'][];
+      availableIds: string[];
+    };
+    DraftView: {
+      period: components['schemas']['PeriodSummary'];
+      /** Format: int32 */
+      seed: null | number;
+      /** Format: int32 */
+      score: number;
+      /** Format: int32 */
+      openSlots: number;
+      hasUnpublishedChanges: boolean;
+      shifts: components['schemas']['DraftShift'][];
+      people: components['schemas']['DraftPerson'][];
+      issues: components['schemas']['DraftIssue'][];
+    };
+    EmailOnlyRequest: {
+      email: null | string;
+    };
+    GenerateRequest: {
+      /** Format: int32 */
+      seed: null | number;
     };
     GeneratorInput: {
       shifts: components['schemas']['GeneratorShift'][];
@@ -134,6 +1110,15 @@ export interface components {
       openingFairness: boolean;
       closingFairness: boolean;
     };
+    GeneratorSetup: {
+      /** Format: int32 */
+      periodWeeks: number;
+      /** Format: int32 */
+      maxConsecutiveShifts: null | number;
+      openingFairness: boolean;
+      closingFairness: boolean;
+      blocks: null | components['schemas']['BlockSetup'][];
+    };
     GeneratorShift: {
       id: string;
       blockId: string;
@@ -146,6 +1131,20 @@ export interface components {
       /** Format: int32 */
       headcount: number;
       levelRequirements: components['schemas']['LevelRequirement'][];
+    };
+    GiveAwayRequest: {
+      /** Format: uuid */
+      shiftId: string;
+    };
+    JoinCodeView: {
+      joinCode: string;
+    };
+    JoinedWorkplace: {
+      /** Format: uuid */
+      workplaceId: string;
+    };
+    JoinRequest: {
+      code: null | string;
     };
     LabGeneration: {
       result: components['schemas']['GeneratorResult'];
@@ -166,6 +1165,26 @@ export interface components {
       level: number;
       /** Format: int32 */
       minCount: number;
+    };
+    LockRequest: {
+      locked: boolean;
+    };
+    MarketplaceBoard: {
+      claimsNeedApproval: boolean;
+      tradesNeedApproval: boolean;
+      openShifts: components['schemas']['OpenShiftView'][];
+      offers: components['schemas']['OfferView'][];
+      claims: components['schemas']['ClaimView'][];
+      trades: components['schemas']['TradeView'][];
+    };
+    Me: {
+      /** Format: uuid */
+      id: string;
+      fullName: string;
+      displayName: string;
+      email: string;
+      language: string;
+      isPlatformAdmin: boolean;
     };
     MemberAvailability: {
       memberId: string;
@@ -188,6 +1207,21 @@ export interface components {
       /** Format: double */
       expectedClosings: number;
     };
+    MemberView: {
+      /** Format: uuid */
+      membershipId: string;
+      displayName: string;
+      email: string;
+      role: string;
+      /** Format: int32 */
+      level: number;
+      isMe: boolean;
+      worksShifts: null | boolean;
+      /** Format: double */
+      desiredWeeklyHours: null | number;
+      /** Format: double */
+      maxWeeklyHours: null | number;
+    };
     MetaResponse: {
       name: string;
       version: string;
@@ -197,6 +1231,244 @@ export interface components {
       database: string;
       /** Format: date-time */
       lastTickAt: null | string;
+    };
+    MyAvailability: {
+      period: components['schemas']['PeriodSummary'];
+      status: string;
+      canEdit: boolean;
+      hasPrevious: boolean;
+      shifts: components['schemas']['AvailabilityShift'][];
+      notes: components['schemas']['AvailabilityNoteView'][];
+    };
+    MyMembership: {
+      /** Format: uuid */
+      membershipId: string;
+      role: string;
+      /** Format: int32 */
+      level: number;
+      worksShifts: boolean;
+      /** Format: double */
+      desiredWeeklyHours: number;
+      /** Format: double */
+      maxWeeklyHours: null | number;
+      permissions: string[];
+    };
+    MyWorkplace: {
+      /** Format: uuid */
+      workplaceId: string;
+      name: string;
+      role: string;
+    };
+    NextPeriod: {
+      period: components['schemas']['PeriodSummary'];
+      myAvailability: string;
+      canEditAvailability: boolean;
+      /** Format: int32 */
+      sentCount: null | number;
+    };
+    NoteRequest: {
+      body: null | string;
+    };
+    NotificationInbox: {
+      /** Format: int32 */
+      unread: number;
+      items: components['schemas']['NotificationItem'][];
+    };
+    NotificationItem: {
+      /** Format: uuid */
+      id: string;
+      type: string;
+      parameters: {
+        [key: string]: string;
+      };
+      /** Format: date-time */
+      createdAt: string;
+      read: boolean;
+    };
+    OfferView: {
+      /** Format: uuid */
+      id: string;
+      shift: components['schemas']['ShiftRef'];
+      /** Format: uuid */
+      fromMembershipId: string;
+      fromName: string;
+      mine: boolean;
+      requested: boolean;
+      wouldMissLevel: boolean;
+      onShift: boolean;
+    };
+    OpenShiftView: {
+      shift: components['schemas']['ShiftRef'];
+      /** Format: int32 */
+      openSlots: number;
+      requested: boolean;
+    };
+    PeriodSummary: {
+      /** Format: uuid */
+      id: string;
+      /** Format: date */
+      startDate: string;
+      /** Format: date */
+      endDate: string;
+      /** Format: int32 */
+      weeks: number;
+      status: string;
+      /** Format: int32 */
+      version: number;
+      locked: boolean;
+    };
+    PublishRequest: {
+      confirmed: boolean;
+    };
+    RemindRequest: {
+      /** Format: uuid */
+      membershipId: null | string;
+    };
+    RemindResult: {
+      /** Format: int32 */
+      reminded: number;
+    };
+    RequirementSetup: {
+      /** Format: int32 */
+      level: number;
+      /** Format: int32 */
+      minCount: number;
+    };
+    ResetPasswordRequest: {
+      token: null | string;
+      password: null | string;
+    };
+    SchedulePerson: {
+      /** Format: uuid */
+      membershipId: string;
+      name: null | string;
+      /** Format: int32 */
+      level: null | number;
+      isMe: boolean;
+    };
+    ScheduleShift: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      blockId: string;
+      /** Format: date */
+      date: string;
+      start: string;
+      end: string;
+      /** Format: double */
+      hours: number;
+      /** Format: date-time */
+      startsAt: string;
+      /** Format: int32 */
+      headcount: number;
+      part: string;
+      people: components['schemas']['SchedulePerson'][];
+    };
+    ScheduleView: {
+      period: components['schemas']['PeriodSummary'];
+      shifts: components['schemas']['ScheduleShift'][];
+    };
+    ShiftRef: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      periodId: string;
+      /** Format: date */
+      date: string;
+      start: string;
+      end: string;
+    };
+    SignInRequest: {
+      email: null | string;
+      password: null | string;
+    };
+    SignUpRequest: {
+      fullName: null | string;
+      email: null | string;
+      password: null | string;
+      language: null | string;
+    };
+    SuggestedAvailability: {
+      shiftIds: string[];
+    };
+    TeamAvailability: {
+      period: components['schemas']['PeriodSummary'];
+      /** Format: int32 */
+      sentCount: number;
+      /** Format: int32 */
+      total: number;
+      people: components['schemas']['TeamAvailabilityRow'][];
+    };
+    TeamAvailabilityRow: {
+      /** Format: uuid */
+      membershipId: string;
+      name: string;
+      /** Format: int32 */
+      level: number;
+      status: string;
+      reopened: boolean;
+      /** Format: double */
+      hoursOffered: number;
+      /** Format: double */
+      desiredWeeklyHours: number;
+      notes: components['schemas']['AvailabilityNoteView'][];
+    };
+    TokenRequest: {
+      token: null | string;
+    };
+    TradeRequest: {
+      /** Format: uuid */
+      myShiftId: string;
+      /** Format: uuid */
+      theirShiftId: string;
+      /** Format: uuid */
+      theirMembershipId: string;
+    };
+    TradeView: {
+      /** Format: uuid */
+      id: string;
+      status: string;
+      role: string;
+      requesterName: string;
+      gives: components['schemas']['ShiftRef'];
+      coworkerName: string;
+      gets: components['schemas']['ShiftRef'];
+      wouldMissLevel: boolean;
+    };
+    UpdateMemberRequest: {
+      /** Format: int32 */
+      level: null | number;
+      worksShifts: null | boolean;
+      /** Format: double */
+      desiredWeeklyHours: null | number;
+      /** Format: double */
+      maxWeeklyHours: null | number;
+      clearMaxWeeklyHours: null | boolean;
+    };
+    UpdateMeRequest: {
+      displayName: null | string;
+      language: null | string;
+    };
+    UpdateMyMembershipRequest: {
+      /** Format: double */
+      desiredWeeklyHours: number;
+    };
+    UpdateSettingsRequest: {
+      claimsNeedApproval: null | boolean;
+      tradesNeedApproval: null | boolean;
+    };
+    WorkplaceView: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      address: string;
+      timeZone: string;
+      /** Format: int32 */
+      memberCount: number;
+      joinCode: null | string;
+      claimsNeedApproval: boolean;
+      tradesNeedApproval: boolean;
+      me: components['schemas']['MyMembership'];
     };
   };
   responses: never;
@@ -223,6 +1495,1367 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['MetaResponse'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetMe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Me'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  UpdateMe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMeRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Me'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetPublishedSchedule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScheduleView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  SignUp: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SignUpRequest'];
+      };
+    };
+    responses: {
+      /** @description Accepted */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  VerifyEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TokenRequest'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ResendVerification: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EmailOnlyRequest'];
+      };
+    };
+    responses: {
+      /** @description Accepted */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  SignIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SignInRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Me'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  SignOut: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  SignOutEverywhere: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ForgotPassword: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EmailOnlyRequest'];
+      };
+    };
+    responses: {
+      /** @description Accepted */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ResetPassword: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ResetPasswordRequest'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ListMyWorkplaces: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyWorkplace'][];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  CreateWorkplace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateWorkplaceRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CreatedWorkplace'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  AcceptOwnerInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AcceptInvitationRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['JoinedWorkplace'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  JoinWorkplace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['JoinRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['JoinedWorkplace'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetWorkplace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WorkplaceView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  UpdateWorkplaceSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateSettingsRequest'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  RegenerateJoinCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['JoinCodeView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ListMembers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MemberView'][];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  RemoveMember: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        membershipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  UpdateMember: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        membershipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMemberRequest'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  UpdateMyMembership: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMyMembershipRequest'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  LeaveWorkplace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetGeneratorSetup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GeneratorSetup'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  SaveGeneratorSetup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GeneratorSetup'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetCurrentPeriods: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CurrentPeriods'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  CreatePeriod: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreatePeriodRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PeriodSummary'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetMyAvailability: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyAvailability'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  SaveMyAvailability: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AvailabilityRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyAvailability'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  SendMyAvailability: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AvailabilityRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyAvailability'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  AddAvailabilityNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['NoteRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyAvailability'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetPreviousAvailability: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SuggestedAvailability'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetTeamAvailability: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TeamAvailability'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ReopenAvailability: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+        membershipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  RemindAvailability: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RemindRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RemindResult'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DraftView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  StartBuilding: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DraftView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GenerateDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GenerateRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DraftView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  AddDraftAssignment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AssignRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DraftView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  RemoveDraftAssignment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+        shiftId: string;
+        membershipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DraftView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  LockDraftAssignment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+        shiftId: string;
+        membershipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LockRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DraftView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  PublishDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PublishRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PeriodSummary'];
         };
       };
       /** @description Any error, as problem details with a machine-readable code (AD-023). */
@@ -286,6 +2919,438 @@ export interface operations {
         content: {
           'application/json': components['schemas']['LabGeneration'];
         };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetMarketplace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarketplaceBoard'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GiveAwayShift: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GiveAwayRequest'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  CancelGiveAway: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        giveAwayId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ClaimShift: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ClaimRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ClaimResult'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ApproveClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        claimId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  DeclineClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        claimId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  RequestTrade: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TradeRequest'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  AcceptTrade: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        tradeId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  DeclineTrade: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        tradeId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  CancelTrade: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        tradeId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ApproveTrade: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        tradeId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  RejectTrade: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        tradeId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetNotifications: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NotificationInbox'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  MarkNotificationsRead: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Any error, as problem details with a machine-readable code (AD-023). */
       default: {

@@ -1,25 +1,20 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { routes } from '../../app/router';
+import { beforeEach, describe, expect, it } from 'vitest';
 import i18n from '../../i18n';
 import en from '../../i18n/locales/en.json';
+import { renderApp, signedIn } from '../../test/app';
 import { accessibilityProblems } from '../../test/axe';
 
 async function openGallery() {
-  const router = createMemoryRouter(routes, { initialEntries: ['/dev/ui'] });
-  render(<RouterProvider router={router} />);
+  renderApp('/dev/ui');
   await screen.findByRole('heading', { level: 1, name: en.gallery.title });
 }
 
 describe('the component gallery', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en');
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response('{}', { status: 503 })),
-    );
+    signedIn();
   });
 
   it('shows every kind of component', async () => {
@@ -65,8 +60,7 @@ describe('the component gallery', () => {
 
   it('has none in French', async () => {
     await i18n.changeLanguage('fr');
-    const router = createMemoryRouter(routes, { initialEntries: ['/dev/ui'] });
-    render(<RouterProvider router={router} />);
+    renderApp('/dev/ui');
     await screen.findByRole('heading', { level: 1, name: 'Galerie de composants' });
     expect(await accessibilityProblems()).toEqual([]);
   });
@@ -79,13 +73,11 @@ describe('the component gallery', () => {
   });
 
   it('puts the theme back when the person leaves', async () => {
-    const router = createMemoryRouter(routes, { initialEntries: ['/dev/ui'] });
-    render(<RouterProvider router={router} />);
-    await screen.findByRole('heading', { level: 1, name: en.gallery.title });
+    await openGallery();
     await userEvent.click(screen.getByRole('button', { name: en.gallery.theme.light }));
     expect(document.documentElement.dataset.theme).toBe('light');
 
-    await userEvent.click(within(screen.getByRole('navigation')).getByRole('link', { name: en.nav.news }));
+    await userEvent.click(within(screen.getByRole('navigation')).getByRole('link', { name: en.nav.trade }));
 
     expect(document.documentElement.dataset.theme).toBeUndefined();
   });

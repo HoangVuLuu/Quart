@@ -172,12 +172,37 @@
 }
 
 @layer base {
+  /* Touch: no grey flash on tap and no double-tap zoom delay, so buttons answer at once on phones.
+     Fields are 16 px (see TextField) because iPhone zooms the page when a smaller one is focused. */
+  a,
+  button,
+  [role='button'],
+  [role='radio'],
+  [role='switch'],
+  select,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
   html {
     background-color: var(--color-bg);
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -webkit-text-size-adjust: 100%;
+    /* The app has its own pull-to-refresh (PullToRefresh.tsx). This stops Chrome on Android from
+       also reloading the whole page on the same pull. */
+    overscroll-behavior-y: contain;
+  }
+
+  /* On touch screens a sideways swipe changes the week or the tab (lib/gestures.ts). Some browsers
+     would also read it as "go back a page"; this leaves the swipe to the app. The phone's own
+     back gesture from the screen edge is not affected, and neither is a trackpad on a computer. */
+  @media (pointer: coarse) {
+    html {
+      overscroll-behavior-x: none;
+    }
   }
 
   body {

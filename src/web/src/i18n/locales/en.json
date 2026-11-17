@@ -24,7 +24,40 @@
     "serverTime": "Server time",
     "lastTick": "Last background run",
     "lastTickNever": "Not yet",
-    "retry": "Try again"
+    "retry": "Try again",
+    "hello": "Hi {{name}}!",
+    "nextShift": "Next shift",
+    "viewShift": "View shift",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "with": "With {{names}}",
+    "alone": "On your own",
+    "workingNext": "You’re working next",
+    "hours": "Hours this week",
+    "grabs": "Up for grabs",
+    "grabsDetail": "{{open}} open · {{trades}} trade",
+    "availability": "Availability · {{range}}",
+    "availabilitySent": "Sent. You can change it until the schedule is built.",
+    "availabilityDue": "Not sent yet",
+    "availabilityLocked": "Locked: the schedule is being built.",
+    "view": "View",
+    "fillIn": "Fill in",
+    "nothing": "Nothing scheduled yet. Your shifts will show here once a schedule is published.",
+    "waiting": "Waiting on you",
+    "period": {
+      "none": "Next period",
+      "noneTitle": "No period open",
+      "open": "Open the next period",
+      "next": "Next period · {{range}}",
+      "building": "Building the schedule",
+      "collected": "Availability collected",
+      "collecting": "Collecting availability",
+      "sent": "{{sent}} of {{total}} sent",
+      "ready": "Ready to build schedule",
+      "build": "Build the schedule",
+      "continue": "Open the draft",
+      "who": "Who has sent"
+    }
   },
   "notFound": {
     "title": "Page not found",
@@ -45,44 +78,177 @@
     "page": {
       "title": "Something went wrong",
       "home": "Back to home"
+    },
+    "auth": {
+      "antiforgery": "Your session needs a refresh. Reload the page and try again.",
+      "email_invalid": "Enter a valid email address.",
+      "email_not_verified": "Verify your email first: open the link we sent you.",
+      "invalid_credentials": "Wrong email or password.",
+      "language_invalid": "Choose French or English.",
+      "link_expired": "This link has expired. Ask for a new one.",
+      "link_invalid": "This link is not valid. Ask for a new one.",
+      "link_used": "This link was already used.",
+      "locked_out": "Too many wrong passwords. Try again in 15 minutes, or reset your password.",
+      "name_invalid": "Enter your name using letters, spaces, hyphens and apostrophes.",
+      "password_breached": "This password appeared in a data breach. Choose a different one.",
+      "password_too_short": "Use at least 8 characters."
+    },
+    "availability": {
+      "locked": "Availability is locked: the schedule is being built.",
+      "not_shift_worker": "You are not set up to work shifts here.",
+      "note_empty": "Write something first.",
+      "note_too_long": "A note can have 500 characters at most.",
+      "too_many_notes": "You have reached the number of notes for this period.",
+      "unknown_shift": "One of these shifts no longer exists. Reload and try again."
+    },
+    "marketplace": {
+      "already_offered": "You are already giving this shift away.",
+      "already_requested": "You already asked for this.",
+      "missing_level": "Refused: a shift would be left without its required level.",
+      "no_longer_pending": "This request is no longer waiting.",
+      "not_shift_worker": "You are not set up to work shifts here.",
+      "not_your_shift": "This shift is not yours.",
+      "nothing_to_claim": "This shift has no open place left.",
+      "overlap": "You already work a shift at that time.",
+      "own_shift": "This is your own shift.",
+      "shift_started": "This shift has already started.",
+      "shift_taken": "This shift was just taken.",
+      "trade_invalid": "These two shifts cannot be traded."
+    },
+    "period": {
+      "overlaps": "These dates overlap another period.",
+      "start_not_monday": "A period starts on a Monday.",
+      "template_empty": "Add your shifts in the Edit Generator page first.",
+      "unfinished_exists": "Publish the period you are working on before opening another.",
+      "weeks_invalid": "A period lasts 1 to 4 weeks."
+    },
+    "schedule": {
+      "already_on_shift": "This person is already on the shift.",
+      "double_booking": "Someone already holds a shift at the same time elsewhere. Check the issues list.",
+      "not_building": "Start building the schedule first.",
+      "not_on_shift": "This person is not on the shift.",
+      "not_published": "This schedule is not published yet.",
+      "nothing_to_publish": "Nothing changed since the last publish.",
+      "publish_blocked": "Some issues block publishing. Open the issues list.",
+      "publish_needs_confirmation": "Some issues need your confirmation before publishing.",
+      "shift_full": "This shift is full.",
+      "unknown_member": "This person no longer works shifts here.",
+      "unknown_shift": "This shift no longer exists."
+    },
+    "settings": {
+      "max_consecutive_invalid": "Choose 1 to 4 shifts in a row, or no limit.",
+      "period_weeks_invalid": "A period lasts 1 to 4 weeks."
+    },
+    "template": {
+      "conflict_duplicate": "This pair is already listed.",
+      "conflict_invalid": "Choose two different people from the team.",
+      "crosses_midnight": "A shift must end after it starts, on the same day.",
+      "headcount_invalid": "A shift needs 1 to 20 people.",
+      "no_days": "Choose at least one day.",
+      "off_grid": "Times go by 15 minutes: 10:00, 10:15, 10:30…",
+      "requirement_exceeds_headcount": "A rule asks for more people than the shift has.",
+      "requirement_invalid": "A level rule needs a level from 1 to 3 and at least 1 person.",
+      "time_invalid": "Enter the times as hours and minutes.",
+      "too_many_blocks": "That is more shifts than a template can hold."
+    },
+    "workplace": {
+      "already_member": "You are already in this workplace.",
+      "hours_invalid": "Hours go from 0 to 80.",
+      "invitation_invalid": "This invitation is not valid, was already used, or has expired.",
+      "join_code_unknown": "No workplace has this code. Check it with your manager.",
+      "level_invalid": "A level goes from 1 to 3.",
+      "name_required": "Enter a name.",
+      "owner_cannot_leave": "The owner cannot leave. Transfer ownership first.",
+      "time_zone_unknown": "Unknown time zone."
     }
   },
   "shell": {
     "skipToContent": "Skip to content",
-    "account": "Your account"
+    "back": "Back",
+    "team": "Whole team"
   },
   "nav": {
     "label": "Main navigation",
     "home": "Home",
     "schedule": "Schedule",
-    "availability": "Availability",
-    "requests": "Requests",
-    "news": "News",
-    "count": "{{count}} waiting"
+    "count": "{{count}} waiting",
+    "trade": "Trade",
+    "alerts": "Alerts",
+    "profile": "Profile"
   },
   "schedule": {
-    "context": "Your shifts",
     "title": "Schedule",
+    "state": {
+      "draft": "Draft · only you can see it",
+      "collecting": "Collecting availability",
+      "published": "published"
+    },
+    "which": "Which schedule",
+    "published": "Published",
+    "next": "Next period",
+    "fillAvailability": "Fill availability",
+    "edit": "Edit",
     "emptyTitle": "No schedule yet",
-    "emptyText": "Your shifts show up here as soon as the schedule is published."
+    "emptyText": "Your shifts will show here once a schedule is published.",
+    "emptyCollecting": "Your manager is collecting availability for the next schedule.",
+    "editGenerator": "Edit Generator",
+    "mine": "My shifts",
+    "team": "Whole team",
+    "noShiftsTitle": "No shifts for you",
+    "noShiftsText": "You are not on this schedule. Open shifts show in the Trade tab.",
+    "offered": "Up for grabs · still yours until taken",
+    "completedChip": "Completed",
+    "upcoming": "Upcoming",
+    "completed": "Completed",
+    "you": "You",
+    "openSlots_one": "{{count}} open place",
+    "openSlots_other": "{{count}} open places",
+    "sheet": {
+      "offeredText": "This shift is up for grabs. It stays yours until someone takes it.",
+      "keep": "Keep it",
+      "giveAway": "Give away",
+      "trade": "Trade",
+      "offeredToast": "Offered to the team. Still yours until taken."
+    },
+    "ready": {
+      "title": "Ready to build?",
+      "sent": "{{sent}} of {{total}} sent.",
+      "locks": "Generating locks everyone’s availability.",
+      "generate": "Generate schedule",
+      "byHand": "By hand",
+      "allSentLabel": "Sent",
+      "notSent": "Not sent yet",
+      "allSent": "Everyone has sent their availability",
+      "team": "See everyone’s availability"
+    },
+    "open": {
+      "title": "Open the next period",
+      "text": "Everyone who works shifts is asked for their availability.",
+      "start": "Starts on",
+      "startHint": "A Monday.",
+      "weeks": "Weeks",
+      "submit": "Open period"
+    }
   },
   "availability": {
-    "context": "When can you work?",
     "title": "Availability",
-    "emptyTitle": "Nothing to fill in yet",
-    "emptyText": "When Philippe asks for your availability, you fill it in here."
-  },
-  "requests": {
-    "context": "Trades and give-aways",
-    "title": "Requests",
-    "emptyTitle": "No requests",
-    "emptyText": "Shifts to give away, trade or pick up show up here."
-  },
-  "news": {
-    "context": "From the shop",
-    "title": "News",
-    "emptyTitle": "No news",
-    "emptyText": "Announcements and the team’s recipes show up here."
+    "hint": "Tap the shifts you can work.",
+    "locked": "Shifts are locked: the schedule is being built. You can still send a note.",
+    "sent": "Sent",
+    "notSent": "Not sent",
+    "sentToast": "Availability sent",
+    "counter_one": "{{count}} shift · {{hours}} h selected",
+    "counter_other": "{{count}} shifts · {{hours}} h selected",
+    "sameAsLast": "Same as last period",
+    "copyWeek": "Copy week 1 → all",
+    "note": "Note for your manager",
+    "noteHint_one": "Optional, only managers see it. {{count}} character left.",
+    "noteHint_other": "Optional, only managers see it. {{count}} characters left.",
+    "notePlaceholder": "e.g. Exams Oct 12–16, evenings only that week",
+    "noteSent": "Note sent",
+    "sendNote": "Send note",
+    "send": "Send",
+    "sendAgain": "Send again"
   },
   "ui": {
     "close": "Close",
@@ -90,7 +256,8 @@
     "hidePassword": "Hide",
     "decrease": "Decrease",
     "increase": "Increase",
-    "notification": "Notifications"
+    "notification": "Notifications",
+    "refreshing": "Refreshing…"
   },
   "gallery": {
     "context": "For developers",
@@ -386,6 +553,401 @@
     "unknown": {
       "title": "Other issues",
       "item": "Issue {{code}}"
+    }
+  },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Manager",
+    "employee": "Barista"
+  },
+  "auth": {
+    "back": "Back",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "fullName": "Full name",
+    "passwordHint_one": "At least {{count}} character.",
+    "passwordHint_other": "At least {{count}} characters.",
+    "errors": {
+      "nameRequired": "Enter your full name.",
+      "passwordsDiffer": "The two passwords are not the same."
+    },
+    "signIn": {
+      "title": "Welcome back",
+      "subtitle": "Log in to see your shifts.",
+      "forgot": "Forgot password?",
+      "submit": "Log in",
+      "new": "New here?",
+      "create": "Create a new account",
+      "resend": "Send the verification email again"
+    },
+    "signUp": {
+      "title": "Create an account",
+      "subtitle": "Set up Quart to see and swap your shifts.",
+      "submit": "Create account",
+      "have": "Already have an account?",
+      "signIn": "Log in"
+    },
+    "checkEmail": {
+      "title": "Check your email",
+      "sentTo": "We sent a link to <strong>{{email}}</strong>. Open it to finish creating your account.",
+      "sent": "We sent you a link. Open it to finish creating your account.",
+      "spam": "Nothing yet? Look in your spam folder. The link works for 24 hours.",
+      "resend": "Send the email again",
+      "resent": "Email sent again"
+    },
+    "verify": {
+      "working": "Checking your link…",
+      "done": "Email verified",
+      "doneText": "Your account is ready. Log in to continue.",
+      "failed": "This link did not work"
+    },
+    "forgot": {
+      "title": "Forgot password?",
+      "subtitle": "Enter your email and we will send you a link to reset it.",
+      "submit": "Send reset link",
+      "sent": "Link sent to <strong>{{email}}</strong>. Check your inbox and spam folder.",
+      "remembered": "Remembered it?",
+      "back": "Back to log in"
+    },
+    "reset": {
+      "title": "Choose a new password",
+      "subtitle": "You will be logged out everywhere else.",
+      "password": "New password",
+      "submit": "Save password"
+    }
+  },
+  "workplaces": {
+    "signOut": "Log out",
+    "hello": "Hi {{name}}",
+    "pick": "Pick a workplace to continue.",
+    "yours": "Your workplaces",
+    "none": "You are not in a workplace yet. Join one with the code from your manager.",
+    "open": "Open",
+    "openNamed": "Open {{name}}",
+    "joinTitle": "Join a new workplace",
+    "code": "Join code",
+    "codeHint_one": "The {{count}}-character code from your manager.",
+    "codeHint_other": "The {{count}}-character code from your manager.",
+    "join": "Join workplace",
+    "create": {
+      "title": "Create a workplace",
+      "text": "Only you, the platform admin, see this. You get a link to send to the future owner.",
+      "name": "Name",
+      "address": "Address",
+      "submit": "Create workplace",
+      "done": "Created. Send this link to the owner. It works once, for 7 days:"
+    },
+    "invitation": {
+      "title": "Become the owner",
+      "text": "Accepting makes this account the owner of the workplace you were invited to.",
+      "accept": "Accept the invitation"
+    }
+  },
+  "draft": {
+    "generate": "Generate",
+    "generateAgain": "Generate again",
+    "publish": "Publish",
+    "update": "Update",
+    "back": "Back to published",
+    "hint": "People you keep stay put when you generate again.",
+    "seed": "Seed #{{seed}}.",
+    "openSlots_one": "{{count}} open place.",
+    "openSlots_other": "{{count}} open places.",
+    "same": "Nothing to update: this is what staff see.",
+    "updated": "Schedule updated",
+    "publishedToast": "Schedule published",
+    "blocked": "Fix the issues marked “Blocks” before publishing.",
+    "severity": {
+      "block": "Blocks",
+      "confirm": "Asks",
+      "show": "Info"
+    },
+    "confirm": {
+      "title": "Publish with these issues?",
+      "text": "Empty places become open shifts that staff can claim.",
+      "publish": "Publish anyway",
+      "update": "Update anyway",
+      "back": "Go back"
+    },
+    "editor": {
+      "onShift": "On this shift",
+      "nobody": "Nobody yet.",
+      "thisWeek": "{{hours}} this week",
+      "keep": "Keep",
+      "remove": "Remove",
+      "removeNamed": "Remove {{name}}",
+      "add": "Add someone",
+      "full": "This shift is full. Remove someone to add another.",
+      "addButton": "Add",
+      "addNamed": "Add {{name}}",
+      "available": "Available",
+      "unavailable": "Not available",
+      "noAnswer": "No answer",
+      "notes_one": "{{count}} note",
+      "notes_other": "{{count}} notes"
+    }
+  },
+  "teamAvailability": {
+    "title": "Team availability",
+    "mine": "Fill in my availability",
+    "offers": "Offers {{offered}} h/wk · wants {{wanted}} h/wk",
+    "noAnswer": "No answer yet · wants {{wanted}} h/wk",
+    "reopened": "Reopened",
+    "remind": "Remind",
+    "remindNamed": "Remind {{name}}",
+    "reminded_one": "{{count}} reminder sent",
+    "reminded_other": "{{count}} reminders sent",
+    "reopen": "Reopen",
+    "reopenNamed": "Reopen availability for {{name}}",
+    "reopenedToast": "Reopened for {{name}}",
+    "remindAll": "Remind everyone who is missing"
+  },
+  "team": {
+    "title": "Whole team",
+    "context_one": "{{count}} member · {{workplace}}",
+    "context_other": "{{count}} members · {{workplace}}",
+    "count_one": "{{count}} person",
+    "count_other": "{{count}} people",
+    "you": "you",
+    "former": "Former employee",
+    "barista": "Barista · Level {{level}}",
+    "edit": "Edit",
+    "editNamed": "Edit {{name}}",
+    "sheet": {
+      "title": "Edit level",
+      "level": "Level",
+      "worksShifts": "Works shifts",
+      "worksShiftsText": "Sends availability and can be scheduled.",
+      "hours": "Hours wanted per week",
+      "hoursText": "The generator aims for this.",
+      "save": "Save level",
+      "remove": "Remove from the workplace"
+    },
+    "remove": {
+      "title": "Remove {{name}}?",
+      "text": "They lose access at once and their future shifts become open shifts.",
+      "confirm": "Remove",
+      "cancel": "Cancel"
+    }
+  },
+  "marketplace": {
+    "claims": "Requests to take a shift",
+    "claimFrom": "{{name}} wants the shift {{from}} is giving away",
+    "claimOpen": "{{name}} wants this open place",
+    "giveTo": "Give it to {{name}}",
+    "decline": "Decline",
+    "open": "Open shifts",
+    "openSlots_one": "{{count}} open place",
+    "openSlots_other": "{{count}} open places",
+    "waiting": "Waiting for a manager",
+    "claim": "Claim",
+    "claimed": "The shift is yours",
+    "requested": "Request sent to your manager",
+    "offeredByMe": "You are giving this away. Still yours until taken.",
+    "offeredBy": "Offered by {{name}}",
+    "onShift": "You already work this shift.",
+    "wouldMissLevel": "The shift would miss its required level",
+    "keep": "Keep it",
+    "trades": "Trades",
+    "trade": {
+      "youAsked": "You asked {{name}} to trade",
+      "wants": "{{name}} wants to trade",
+      "between": "{{first}} and {{second}} want to trade",
+      "gives": "{{name}} gives",
+      "youGive": "You give",
+      "youGet": "You get",
+      "missesLevel": "A shift would be left without its required level. Approving will be refused.",
+      "levelsOk": "Levels still covered on both shifts.",
+      "waitingApproval": "Waiting for a manager",
+      "accept": "Accept",
+      "cancel": "Cancel request",
+      "approve": "Approve"
+    }
+  },
+  "trade": {
+    "title": "Trade",
+    "context": "Open shifts and trades",
+    "empty": "Nothing to take and no trade waiting.",
+    "fromSchedule": "Give away or trade one of my shifts",
+    "sheet": {
+      "title": "Trade your {{shift}}",
+      "text": "Pick one shift to swap for it. One for one.",
+      "none": "Nobody has a shift you could swap for.",
+      "ask": "Ask",
+      "askNamed": "Ask {{name}}",
+      "asked": "Request sent to {{name}}"
+    }
+  },
+  "alerts": {
+    "title": "Notifications",
+    "context": "Reminders, shifts and trades",
+    "waiting_one": "{{count}} waiting on you",
+    "waiting_other": "{{count}} waiting on you",
+    "reminders": "Reminders",
+    "fillAvailability": "Fill in your availability",
+    "recent": "Recent",
+    "markRead": "Mark all read",
+    "empty": "Nothing yet.",
+    "unread": "Unread",
+    "unknown": "Something changed.",
+    "types": {
+      "member": {
+        "joined": "{{name}} joined the team",
+        "left": "{{name}} left the team. Their future shifts are open."
+      },
+      "availability": {
+        "requested": "Availability is open for the period starting {{periodStart}}",
+        "reminder": "Reminder: send your availability for the period starting {{periodStart}}",
+        "reopened": "Your availability was reopened for the period starting {{periodStart}}",
+        "sent": "{{name}} sent their availability",
+        "note_added": "{{name}} added a note to their availability"
+      },
+      "schedule": {
+        "published": "The schedule starting {{periodStart}} is published",
+        "changed": "Your schedule changed: {{added}} added, {{removed}} removed"
+      },
+      "shift": {
+        "offered": "{{name}} is giving away {{date}}, {{start}}–{{end}}",
+        "claimed": "{{name}} took the shift on {{date}}, {{start}}–{{end}}"
+      },
+      "claim": {
+        "requested": "{{name}} asks for the shift on {{date}}, {{start}}–{{end}}",
+        "approved": "The shift on {{date}}, {{start}}–{{end}} is yours",
+        "declined": "Your request for {{date}}, {{start}}–{{end}} was declined"
+      },
+      "trade": {
+        "requested": "{{name}} wants to trade their shift on {{date}}, {{start}}–{{end}}",
+        "accepted": "{{name}} accepted your trade. Waiting for a manager.",
+        "declined": "{{name}} declined or cancelled the trade for {{date}}, {{start}}–{{end}}",
+        "awaiting_approval": "A trade for {{date}}, {{start}}–{{end}} waits for your approval",
+        "applied": "The trade for {{date}}, {{start}}–{{end}} is done",
+        "rejected": "The trade for {{date}}, {{start}}–{{end}} was not applied",
+        "expired": "The trade for {{date}}, {{start}}–{{end}} expired"
+      }
+    }
+  },
+  "generator": {
+    "title": "Edit Generator",
+    "general": "General",
+    "shifts": "Shifts",
+    "tabs": "Sections",
+    "saved": "Saved",
+    "period": {
+      "title": "Availability period",
+      "text": "How many weeks the next period covers.",
+      "weeks_one": "{{count}} week",
+      "weeks_other": "{{count}} weeks"
+    },
+    "row": {
+      "title": "Max shifts in a row",
+      "text": "Most shifts one person can work back to back. Two shifts in one day count as two.",
+      "noLimit": "No limit"
+    },
+    "fairness": {
+      "title": "Fairness",
+      "opening": "Share openings fairly",
+      "closing": "Share closings fairly",
+      "text": "In proportion to each person’s hours and availability."
+    },
+    "blocks": {
+      "text": "Each shift repeats on the days you choose. Tap one to change its rules.",
+      "none": "No shifts yet. Add the first one.",
+      "everyDay": "Every day",
+      "people_one": "{{count}} person",
+      "people_other": "{{count}} people",
+      "rule_one": "at least {{count}} of level {{level}}",
+      "rule_other": "at least {{count}} of level {{level}}",
+      "pairs_one": "{{count}} pair kept apart",
+      "pairs_other": "{{count}} pairs kept apart",
+      "add": "Add a shift"
+    },
+    "save": "Save changes",
+    "saveHint": "Changes apply to the next period you open, never to one already open or published.",
+    "leave": {
+      "title": "Are you sure you want to go back?",
+      "text": "Your changes will not be saved.",
+      "stay": "Return to editing",
+      "leave": "Leave page"
+    },
+    "block": {
+      "new": "New shift",
+      "edit": "Edit shift",
+      "start": "Starts",
+      "end": "Ends",
+      "days": "Days",
+      "headcount": "People needed",
+      "atLeast": "Requires at least",
+      "atLeastText": "Counted inside the people needed, not on top.",
+      "level": "Of level, or above",
+      "pairs": "Cannot work together",
+      "pairsText": "The generator never puts these two on this shift together.",
+      "removePair": "Remove the pair {{first}} and {{second}}",
+      "first": "First person",
+      "second": "Second person",
+      "pick": "Choose…",
+      "addPair": "Add pair",
+      "done": "Done",
+      "applyAll": "Apply these rules to all shifts",
+      "delete": "Delete this shift"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "level": "Barista level",
+    "levelHint": "Set by your manager",
+    "wants": "Wants per week",
+    "worksShifts": "I work shifts too",
+    "worksShiftsText": "Be scheduled and send availability",
+    "workplace": "Workplace",
+    "joinCode": "Join code",
+    "joinCodeText": "Share with new staff",
+    "copyCode": "Copy the join code {{code}}",
+    "codeCopied": "Code copied",
+    "codeChanged": "New code. The old one no longer works.",
+    "newCode": "Get a new code",
+    "members": "Members and levels",
+    "generatorText": "Shifts, people needed, scheduling rules",
+    "claimsApproval": "Approve claims",
+    "claimsApprovalText": "Taking an open or offered shift waits for a manager",
+    "tradesApproval": "Approve trades",
+    "tradesApprovalText": "A trade both people accepted waits for a manager",
+    "preferences": "Preferences",
+    "language": "Language",
+    "languages": {
+      "fr": "Français",
+      "en": "English"
+    },
+    "dark": "Dark mode",
+    "darkText": "Easier on the eyes at night",
+    "shortName": "Short name",
+    "shortNameHint": "What your team sees on the schedule.",
+    "save": "Save",
+    "saved": "Saved",
+    "account": "Account",
+    "switch": "Switch workplace",
+    "signOutEverywhere": "Log out of all devices",
+    "signOut": "Log out",
+    "leave": "Leave this workplace",
+    "leaveTitle": "Leave {{workplace}}?",
+    "leaveText": "You lose access at once and your future shifts become open shifts.",
+    "wantsEdit": "Edit →",
+    "hoursSheet": {
+      "title": "Hours you want per week",
+      "text": "Your manager sees this when building the schedule. It is a wish, not a promise.",
+      "label": "Hours per week",
+      "save": "Save"
+    }
+  },
+  "install": {
+    "title": "Put Quart on your home screen",
+    "text": "Open it like an app, full screen, from its own icon.",
+    "install": "Install",
+    "notNow": "Not now",
+    "ios": {
+      "share": "In Safari, tap the Share button (the square with an arrow).",
+      "add": "Choose “Add to Home Screen”.",
+      "open": "Open Quart from its new icon."
     }
   }
 }

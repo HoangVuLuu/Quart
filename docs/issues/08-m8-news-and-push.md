@@ -162,3 +162,30 @@ spec: 12.7, 11.5, 12.5
 
 **Done when**
 - [ ] Every item in 12.7 has a link, and the storage restore drill succeeds.
+
+## M8-10 · Publish the Android app on Google Play
+labels: type:feature, stack:frontend, area:ui, area:infra, size:M
+depends: M8-06, M6-02
+spec: NFR-012, NFR-001, AD-040
+
+**Goal.** Android staff install Quart from Google Play; it is the same web app, not a second codebase.
+
+**You will see.** A "Quart" listing in Google Play. Installed, it opens full screen with no browser bar and stays signed in like the home-screen app.
+
+**Frontend**
+- [ ] A Trusted Web Activity built with Bubblewrap (or PWABuilder) from the production manifest: package name, icons, splash colours from the tokens, portrait.
+- [ ] `/.well-known/assetlinks.json` served by the app with the signing key's fingerprint, so Android shows no browser bar. Excluded from the SPA fallback and covered by a test.
+- [ ] The install card on Home is hidden inside the store app (it already counts as installed).
+
+**Chores**
+- [ ] Google Play developer account under the owner's name or Hoang's (US$25 once), with two-step verification (11.5).
+- [ ] The upload key and its password are stored outside the repository; Play App Signing holds the app signing key.
+- [ ] Store listing in French and English, screenshots at phone size, the privacy policy URL from M6-03, the data safety form (no data sold, no ads; account email and name collected).
+- [ ] A new personal developer account must run a closed test with at least 12 testers for 14 days before production: the Presotea team is the tester list.
+
+**Tests**
+- [ ] `assetlinks.json` is served as JSON with the expected package name; Lighthouse reports the app as installable.
+
+**Done when**
+- [ ] An Android phone installs Quart from Google Play, opens it with no browser bar, and receives a push notification.
+

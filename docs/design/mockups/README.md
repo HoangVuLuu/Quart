@@ -85,7 +85,7 @@ Hoang decides, build what is written in the "Do this" column.
 | 1 | The PDF's first page says the tabs are "Home, Schedule, Availability, Notifications, Profile", but every tab bar shows Trade and Alerts | NFR-016 now lists Home, Schedule, Trade, Notifications, Profile | Use the tab bars in the images. There is no full-page "Trade" screen in the mockups: trades are started from the shift sheet (1h, 1i) and answered in Alerts (1f, 1n). Ask before building a Trade tab page (M7-01) |
 | 2 | 1m (admin team availability) is shown with the Trade tab highlighted, and no entry point is shown | n/a | Open it from the Home card (1j) and from Schedule (1k). Do not add a sixth tab |
 | 3 | 1v asks for a 6-character join code; 1o shows PRESTEA24X (10 characters) | FR-033: 10 characters, no look-alikes | Keep 10 characters; use a row of boxes only if it fits on a 390 px screen, otherwise one field |
-| 4 | 1g lets the employee edit "Wants per week" | FR-037: desired hours are set by an admin | Ask. Until decided, show it read-only for employees |
+| 4 | 1g lets the employee edit "Wants per week" | FR-037: desired hours are set by an admin | Decided 2026-11-16: the mockup wins. Employees edit it from Profile; FR-037 now says so |
 | 5 | 1g and 1o have a Dark mode switch | NFR-011: follows the device setting | Follow the device by default, with the switch as an override |
 | 6 | 1f lists News inside Alerts; 1j has a composer on Home | M8-01 plans a News page, FR-231 | Build the News section in Alerts and the composer on Home as shown; keep the page for the full list |
 | 7 | 1w shows Instagram and Facebook icons for everyone | FR-040: shown only if the member opted in | Show an icon only when that person chose to share the link |
