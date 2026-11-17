@@ -1822,6 +1822,15 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             closed, and both people are told when it is a trade. Saving Edit
             Generator a second time no longer fails.  (FR-068, FR-161, FR-191,
             M4-01, M5-05, M5-07, M7-08)
+2026-11-17  Security review. Signing up again with an address that is not yet
+            confirmed no longer leaves the first password in place: each
+            verification link carries the password of its own attempt and
+            applies it only when opened. One link email per account and
+            purpose per minute. A used reset link ends the other reset links.
+            Session keys are stored hashed. Sent emails keep no link in the
+            outbox. API answers are never cached; requests over 256 KB are
+            refused; HSTS is one year. CI fails on a package with a known
+            vulnerability.  (FR-004, FR-005, FR-007, AD-045, AD-046)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

@@ -116,6 +116,14 @@ namespace Quart.Modules.Identity.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
+                    b.Property<string>("PendingFullName")
+                        .HasColumnType("text")
+                        .HasColumnName("pending_full_name");
+
+                    b.Property<string>("PendingPasswordHash")
+                        .HasColumnType("text")
+                        .HasColumnName("pending_password_hash");
+
                     b.Property<string>("Purpose")
                         .IsRequired()
                         .HasColumnType("text")

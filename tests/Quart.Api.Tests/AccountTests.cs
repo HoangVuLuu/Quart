@@ -57,6 +57,105 @@ public sealed class AccountTests(PostgresFixture postgres)
         Assert.Equal("Ana Lima", (await first.GetAsync("/api/me"))["fullName"]!.GetValue<string>());
     }
 
+    [Fact]
+    public async Task Whoever_opens_their_own_link_gets_their_own_password_not_the_one_a_stranger_set_first()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        using var stranger = app.Browser();
+        using var ana = app.Browser();
+        const string strangersPassword = "the stranger chose this";
+        const string anasPassword = "ana chose this herself";
+
+        // A stranger signs up with Ana's address and never sees the email. Later Ana signs up herself.
+        await stranger.PostAsJsonAsync("/api/auth/sign-up", new { fullName = "Not Ana", email = "ana@quart.test", password = strangersPassword }, Cancellation);
+        app.Clock.Advance(Duration.FromMinutes(5));
+        await ana.PostAsJsonAsync("/api/auth/sign-up", new { fullName = "Ana Lima", email = "ana@quart.test", password = anasPassword }, Cancellation);
+        var firstToken = TestApp.TokenPattern().Match(app.Emails.To("ana@quart.test")[0].TextBody).Groups[1].Value;
+        using var verify = await ana.PostAsJsonAsync("/api/auth/verify-email", new { token = app.Emails.LastTokenFor("ana@quart.test") }, Cancellation);
+        using var asStranger = await stranger.PostAsJsonAsync("/api/auth/sign-in", new { email = "ana@quart.test", password = strangersPassword }, Cancellation);
+        var me = await TestApp.SignInAsync(ana, "ana@quart.test", anasPassword);
+        // The stranger's link died when hers was used.
+        using var late = await stranger.PostAsJsonAsync("/api/auth/verify-email", new { token = firstToken }, Cancellation);
+
+        Assert.Equal(HttpStatusCode.NoContent, verify.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, asStranger.StatusCode);
+        Assert.Equal("Ana Lima", me["fullName"]!.GetValue<string>());
+        Assert.Equal(HttpStatusCode.BadRequest, late.StatusCode);
+    }
+
+    [Fact]
+    public async Task Asking_for_links_again_and_again_sends_one_email_a_minute_and_one_reset_ends_the_others()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var ana = await app.PersonAsync("Ana Lima", "ana@quart.test");
+        var before = app.Emails.To(ana.Email).Count;
+        using var client = app.Browser();
+
+        for (var i = 0; i < 5; i++)
+        {
+            await client.PostAsJsonAsync("/api/auth/forgot-password", new { email = ana.Email }, Cancellation);
+        }
+        Assert.Equal(before + 1, app.Emails.To(ana.Email).Count);
+        var first = app.Emails.LastTokenFor(ana.Email);
+
+        app.Clock.Advance(Duration.FromMinutes(2));
+        await client.PostAsJsonAsync("/api/auth/forgot-password", new { email = ana.Email }, Cancellation);
+        Assert.Equal(before + 2, app.Emails.To(ana.Email).Count);
+        using var reset = await client.PostAsJsonAsync("/api/auth/reset-password", new { token = app.Emails.LastTokenFor(ana.Email), password = "a brand new password" }, Cancellation);
+        using var replay = await client.PostAsJsonAsync("/api/auth/reset-password", new { token = first, password = "yet another password" }, Cancellation);
+
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
+    }
+
+    [Fact]
+    public async Task The_database_holds_no_working_session_key_and_no_working_link_once_an_email_is_sent()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var ana = await app.PersonAsync("Ana Lima", "ana@quart.test");
+        using var client = app.Browser();
+        await client.PostAsJsonAsync("/api/auth/forgot-password", new { email = ana.Email }, Cancellation);
+        var token = app.Emails.LastTokenFor(ana.Email);
+
+        await using var connection = await Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Npgsql.NpgsqlDataSource>(app.Factory.Services).OpenConnectionAsync(Cancellation);
+        async Task<List<string>> ColumnAsync(string sql)
+        {
+            await using var command = new Npgsql.NpgsqlCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync(Cancellation);
+            var values = new List<string>();
+            while (await reader.ReadAsync(Cancellation))
+            {
+                values.Add(reader.GetString(0));
+            }
+            return values;
+        }
+
+        var sessions = await ColumnAsync("SELECT id FROM identity.session");
+        var sent = await ColumnAsync("SELECT parameters::text FROM notifications.outbox_message WHERE sent_at IS NOT NULL");
+
+        Assert.NotEmpty(sessions);
+        // A key from a cookie is 43 characters of base64url; what is stored is a SHA-256 in hex.
+        Assert.All(sessions, id => Assert.Matches("^[0-9A-F]{64}$", id));
+        Assert.NotEmpty(sent);
+        Assert.All(sent, parameters => Assert.DoesNotContain(token, parameters, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Answers_carry_the_browser_protections_and_big_bodies_are_refused()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        using var client = app.Browser();
+
+        using var meta = await client.GetAsync("/api/meta", Cancellation);
+        using var body = new StringContent($$"""{"email":"a@quart.test","password":"{{new string('x', 300_000)}}"}""", System.Text.Encoding.UTF8, "application/json");
+        using var big = await client.PostAsync("/api/auth/sign-in", body, Cancellation);
+
+        Assert.Equal("no-store", meta.Headers.CacheControl?.ToString());
+        Assert.Equal("DENY", meta.Headers.GetValues("X-Frame-Options").Single());
+        Assert.Equal("same-origin", meta.Headers.GetValues("Cross-Origin-Opener-Policy").Single());
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, big.StatusCode);
+    }
+
     [Theory]
     [InlineData("", "ana@quart.test", TestApp.Password, "auth.name_invalid")]
     [InlineData("Ana <b>", "ana@quart.test", TestApp.Password, "auth.name_invalid")]

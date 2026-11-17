@@ -20,6 +20,8 @@ public static class SecurityHeaders
 
     public const string PermissionsPolicy = "camera=(), microphone=(), geolocation=()";
 
+    public const long MaxRequestBodyBytes = 256 * 1024;
+
     public static WebApplicationBuilder AddQuartSecurity(this WebApplicationBuilder builder)
     {
         // Container Apps terminates HTTPS at its ingress and forwards plain HTTP. Trust its X-Forwarded-Proto
@@ -29,6 +31,16 @@ public static class SecurityHeaders
         // per-address limits on sign-in and join codes (FR-007) would put the whole shop in one bucket, and
         // one person guessing passwords would lock everyone out. Only the last address is taken (the
         // default limit of 1): that is the one the ingress itself appended, which a client cannot forge.
+        // A year, subdomains included: a browser that has seen the site once never tries plain HTTP again.
+        builder.Services.AddHsts(options =>
+        {
+            options.MaxAge = TimeSpan.FromDays(365);
+            options.IncludeSubDomains = true;
+        });
+        // No request to this API is large: the biggest is a generator setup of a few kilobytes. A small
+        // limit means nobody can tie the server up by posting megabytes. File uploads (M8-02) will raise it
+        // on their own routes only.
+        builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = MaxRequestBodyBytes);
         builder.Services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor;
@@ -47,6 +59,16 @@ public static class SecurityHeaders
             app.UseHsts();
         }
 
+        // Refused before a byte of the body is read. Kestrel enforces the same limit on bodies sent without a length.
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.ContentLength > MaxRequestBodyBytes)
+            {
+                context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+                return;
+            }
+            await next(context);
+        });
         var contentSecurityPolicy = app.Environment.IsDevelopment() ? DevelopmentContentSecurityPolicy : ContentSecurityPolicy;
         app.Use(async (context, next) =>
         {
@@ -58,6 +80,15 @@ public static class SecurityHeaders
                 headers.XContentTypeOptions = "nosniff";
                 headers["Referrer-Policy"] = "no-referrer";
                 headers["Permissions-Policy"] = PermissionsPolicy;
+                // Older browsers that do not read frame-ancestors, and no other site keeps a handle on our window.
+                headers.XFrameOptions = "DENY";
+                headers["Cross-Origin-Opener-Policy"] = "same-origin";
+                // API answers hold names, emails and schedules: never kept by a browser or a proxy, so the
+                // Back button after signing out on a shared phone shows nothing.
+                if (context.Request.Path.StartsWithSegments("/api"))
+                {
+                    headers.CacheControl = "no-store";
+                }
                 return Task.CompletedTask;
             });
             await next(context);

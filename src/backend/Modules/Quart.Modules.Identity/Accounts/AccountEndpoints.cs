@@ -37,6 +37,13 @@ internal static class AccountEndpoints
     public const string LinkExpired = "auth.link_expired";
     public const string LinkUsed = "auth.link_used";
 
+    /// <summary>At most one link email per account and purpose in this time, so the form cannot flood a mailbox.</summary>
+    private static readonly Duration LinkEmailInterval = Duration.FromMinutes(1);
+
+    private static readonly QuartUser UnknownUser = new() { FullName = string.Empty, DisplayName = string.Empty, Language = "en" };
+    private static readonly Lazy<string> UnknownUserHash = new(() =>
+        new PasswordHasher<QuartUser>().HashPassword(UnknownUser, Convert.ToHexString(RandomNumberGenerator.GetBytes(16))));
+
     private static readonly Duration VerifyLifetime = Duration.FromHours(24);
     private static readonly Duration ResetLifetime = Duration.FromMinutes(45);
 
@@ -120,7 +127,13 @@ internal static class AccountEndpoints
             }
             else
             {
-                await SendLinkAsync(db, emails, clock, existing, AccountLink.VerifyEmail, cancellationToken);
+                // The address is not confirmed, so nobody has proved it is theirs. This attempt's password
+                // and name travel with this attempt's link and apply only if that link is opened: a
+                // stranger who signed up first with someone else's address must not end up owning the
+                // account the real owner later confirms.
+                await SendLinkAsync(
+                    db, emails, clock, existing, AccountLink.VerifyEmail, cancellationToken,
+                    pendingPasswordHash: users.PasswordHasher.HashPassword(existing, request.Password!), pendingFullName: fullName);
             }
             return TypedResults.Accepted((string?)null);
         }
@@ -155,9 +168,22 @@ internal static class AccountEndpoints
         }
 
         var user = await db.Users.SingleAsync(x => x.Id == link.UserId, cancellationToken);
+        var now = clock.GetCurrentInstant();
         user.EmailConfirmed = true;
-        link.UsedAt = clock.GetCurrentInstant();
+        if (link.PendingPasswordHash is not null)
+        {
+            user.PasswordHash = link.PendingPasswordHash;
+            user.SecurityStamp = Guid.NewGuid().ToString();
+            if (link.PendingFullName is { } fullName)
+            {
+                user.FullName = fullName;
+                user.DisplayName = AccountRules.DisplayNameOf(fullName);
+            }
+        }
+        link.UsedAt = now;
         await db.SaveChangesAsync(cancellationToken);
+        // The other links sent for this account are finished too, with whatever password they carried.
+        await RetireLinksAsync(db, user.Id, AccountLink.VerifyEmail, now, cancellationToken);
         return TypedResults.NoContent();
     }
 
@@ -177,6 +203,9 @@ internal static class AccountEndpoints
         var user = await users.FindByEmailAsync(AccountRules.CleanEmail(request.Email));
         if (user is null)
         {
+            // Spend the same time as for a real account, so the answer's speed does not say whether the
+            // address has one.
+            users.PasswordHasher.VerifyHashedPassword(UnknownUser, UnknownUserHash.Value, request.Password ?? string.Empty);
             return Problems.Unauthorized(InvalidCredentials);
         }
         if (await users.IsLockedOutAsync(user))
@@ -262,8 +291,11 @@ internal static class AccountEndpoints
         await users.SetLockoutEndDateAsync(user, null);
         await users.ResetAccessFailedCountAsync(user);
 
-        link.UsedAt = clock.GetCurrentInstant();
+        var now = clock.GetCurrentInstant();
+        link.UsedAt = now;
         await db.SaveChangesAsync(cancellationToken);
+        // Any other reset link still in a mailbox dies with this one.
+        await RetireLinksAsync(db, user.Id, AccountLink.ResetPassword, now, cancellationToken);
         await db.Sessions.Where(x => x.UserId == user.Id).ExecuteDeleteAsync(cancellationToken);
         return TypedResults.NoContent();
     }
@@ -309,18 +341,33 @@ internal static class AccountEndpoints
     private static Me ToMe(QuartUser user) =>
         new(user.Id, user.FullName, user.DisplayName, user.Email!, user.Language, user.IsPlatformAdmin);
 
+    private static Task<int> RetireLinksAsync(IdentityDb db, Guid userId, string purpose, Instant now, CancellationToken cancellationToken) =>
+        db.AccountLinks.Where(x => x.UserId == userId && x.Purpose == purpose && x.UsedAt == null)
+            .ExecuteUpdateAsync(update => update.SetProperty(x => x.UsedAt, now), cancellationToken);
+
     private static async Task SendLinkAsync(
-        IdentityDb db, IEmailOutbox emails, IClock clock, QuartUser user, string purpose, CancellationToken cancellationToken)
+        IdentityDb db, IEmailOutbox emails, IClock clock, QuartUser user, string purpose, CancellationToken cancellationToken,
+        string? pendingPasswordHash = null, string? pendingFullName = null)
     {
         var token = WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
         var verify = purpose == AccountLink.VerifyEmail;
+        var now = clock.GetCurrentInstant();
+        var lifetime = verify ? VerifyLifetime : ResetLifetime;
+        // A link's age is its lifetime minus what is left of it. One was sent a moment ago: say nothing more.
+        var recent = now + lifetime - LinkEmailInterval;
+        if (await db.AccountLinks.AnyAsync(x => x.UserId == user.Id && x.Purpose == purpose && x.UsedAt == null && x.ExpiresAt > recent, cancellationToken))
+        {
+            return;
+        }
         db.AccountLinks.Add(new AccountLink
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
             Purpose = purpose,
             TokenHash = Hash(token),
-            ExpiresAt = clock.GetCurrentInstant() + (verify ? VerifyLifetime : ResetLifetime),
+            ExpiresAt = now + lifetime,
+            PendingPasswordHash = pendingPasswordHash,
+            PendingFullName = pendingFullName,
         });
         await db.SaveChangesAsync(cancellationToken);
         await emails.EnqueueAsync(

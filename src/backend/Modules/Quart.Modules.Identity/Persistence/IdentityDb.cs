@@ -74,6 +74,7 @@ internal sealed class QuartUser : IdentityUser<Guid>
 /// </summary>
 internal sealed class Session
 {
+    /// <summary>The SHA-256 of the key in the cookie, never the key: a copy of this table opens no session.</summary>
     public required string Id { get; set; }
 
     public Guid UserId { get; set; }
@@ -103,6 +104,17 @@ internal sealed class AccountLink
     public Instant ExpiresAt { get; set; }
 
     public Instant? UsedAt { get; set; }
+
+    /// <summary>
+    /// For a verification link sent because someone signed up again with an address that is not confirmed
+    /// yet: the password of <em>that</em> attempt. It replaces the account's password only when this very
+    /// link is opened, so whoever proves they own the mailbox gets the password they typed, and a stranger
+    /// who signed up first with someone else's address gains nothing.
+    /// </summary>
+    public string? PendingPasswordHash { get; set; }
+
+    /// <summary>The full name typed in that same attempt.</summary>
+    public string? PendingFullName { get; set; }
 }
 
 /// <summary>
