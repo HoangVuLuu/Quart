@@ -17,7 +17,7 @@ export interface ApiCall {
 
 type Answer = unknown | ((call: ApiCall) => unknown);
 
-/** An answer with a status other than 200, such as a problem: `status(409, { code: 'schedule.shift_full' })`. */
+/** An answer with a status other than 200, such as a problem: `status(409, { code: 'schedule.not_building' })`. */
 export function status(code: number, body?: unknown) {
   return { __status: code, body };
 }

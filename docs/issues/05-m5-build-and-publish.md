@@ -104,7 +104,7 @@ spec: FR-144, FR-160, FR-165, AD-012, FR-215
 - [ ] One notification per member, plus an email fallback (FR-211).
 
 **Tests**
-- [ ] A "missing level" issue blocks by default; a confirm-type issue needs an explicit confirmation flag; publishing is atomic.
+- [ ] A "missing level" issue asks for confirmation by default (it does not block); a confirm-type issue needs an explicit confirmation flag; only overlapping shifts always block; publishing is atomic.
 
 **Done when**
 - [ ] v1 is published on staging and every test account is notified.

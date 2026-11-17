@@ -348,6 +348,10 @@ FR-067  Desktop and iPad support drag-to-create on a week grid, the way Google
         likewise.
 FR-068  Editing the template affects future, unpublished periods only. It never
         rewrites a published schedule.
+        Built so far: the rules (fairness, shifts in a row, publish checks,
+        "cannot work together") reach an open period when the admin starts
+        building or generates; changed shift blocks reach only the next
+        period opened (FR-069 is not built yet).
 FR-069  If a shift block is changed after availability has been collected for a
         period that uses it, every answer for that block resets to unanswered
         and the affected employees are notified.
@@ -452,7 +456,9 @@ FR-141  Tapping a shift opens a panel with: the current roster, and a list of
         level, and a live hours counter for the week that shift falls in, shown
         as assigned/desired, e.g. 3/13.
 FR-142  From that panel the admin can add someone, remove someone, or lock an
-        assignment.
+        assignment. The admin may add people past the shift's headcount, for
+        an extra pair of hands that day; it is shown as an issue and never
+        refused. The generator itself never goes past the headcount (BR-003).
 FR-143  The issues dashboard lists everything the evaluator found. Issue types:
           - shift below its headcount
           - shift above its headcount (only a lock or a manual edit can
@@ -473,9 +479,11 @@ FR-143  The issues dashboard lists everything the evaluator found. Issue types:
         Employees see the subset that concerns them, plus open shifts.
 FR-144  Each issue type has an admin setting controlling what happens at publish
         time: block publishing, ask for confirmation, or just display.
-        Defaults: missing required level = block; below headcount = confirm;
-        unavailable or unsubmitted person assigned = confirm; everything else
-        = display.
+        Defaults: missing required level = confirm; below headcount =
+        confirm; unavailable or unsubmitted person assigned = confirm;
+        everything else, including a shift above its headcount, = display.
+        One issue blocks whatever the setting: a person on two shifts that
+        overlap in time, which the database refuses (AD-011).
 
 6.7 PUBLISHING
 FR-160  Publishing makes the draft visible to staff as version 1 and notifies
@@ -1799,6 +1807,21 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             1g shows ("Edit"). Admins can still set them, and the admin-set
             maximum caps the wish. Mockup conflict 4 is closed.  (FR-037,
             BR-032, M2-12)
+2026-11-17  A shift missing its required level no longer blocks publishing: it
+            asks for confirmation. More people than the headcount no longer
+            blocks either: the admin can add extra people by hand and it is
+            only displayed. The generator still never goes past the headcount.
+            Only overlapping shifts always block. Stored settings and open
+            periods were migrated.  (FR-142, FR-144, BR-003, M5-02, M5-05)
+2026-11-17  Review fixes. A period published ahead of time can be opened
+            before the current one ends (the API lists them as "upcoming").
+            Rule changes in Edit Generator reach a period that is open but not
+            published. Generating again in a published period keeps shifts
+            that have already started. Marketplace requests that can no longer
+            happen (the giver was moved, a slot was filled, someone left) are
+            closed, and both people are told when it is a trade. Saving Edit
+            Generator a second time no longer fails.  (FR-068, FR-161, FR-191,
+            M4-01, M5-05, M5-07, M7-08)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

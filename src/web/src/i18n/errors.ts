@@ -54,7 +54,6 @@ const errorKeys = {
   'schedule.nothing_to_publish': 'errors.schedule.nothing_to_publish',
   'schedule.publish_blocked': 'errors.schedule.publish_blocked',
   'schedule.publish_needs_confirmation': 'errors.schedule.publish_needs_confirmation',
-  'schedule.shift_full': 'errors.schedule.shift_full',
   'schedule.unknown_member': 'errors.schedule.unknown_member',
   'schedule.unknown_shift': 'errors.schedule.unknown_shift',
   'settings.max_consecutive_invalid': 'errors.settings.max_consecutive_invalid',

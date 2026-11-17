@@ -114,11 +114,14 @@ internal static class TemplateEndpoints
             block.StartTime = start;
             block.EndTime = end;
             block.Headcount = setup.Headcount;
-            block.Requirements.Clear();
-            block.Requirements.AddRange((setup.Requirements ?? []).Select(x => new ShiftBlockRequirement { Id = Guid.NewGuid(), Level = x.Level, MinCount = x.MinCount }));
-            block.Conflicts.Clear();
-            block.Conflicts.AddRange((setup.Conflicts ?? []).Select(x => Ordered(x)).Distinct()
-                .Select(x => new ShiftBlockConflict { Id = Guid.NewGuid(), MembershipA = x.MembershipA, MembershipB = x.MembershipB }));
+            // Replaced through the sets, not the block's own lists: a new row that already has its key and is
+            // put into the list of a block read from the database is taken for an existing row, and saving
+            // the page a second time failed.
+            db.ShiftBlockRequirements.RemoveRange(block.Requirements);
+            db.ShiftBlockConflicts.RemoveRange(block.Conflicts);
+            db.ShiftBlockRequirements.AddRange((setup.Requirements ?? []).Select(x => new ShiftBlockRequirement { Id = Guid.NewGuid(), ShiftBlockId = block.Id, Level = x.Level, MinCount = x.MinCount }));
+            db.ShiftBlockConflicts.AddRange((setup.Conflicts ?? []).Select(x => Ordered(x)).Distinct()
+                .Select(x => new ShiftBlockConflict { Id = Guid.NewGuid(), ShiftBlockId = block.Id, MembershipA = x.MembershipA, MembershipB = x.MembershipB }));
         }
         db.ShiftBlocks.RemoveRange(existing.Where(x => !kept.Contains(x.Id)));
 

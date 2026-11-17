@@ -228,7 +228,8 @@ internal sealed class WorkplaceSettings
     /// <summary>Per issue code, what publishing does; anything not listed is only shown (FR-144).</summary>
     public Dictionary<string, string> PublishChecks { get; set; } = new()
     {
-        ["issue.missing_level"] = Block,
+        // A shift without its required level is the manager's call: it asks, it never blocks.
+        ["issue.missing_level"] = Confirm,
         ["issue.below_headcount"] = Confirm,
         ["issue.unavailable"] = Confirm,
         ["issue.not_submitted"] = Confirm,

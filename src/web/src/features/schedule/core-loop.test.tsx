@@ -247,7 +247,7 @@ describe('the schedule tab', () => {
     const calls = signedIn('owner', {
       [`GET ${base}/periods/current`]: { live: null, next: { ...next, sentCount: 1 } },
       [`GET ${base}/periods/${periodId}/availability`]: team,
-      [`POST ${base}/periods/${periodId}/draft/generate`]: status(409, { code: 'schedule.shift_full' }),
+      [`POST ${base}/periods/${periodId}/draft/generate`]: status(409, { code: 'schedule.double_booking' }),
     });
     renderApp('/schedule');
 
@@ -256,7 +256,7 @@ describe('the schedule tab', () => {
     await userEvent.click(screen.getByRole('button', { name: en.schedule.ready.generate }));
 
     expect(calls.find((call) => call.path.endsWith('/draft/generate'))?.body).toEqual({ seed: null });
-    expect(await screen.findByRole('alert')).toHaveTextContent(en.errors.schedule.shift_full);
+    expect(await screen.findByRole('alert')).toHaveTextContent(en.errors.schedule.double_booking);
   });
 
   it('will not publish a draft with a blocking issue: it opens the issues instead', async () => {
@@ -307,10 +307,18 @@ describe('the schedule tab', () => {
       issues: [
         {
           code: 'issue.missing_level',
-          severity: 'block',
+          severity: 'confirm',
           shiftIds: ['mon-close'],
           memberIds: [],
           parameters: { level: '3', required: '1', present: '0' },
+        },
+        // The one thing that always blocks: one person in two places at once (AD-011).
+        {
+          code: 'issue.overlapping_shifts',
+          severity: 'block',
+          shiftIds: ['mon-close', 'mon-close'],
+          memberIds: [mine],
+          parameters: {},
         },
       ],
     };
@@ -332,6 +340,9 @@ describe('the schedule tab', () => {
     expect(within(issues).getByText(en.draft.severity.block)).toBeInTheDocument();
     expect(calls.some((call) => call.path.endsWith('/draft/publish'))).toBe(false);
 
+    // A missing level only asks (FR-144).
+    expect(within(issues).getByText(en.draft.severity.confirm)).toBeInTheDocument();
+
     // From the issue to the shift, then add the level 3 who is available (mockup 1p).
     await userEvent.click(within(issues).getByRole('button', { name: /needs 1 at level 3/ }));
     const editor = await screen.findByRole('dialog', { name: /Closing/ });
@@ -342,6 +353,82 @@ describe('the schedule tab', () => {
       shiftId: 'mon-close',
       membershipId: kevin,
     });
+  });
+
+  it('lets the manager add someone to a shift that is already full (FR-142)', async () => {
+    const building = { ...period, status: 'building', locked: true };
+    const person = (membershipId: string, name: string) => ({
+      membershipId,
+      name,
+      level: 2,
+      desiredWeeklyHours: 14,
+      maxWeeklyHours: null,
+      availability: 'sent',
+      weeklyHours: [7],
+      noteCount: 0,
+    });
+    const draft: Schemas['DraftView'] = {
+      period: building,
+      seed: 7,
+      score: 0,
+      openSlots: 0,
+      hasUnpublishedChanges: true,
+      shifts: [
+        {
+          id: 'mon-close',
+          blockId: 'block-close',
+          date: '2099-10-05',
+          start: '16:00',
+          end: '23:00',
+          hours: 7,
+          headcount: 1,
+          part: 'closing',
+          requirements: [],
+          people: [{ membershipId: mine, locked: false }],
+          availableIds: [mine, kevin],
+        },
+      ],
+      people: [person(mine, 'Sophie L.'), person(kevin, 'Kevin T.')],
+      issues: [],
+    };
+    const calls = signedIn('owner', {
+      [`GET ${base}/periods/current`]: {
+        live: null,
+        next: { ...next, period: building, canEditAvailability: false },
+      },
+      [`GET ${base}/periods/${periodId}/draft`]: draft,
+      [`POST ${base}/periods/${periodId}/draft/assignments`]: draft,
+    });
+    renderApp('/schedule');
+
+    await userEvent.click(await screen.findByRole('button', { name: /Closing/ }));
+    const editor = await screen.findByRole('dialog', { name: /Closing/ });
+    expect(within(editor).getByText(en.draft.editor.full)).toBeInTheDocument();
+    await userEvent.click(within(editor).getByRole('button', { name: 'Add Kevin T.' }));
+
+    expect(calls.find((call) => call.path.endsWith('/draft/assignments'))?.body).toEqual({
+      shiftId: 'mon-close',
+      membershipId: kevin,
+    });
+  });
+
+  it('lets staff read a schedule published ahead of time, before the current one ends', async () => {
+    const laterId = '55555555-5555-4555-8555-555555555555';
+    const later = { ...published, id: laterId, startDate: '2099-10-19', endDate: '2099-11-01' };
+    signedIn('employee', {
+      [`GET ${base}/periods/current`]: { live: published, next: null, upcoming: [later] },
+      [`GET ${base}/periods/${periodId}/schedule`]: schedule,
+      [`GET ${base}/periods/${laterId}/schedule`]: { period: later, shifts: [] },
+    });
+    renderApp('/schedule');
+
+    const which = await screen.findByRole('group', { name: en.schedule.which });
+    expect(await screen.findByText('With Kevin T.')).toBeInTheDocument();
+    await userEvent.click(within(which).getAllByRole('button')[1]!);
+
+    // The later period has no shift of hers yet.
+    expect(screen.queryByText('With Kevin T.')).not.toBeInTheDocument();
+    expect(within(which).getAllByRole('button')[1]).toHaveAttribute('aria-pressed', 'true');
   });
 });
 

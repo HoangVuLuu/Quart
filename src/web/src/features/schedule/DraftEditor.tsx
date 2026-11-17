@@ -224,7 +224,8 @@ function DayRow({
           const missing = draft.issues.filter(
             (issue) => issue.code === 'issue.missing_level' && issue.shiftIds.includes(shift.id),
           );
-          const full = shift.people.length === shift.headcount;
+          // Extra people are the manager's choice (FR-142): full or more is fine, short is not.
+          const full = shift.people.length >= shift.headcount;
           return (
             <li key={shift.id}>
               <button
@@ -511,7 +512,7 @@ function ShiftEditor({
               </div>
               <Button
                 className="min-h-11 px-4 text-sm"
-                disabled={full || actions.add.isPending}
+                disabled={actions.add.isPending}
                 aria-label={t('draft.editor.addNamed', { name: person.name })}
                 onClick={() => actions.add.mutate({ shiftId: shift.id, membershipId: person.membershipId })}
               >

@@ -990,6 +990,7 @@ export interface components {
     CurrentPeriods: {
       live: null | components['schemas']['PeriodSummary'];
       next: null | components['schemas']['NextPeriod'];
+      upcoming: components['schemas']['PeriodSummary'][];
     };
     DraftAssignment: {
       /** Format: uuid */

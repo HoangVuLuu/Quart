@@ -3039,7 +3039,8 @@
       "CurrentPeriods": {
         "required": [
           "live",
-          "next"
+          "next",
+          "upcoming"
         ],
         "type": "object",
         "properties": {
@@ -3062,6 +3063,12 @@
                 "$ref": "#/components/schemas/NextPeriod"
               }
             ]
+          },
+          "upcoming": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PeriodSummary"
+            }
           }
         }
       },
