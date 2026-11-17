@@ -10,6 +10,7 @@ using Npgsql;
 using Quart.Modules.Notifications.Email;
 using Quart.Modules.Notifications.Persistence;
 using Quart.SharedKernel.Access;
+using Quart.SharedKernel.Directory;
 using Quart.SharedKernel.Jobs;
 using Quart.SharedKernel.Notifications;
 
@@ -17,7 +18,7 @@ namespace Quart.Modules.Notifications;
 
 /// <summary>
 /// Entry point of the Notifications module: the only things the API host calls.
-/// The in-app inbox (M2-14) and the email outbox (M2-03, AD-030). Push arrives in M8.
+/// The in-app inbox (M2-14), the email outbox (M2-03, AD-030) and notification emails (FR-211). Push arrives in M8.
 /// Other modules notify through <see cref="INotifier"/> and <see cref="IEmailOutbox"/>.
 /// </summary>
 public static class NotificationsModule
@@ -100,7 +101,13 @@ public sealed record NotificationInbox(int Unread, IReadOnlyList<NotificationIte
 /// <param name="Type">A code such as <c>schedule.published</c>; the web app renders the sentence.</param>
 public sealed record NotificationItem(Guid Id, string Type, IReadOnlyDictionary<string, string> Parameters, DateTimeOffset CreatedAt, bool Read);
 
-internal sealed class Notifier(NotificationsDbContext db, IClock clock) : INotifier
+/// <summary>
+/// Stores in-app notifications and, for the types in <see cref="NotificationEmails"/>, an email to the
+/// recipient in their language (FR-211, FR-261). Both are written in one transaction. The emails are sent by
+/// a job on the next tick rather than during the request, so publishing to the whole team never waits on the
+/// email provider; the job retries with a growing delay and gives up after a day (background-jobs.md).
+/// </summary>
+internal sealed class Notifier(NotificationsDbContext db, IUserDirectory users, IJobScheduler jobs, IClock clock) : INotifier
 {
     public async Task NotifyAsync(IReadOnlyCollection<NotificationRequest> notifications, CancellationToken cancellationToken)
     {
@@ -129,6 +136,53 @@ internal sealed class Notifier(NotificationsDbContext db, IClock clock) : INotif
                 CreatedAt = now,
             });
         }
+
+        var emails = await EmailsForAsync(notifications, now, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+        foreach (var email in emails)
+        {
+            await jobs.ScheduleAsync(
+                new JobRequest(SendEmailHandler.JobType, now)
+                {
+                    Payload = new SendEmailPayload(email.Id),
+                    DedupeKey = $"email:{email.Id}",
+                },
+                cancellationToken);
+        }
+    }
+
+    private async Task<List<OutboxMessage>> EmailsForAsync(IReadOnlyCollection<NotificationRequest> notifications, Instant now, CancellationToken cancellationToken)
+    {
+        var emailed = notifications.Where(x => NotificationEmails.IsEmailed(x.Type)).ToList();
+        if (emailed.Count == 0)
+        {
+            return [];
+        }
+        var recipients = await users.GetAsync(emailed.Select(x => x.UserId).Distinct().ToList(), cancellationToken);
+        var messages = new List<OutboxMessage>();
+        foreach (var request in emailed)
+        {
+            // A deleted account is missing; an unconfirmed address gets nothing but its verification email.
+            if (!recipients.TryGetValue(request.UserId, out var recipient) || !recipient.EmailConfirmed)
+            {
+                continue;
+            }
+            var parameters = new Dictionary<string, string>(request.Parameters ?? new Dictionary<string, string>())
+            {
+                [NotificationEmails.RecipientParameter] = recipient.DisplayName,
+            };
+            var message = new OutboxMessage
+            {
+                Id = Guid.NewGuid(),
+                Recipient = recipient.Email,
+                Template = NotificationEmails.TemplatePrefix + request.Type,
+                Language = recipient.Language,
+                Parameters = JsonSerializer.Serialize(parameters),
+                CreatedAt = now,
+            };
+            db.OutboxMessages.Add(message);
+            messages.Add(message);
+        }
+        return messages;
     }
 }
