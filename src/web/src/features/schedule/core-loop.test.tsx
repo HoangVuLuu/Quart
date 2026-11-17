@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import i18n from '../../i18n';
+import { formatDue } from '../../i18n/format';
 import en from '../../i18n/locales/en.json';
 import fr from '../../i18n/locales/fr.json';
 import type { Schemas } from '../../lib/api/client';
@@ -19,6 +20,9 @@ const period: Schemas['PeriodSummary'] = {
   status: 'collecting',
   version: 0,
   locked: false,
+  dueAt: '2099-10-02T22:00:00Z',
+  requestAt: '2099-09-21T13:00:00Z',
+  requestSent: true,
 };
 const next = { period, myAvailability: 'not_sent', canEditAvailability: true, sentCount: null };
 
@@ -113,6 +117,41 @@ describe('availability', () => {
 
     const sent = calls.find((call) => call.path.endsWith('/availability/me/send'));
     expect(sent?.body).toEqual({ shiftIds: ['mon-close', 'tue-open'] });
+  });
+
+  it('tells staff when availability is due, on Home and on the availability page (FR-091, mockup 1a)', async () => {
+    signedIn('employee', {
+      [`GET ${base}/periods/current`]: { live: null, next, upcoming: [] },
+      [`GET ${base}/periods/${periodId}/availability/me`]: myAvailability,
+    });
+    const router = renderApp('/');
+    const due = `Due ${formatDue(period.dueAt ?? '', 'en')}`;
+
+    expect(await screen.findByText(due)).toBeInTheDocument();
+    await router.navigate('/availability');
+    await screen.findByRole('heading', { name: en.availability.title });
+    expect(await screen.findByText(due)).toBeInTheDocument();
+  });
+
+  it('opens a period with a deadline three days before it starts, at 18:00 unless changed', async () => {
+    const calls = signedIn('owner', {
+      [`GET ${base}/periods/current`]: { live: null, next: null, upcoming: [] },
+      [`POST ${base}/periods`]: period,
+    });
+    renderApp('/schedule');
+
+    const start = await screen.findByLabelText(en.schedule.open.start);
+    await userEvent.clear(start);
+    await userEvent.type(start, '2099-10-05');
+    await userEvent.click(screen.getByRole('button', { name: en.schedule.open.submit }));
+
+    const opened = calls.find((call) => call.method === 'POST' && call.path === `${base}/periods`);
+    expect(opened?.body).toEqual({
+      startDate: '2099-10-05',
+      weeks: 2,
+      dueDate: '2099-10-02',
+      dueTime: '18:00',
+    });
   });
 
   it('locks the shifts once building has started, but still takes a note', async () => {
@@ -538,6 +577,8 @@ describe('notifications', () => {
         added: '1',
         removed: '0',
         reason: 'stale',
+        sent: '12',
+        total: '15',
       };
 
       for (const type of notificationTypes) {

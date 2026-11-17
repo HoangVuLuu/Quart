@@ -9,6 +9,7 @@ using Quart.Modules.Scheduling.Persistence;
 using Quart.SharedKernel;
 using Quart.SharedKernel.Access;
 using Quart.SharedKernel.Directory;
+using Quart.SharedKernel.Jobs;
 using Quart.SharedKernel.Notifications;
 
 namespace Quart.Modules.Scheduling.Periods;
@@ -24,6 +25,12 @@ internal static class PeriodEndpoints
     public const string Overlaps = "period.overlaps";
     public const string TemplateEmpty = "period.template_empty";
     public const string UnfinishedExists = "period.unfinished_exists";
+    public const string DueRequired = "period.due_required";
+    public const string DueInPast = "period.due_in_past";
+    public const string DueAfterStart = "period.due_after_start";
+    public const string DueBeforeRequest = "period.due_before_request";
+
+    private static readonly NodaTime.Text.LocalTimePattern DueTimePattern = NodaTime.Text.LocalTimePattern.CreateWithInvariantCulture("HH:mm");
 
     public static void MapPeriods(this IEndpointRouteBuilder endpoints)
     {
@@ -69,17 +76,18 @@ internal static class PeriodEndpoints
         return TypedResults.Ok(new CurrentPeriods(live is null ? null : Support.Summarize(live), nextView, published.Skip(1).Select(Support.Summarize).ToList()));
     }
 
-    /// <summary>
-    /// Copies the template into dated shifts and asks everyone who works shifts for their availability
-    /// (FR-091, FR-092). One unpublished period at a time keeps "the next period" unambiguous.
-    /// </summary>
     internal static string RulesJson(WorkplaceTemplate template) =>
         JsonSerializer.Serialize(
             new PeriodRules(template.Rules.MaxConsecutiveShifts, template.Rules.OpeningFairness, template.Rules.ClosingFairness, template.Rules.PublishChecks.ToDictionary()),
             JsonSerializerOptions.Web);
 
+    /// <summary>
+    /// Copies the template into dated shifts (FR-092) and sets up the availability cycle (FR-091): the request
+    /// goes out now or on the day the workplace chose, with a deadline, reminders and a note to the admins.
+    /// One unpublished period at a time keeps "the next period" unambiguous.
+    /// </summary>
     private static async Task<Results<Ok<PeriodSummary>, ProblemHttpResult>> CreateAsync(
-        Guid workplaceId, CreatePeriodRequest request, SchedulingDb db, IWorkplaceDirectory directory, INotifier notifier, IClock clock, CancellationToken cancellationToken)
+        Guid workplaceId, CreatePeriodRequest request, SchedulingDb db, IWorkplaceDirectory directory, INotifier notifier, IJobScheduler jobs, IClock clock, CancellationToken cancellationToken)
     {
         var start = LocalDate.FromDateOnly(request.StartDate);
         if (start.DayOfWeek != IsoDayOfWeek.Monday)
@@ -107,6 +115,32 @@ internal static class PeriodEndpoints
             return Problems.Conflict(Overlaps);
         }
 
+        // FR-091: a deadline in the workplace's own clock, after the request and before the first day.
+        // Checked after the dates, since it is measured against them.
+        var now = clock.GetCurrentInstant();
+        if (request.DueDate is not { } dueDate || DueTimePattern.Parse(request.DueTime ?? string.Empty) is not { Success: true } dueTime)
+        {
+            return Problems.Validation(new FieldError(DueRequired, "dueDate"));
+        }
+        var due = Support.InstantOf(LocalDate.FromDateOnly(dueDate), dueTime.Value, template.TimeZone);
+        var requestAt = AvailabilitySteps.RequestAt(start, template.Rules.RequestDaysBefore, template.TimeZone, now);
+        if (due <= now)
+        {
+            return Problems.Validation(new FieldError(DueInPast, "dueDate"));
+        }
+        // Before the first day; for a period opened after it has started (the first one at a new shop),
+        // any time before it ends.
+        var startsAt = Support.InstantOf(start, LocalTime.Midnight, template.TimeZone);
+        var latest = startsAt > now ? startsAt : Support.InstantOf(start.PlusDays(request.Weeks * 7), LocalTime.Midnight, template.TimeZone);
+        if (due > latest)
+        {
+            return Problems.Validation(new FieldError(DueAfterStart, "dueDate"));
+        }
+        if (due <= requestAt)
+        {
+            return Problems.Validation(new FieldError(DueBeforeRequest, "dueDate"));
+        }
+
         var period = new Period
         {
             Id = Guid.NewGuid(),
@@ -116,7 +150,10 @@ internal static class PeriodEndpoints
             Status = Period.Collecting,
             TimeZone = template.TimeZone.Id,
             Rules = RulesJson(template),
-            CreatedAt = clock.GetCurrentInstant(),
+            CreatedAt = now,
+            AvailabilityDueAt = due,
+            RequestAt = requestAt,
+            StepsDone = requestAt <= now ? [AvailabilitySteps.Request] : [],
         };
         db.Periods.Add(period);
         for (var date = start; date <= end; date = date.PlusDays(1))
@@ -146,13 +183,11 @@ internal static class PeriodEndpoints
         }));
         await db.SaveChangesAsync(cancellationToken);
 
-        var members = await directory.GetMembersAsync(workplaceId, cancellationToken);
-        var parameters = new Dictionary<string, string> { ["periodStart"] = Support.IsoDate(start), ["weeks"] = request.Weeks.ToString(System.Globalization.CultureInfo.InvariantCulture) };
-        await notifier.NotifyAsync(
-            members.Where(x => x.WorksShifts)
-                .Select(x => new NotificationRequest(workplaceId, x.MembershipId, x.UserId, NotificationTypes.AvailabilityRequested, parameters))
-                .ToList(),
-            cancellationToken);
+        await AvailabilitySteps.ScheduleAsync(jobs, period, now, cancellationToken);
+        if (period.StepsDone.Contains(AvailabilitySteps.Request))
+        {
+            await AvailabilitySteps.SendRequestAsync(notifier, await directory.GetMembersAsync(workplaceId, cancellationToken), period, cancellationToken);
+        }
         return TypedResults.Ok(Support.Summarize(period));
     }
 }
@@ -162,11 +197,26 @@ internal sealed record PeriodRules(int? MaxConsecutiveShifts, bool OpeningFairne
 
 /// <param name="StartDate">A Monday.</param>
 /// <param name="Weeks">1 to 4 (FR-090).</param>
-public sealed record CreatePeriodRequest(DateOnly StartDate, int Weeks);
+/// <param name="DueDate">The day availability is due, in the workplace's time zone (FR-091). Required.</param>
+/// <param name="DueTime">The time on that day, "HH:mm". Required.</param>
+public sealed record CreatePeriodRequest(DateOnly StartDate, int Weeks, DateOnly? DueDate, string? DueTime);
 
 /// <param name="Status">"collecting", "building" or "published".</param>
 /// <param name="Version">0 until first published.</param>
-public sealed record PeriodSummary(Guid Id, DateOnly StartDate, DateOnly EndDate, int Weeks, string Status, int Version, bool Locked);
+/// <param name="DueAt">When availability is due; null for periods opened before deadlines existed (FR-091).</param>
+/// <param name="RequestAt">When the availability request goes out or went out; null for periods from before.</param>
+/// <param name="RequestSent">False while the request is still waiting for its day. Staff may fill in early either way.</param>
+public sealed record PeriodSummary(
+    Guid Id,
+    DateOnly StartDate,
+    DateOnly EndDate,
+    int Weeks,
+    string Status,
+    int Version,
+    bool Locked,
+    DateTimeOffset? DueAt,
+    DateTimeOffset? RequestAt,
+    bool RequestSent);
 
 /// <param name="Live">The published period that is running or coming up; null when there is none.</param>
 /// <param name="Next">The period still collecting availability or being built; null when there is none.</param>

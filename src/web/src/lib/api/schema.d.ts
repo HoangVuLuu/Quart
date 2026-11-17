@@ -1037,6 +1037,9 @@ export interface components {
       startDate: string;
       /** Format: int32 */
       weeks: number;
+      /** Format: date */
+      dueDate: null | string;
+      dueTime: null | string;
     };
     CreateWorkplaceRequest: {
       name: null | string;
@@ -1174,6 +1177,8 @@ export interface components {
       maxConsecutiveShifts: null | number;
       openingFairness: boolean;
       closingFairness: boolean;
+      /** Format: int32 */
+      requestDaysBefore: number;
       blocks: null | components['schemas']['BlockSetup'][];
     };
     GeneratorShift: {
@@ -1373,6 +1378,11 @@ export interface components {
       /** Format: int32 */
       version: number;
       locked: boolean;
+      /** Format: date-time */
+      dueAt: null | string;
+      /** Format: date-time */
+      requestAt: null | string;
+      requestSent: boolean;
     };
     PublishRequest: {
       confirmed: boolean;

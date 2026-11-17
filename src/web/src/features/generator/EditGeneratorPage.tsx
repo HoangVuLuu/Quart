@@ -150,6 +150,17 @@ function GeneratorForm({ initial }: { initial: Setup }) {
               </div>
             </Card>
             <Card>
+              <h2 className="text-[17px]">{t('generator.request.title')}</h2>
+              <p className="mb-3 text-sm text-muted">{t('generator.request.text')}</p>
+              <Stepper
+                label={t('generator.request.label')}
+                value={draft.requestDaysBefore}
+                min={0}
+                max={28}
+                onChange={(requestDaysBefore) => setDraft({ ...draft, requestDaysBefore })}
+              />
+            </Card>
+            <Card>
               <h2 className="text-[17px]">{t('generator.row.title')}</h2>
               <p className="mb-3 text-sm text-muted">{t('generator.row.text')}</p>
               <div role="radiogroup" aria-label={t('generator.row.title')} className="flex flex-wrap gap-2">

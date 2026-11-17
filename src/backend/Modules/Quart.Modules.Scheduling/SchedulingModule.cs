@@ -12,6 +12,7 @@ using Quart.Modules.Scheduling.Periods;
 using Quart.Modules.Scheduling.Persistence;
 using Quart.Modules.Scheduling.Published;
 using Quart.SharedKernel.Directory;
+using Quart.SharedKernel.Jobs;
 using Quart.SharedKernel.Scheduling;
 
 namespace Quart.Modules.Scheduling;
@@ -35,6 +36,7 @@ public static class SchedulingModule
         services.AddScoped<DraftBuilder>();
         services.AddScoped<IScheduleLedger, ScheduleLedger>();
         services.AddScoped<IMemberLeftHandler, ReleaseShiftsOnLeave>();
+        services.AddScoped<IJobHandler, AvailabilityStepHandler>();
         services.AddLab();
         return services;
     }

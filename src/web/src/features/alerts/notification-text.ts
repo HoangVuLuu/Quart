@@ -10,6 +10,7 @@ export const notificationTypes = [
   'availability.reopened',
   'availability.sent',
   'availability.note_added',
+  'availability.due',
   'schedule.published',
   'schedule.changed',
   'shift.offered',

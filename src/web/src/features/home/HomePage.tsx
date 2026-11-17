@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { formatDateRange, formatNumber, formatShortDate } from '../../i18n/format';
+import { formatDateRange, formatDue, formatNumber, formatShortDate } from '../../i18n/format';
 import { buttonClassName } from '../../ui/button-styles';
 import { Card } from '../../ui/Card';
 import { Cup } from '../../ui/Cup';
@@ -154,9 +154,11 @@ export function HomePage() {
             <p className="text-sm text-muted">
               {nextPeriod.myAvailability === 'sent'
                 ? t('home.availabilitySent')
-                : nextPeriod.canEditAvailability
-                  ? t('home.availabilityDue')
-                  : t('home.availabilityLocked')}
+                : !nextPeriod.canEditAvailability
+                  ? t('home.availabilityLocked')
+                  : nextPeriod.period.dueAt
+                    ? t('home.availabilityDueBy', { when: formatDue(nextPeriod.period.dueAt, language) })
+                    : t('home.availabilityDue')}
             </p>
           </div>
           <Link

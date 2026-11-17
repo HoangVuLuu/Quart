@@ -57,7 +57,8 @@
       "build": "Build the schedule",
       "continue": "Open the draft",
       "who": "Who has sent"
-    }
+    },
+    "availabilityDueBy": "Due {{when}}"
   },
   "notFound": {
     "title": "Page not found",
@@ -118,6 +119,10 @@
       "trade_invalid": "These two shifts cannot be traded."
     },
     "period": {
+      "due_after_start": "The deadline must be before the period starts.",
+      "due_before_request": "The deadline must be after the request goes out. Check the days in Edit Generator.",
+      "due_in_past": "This deadline has already passed.",
+      "due_required": "Choose when availability is due.",
       "overlaps": "These dates overlap another period.",
       "start_not_monday": "A period starts on a Monday.",
       "template_empty": "Add your shifts in the Edit Generator page first.",
@@ -138,7 +143,8 @@
     },
     "settings": {
       "max_consecutive_invalid": "Choose 1 to 4 shifts in a row, or no limit.",
-      "period_weeks_invalid": "A period lasts 1 to 4 weeks."
+      "period_weeks_invalid": "A period lasts 1 to 4 weeks.",
+      "request_days_invalid": "Choose 0 to 28 days."
     },
     "template": {
       "conflict_duplicate": "This pair is already listed.",
@@ -221,15 +227,20 @@
       "allSentLabel": "Sent",
       "notSent": "Not sent yet",
       "allSent": "Everyone has sent their availability",
-      "team": "See everyone’s availability"
+      "team": "See everyone’s availability",
+      "due": "Deadline: {{when}}.",
+      "requestLater": "The request goes out {{when}}. Staff can already fill in."
     },
     "open": {
       "title": "Open the next period",
-      "text": "Everyone who works shifts is asked for their availability.",
+      "text": "Everyone who works shifts is asked for their availability, on the day set in Edit Generator.",
       "start": "Starts on",
       "startHint": "A Monday.",
       "weeks": "Weeks",
-      "submit": "Open period"
+      "submit": "Open period",
+      "dueDate": "Availability due",
+      "dueDateHint": "Reminders go out 48 and 24 hours before.",
+      "dueTime": "At"
     }
   },
   "availability": {
@@ -250,7 +261,8 @@
     "noteSent": "Note sent",
     "sendNote": "Send note",
     "send": "Send",
-    "sendAgain": "Send again"
+    "sendAgain": "Send again",
+    "due": "Due {{when}}"
   },
   "ui": {
     "close": "Close",
@@ -710,7 +722,8 @@
     "reopen": "Reopen",
     "reopenNamed": "Reopen availability for {{name}}",
     "reopenedToast": "Reopened for {{name}}",
-    "remindAll": "Remind everyone who is missing"
+    "remindAll": "Remind everyone who is missing",
+    "due": "Deadline: {{when}}"
   },
   "team": {
     "title": "Whole team",
@@ -810,7 +823,8 @@
         "reminder": "Reminder: send your availability for the period starting {{periodStart}}",
         "reopened": "Your availability was reopened for the period starting {{periodStart}}",
         "sent": "{{name}} sent their availability",
-        "note_added": "{{name}} added a note to their availability"
+        "note_added": "{{name}} added a note to their availability",
+        "due": "Availability for the period starting {{periodStart}} is due: {{sent}} of {{total}} sent"
       },
       "schedule": {
         "published": "The schedule starting {{periodStart}} is published",
@@ -899,6 +913,11 @@
       "done": "Done",
       "applyAll": "Apply these rules to all shifts",
       "delete": "Delete this shift"
+    },
+    "request": {
+      "title": "Availability request",
+      "text": "How many days before a period starts everyone is asked. 0 asks as soon as you open the period.",
+      "label": "Days before"
     }
   },
   "profile": {

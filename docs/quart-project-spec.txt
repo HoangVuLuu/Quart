@@ -382,6 +382,15 @@ FR-090  The admin sets a period length of 1, 2, 3 or 4 weeks per period.
 FR-091  The admin sets how many days before the period starts the availability
         request goes out, and a submission deadline. Automatic reminders are
         sent to anyone who has not submitted.
+        The number of days (0 to 28; 0 = when the period is opened) is a
+        workplace setting in Edit Generator; the request goes out at 09:00
+        on that day. The deadline is required when a period is opened,
+        prefilled to 18:00 three days before it starts. Staff may fill in
+        and send before the request goes out. Reminders go out 48 and 24
+        hours before the deadline to people who have not sent; at the
+        deadline the admins are told how many have sent. Nothing locks at
+        the deadline (FR-100). A period opened after it has started may take
+        any future deadline before it ends.
 FR-092  Starting a period copies the template into real, dated shifts. From that
         point the period has its own shifts, which the admin may edit for that
         period only (a holiday closure, extended December hours).
@@ -1861,6 +1870,12 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             default.  (Q-08, FR-183, M7-05)
 2026-11-17  Time-off requests and payslips wait until after the pilot.
             (BL-01, BL-02)
+
+2026-11-17  Availability cycle settled with Hoang (M4-05): "request N days
+            before" is a workplace setting in Edit Generator, not chosen per
+            period; staff can fill in before the request goes out; the
+            deadline is required, prefilled to 18:00 three days before the
+            start; reminders 48 and 24 hours before it.  (FR-091)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

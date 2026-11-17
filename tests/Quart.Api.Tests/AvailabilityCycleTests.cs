@@ -1,0 +1,148 @@
+using System.Net;
+using System.Text.Json.Nodes;
+using NodaTime;
+using Quart.Modules.Jobs;
+
+namespace Quart.Api.Tests;
+
+/// <summary>
+/// The availability cycle runs by itself (FR-091, M4-05): the request on the chosen day, a deadline,
+/// reminders 48 and 24 hours before it to people who have not sent, and a note to the admins when it is due.
+/// The test clock starts on Monday 2 November 2026 at 09:00 in Montreal.
+/// </summary>
+[Collection(PostgresCollection.Name)]
+public sealed class AvailabilityCycleTests(PostgresFixture postgres)
+{
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
+
+    private static async Task<int> CountAsync(TestUser person, Team team, string type) =>
+        (await person.GetAsync($"{team.Base}/notifications"))["items"]!.AsArray().Count(x => x!["type"]!.GetValue<string>() == type);
+
+    /// <summary>Moves the clock to a moment in Montreal and runs one tick, as the deployed job would.</summary>
+    private static async Task TickAtAsync(TestApp app, LocalDateTime montreal)
+    {
+        var target = montreal.InZoneLeniently(DateTimeZoneProviders.Tzdb["America/Toronto"]).ToInstant();
+        app.Clock.Advance(target - app.Clock.GetCurrentInstant());
+        await app.Factory.Services.RunTickAsync(Cancellation);
+    }
+
+    private static async Task<JsonNode> OpenAsync(Team team, string start, string dueDate, string dueTime = "18:00") =>
+        await team.Owner.PostAsync($"{team.Base}/periods", new { startDate = start, weeks = 1, dueDate, dueTime });
+
+    [Fact]
+    public async Task The_request_waits_for_the_day_the_workplace_chose_but_staff_can_send_early()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        var setup = await team.Owner.GetAsync($"{team.Base}/generator");
+        setup["requestDaysBefore"] = 7;
+        await team.Owner.SendAsync(HttpMethod.Put, $"{team.Base}/generator", setup);
+        var lea = team.Staff[0];
+
+        // Starts Monday 23 November: the request goes out Monday 16 November at 09:00.
+        var period = await OpenAsync(team, "2026-11-23", "2026-11-19");
+
+        Assert.False(period["requestSent"]!.GetValue<bool>());
+        Assert.Equal(0, await CountAsync(lea, team, "availability.requested"));
+        var current = await lea.GetAsync($"{team.Base}/periods/current");
+        Assert.True(current["next"]!["canEditAvailability"]!.GetValue<bool>());
+
+        await TickAtAsync(app, new LocalDateTime(2026, 11, 16, 8, 55));
+        Assert.Equal(0, await CountAsync(lea, team, "availability.requested"));
+        await TickAtAsync(app, new LocalDateTime(2026, 11, 16, 9, 0));
+        foreach (var person in team.Everyone)
+        {
+            Assert.Equal(1, await CountAsync(person, team, "availability.requested"));
+        }
+        Assert.True((await lea.GetAsync($"{team.Base}/periods/current"))["next"]!["period"]!["requestSent"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    public async Task Reminders_reach_only_people_who_have_not_sent_and_the_admins_hear_at_the_deadline()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        // Due Friday 6 November at 18:00; the request goes out at once (the default).
+        await team.OpenPeriodAsync();
+        var (lea, marc) = (team.Staff[0], team.Staff[1]);
+        await team.SendAvailabilityAsync(lea);
+
+        await TickAtAsync(app, new LocalDateTime(2026, 11, 4, 18, 0));
+        await team.SendAvailabilityAsync(marc);
+        await TickAtAsync(app, new LocalDateTime(2026, 11, 5, 18, 0));
+        // A tick that runs again sends nothing twice.
+        await app.Factory.Services.RunTickAsync(Cancellation);
+
+        Assert.Equal(0, await CountAsync(lea, team, "availability.reminder"));
+        Assert.Equal(1, await CountAsync(marc, team, "availability.reminder"));
+        Assert.Equal(2, await CountAsync(team.Staff[2], team, "availability.reminder"));
+        Assert.Equal(0, await CountAsync(team.Owner, team, "availability.due"));
+
+        await TickAtAsync(app, new LocalDateTime(2026, 11, 6, 18, 0));
+
+        var due = (await team.Owner.GetAsync($"{team.Base}/notifications"))["items"]!.AsArray().Single(x => x!["type"]!.GetValue<string>() == "availability.due")!;
+        Assert.Equal("2", due["parameters"]!["sent"]!.GetValue<string>());
+        Assert.Equal("7", due["parameters"]!["total"]!.GetValue<string>());
+        Assert.Equal(0, await CountAsync(team.Staff[2], team, "availability.due"));
+        // Nothing locks by itself (FR-100): staff can still send after the deadline.
+        await team.SendAvailabilityAsync(team.Staff[2]);
+        // Emailed too (FR-211), on the same tick.
+        Assert.Single(app.Emails.To(team.Owner.Email), x => x.Subject == "Availability is due");
+    }
+
+    [Fact]
+    public async Task Nothing_more_is_sent_once_building_has_started()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        await team.OpenPeriodAsync();
+        await team.Owner.PostAsync($"{team.Period}/draft/start");
+
+        await TickAtAsync(app, new LocalDateTime(2026, 11, 6, 18, 0));
+
+        Assert.Equal(0, await CountAsync(team.Staff[2], team, "availability.reminder"));
+        Assert.Equal(0, await CountAsync(team.Owner, team, "availability.due"));
+    }
+
+    [Theory]
+    [InlineData("2026-11-02", "08:00", "period.due_in_past")]
+    [InlineData("2026-11-09", "00:01", "period.due_after_start")]
+    [InlineData(null, null, "period.due_required")]
+    [InlineData("2026-11-06", "6pm", "period.due_required")]
+    public async Task A_deadline_is_required_in_the_future_and_before_the_first_day(string? dueDate, string? dueTime, string code)
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+
+        var result = await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-09", weeks = 1, dueDate, dueTime });
+
+        Assert.Equal((HttpStatusCode.BadRequest, code), result);
+    }
+
+    [Fact]
+    public async Task A_period_that_has_already_started_takes_any_deadline_before_it_ends()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+
+        // Today is Monday 2 November, the first day.
+        Assert.Equal((HttpStatusCode.BadRequest, "period.due_after_start"), await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-02", weeks = 1, dueDate = "2026-11-09", dueTime = "00:01" }));
+        await OpenAsync(team, "2026-11-02", "2026-11-03");
+    }
+
+    [Fact]
+    public async Task A_deadline_before_the_request_day_is_refused()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        var setup = await team.Owner.GetAsync($"{team.Base}/generator");
+        setup["requestDaysBefore"] = 7;
+        await team.Owner.SendAsync(HttpMethod.Put, $"{team.Base}/generator", setup);
+
+        var result = await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-23", weeks = 1, dueDate = "2026-11-12", dueTime = "18:00" });
+
+        Assert.Equal((HttpStatusCode.BadRequest, "period.due_before_request"), result);
+        setup["requestDaysBefore"] = 29;
+        Assert.Equal("settings.request_days_invalid", (await team.Owner.TryAsync(HttpMethod.Put, $"{team.Base}/generator", setup)).Code);
+    }
+}

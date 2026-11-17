@@ -3135,7 +3135,9 @@
       "CreatePeriodRequest": {
         "required": [
           "startDate",
-          "weeks"
+          "weeks",
+          "dueDate",
+          "dueTime"
         ],
         "type": "object",
         "properties": {
@@ -3146,6 +3148,19 @@
           "weeks": {
             "type": "integer",
             "format": "int32"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueTime": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3678,6 +3693,7 @@
           "maxConsecutiveShifts",
           "openingFairness",
           "closingFairness",
+          "requestDaysBefore",
           "blocks"
         ],
         "type": "object",
@@ -3698,6 +3714,10 @@
           },
           "closingFairness": {
             "type": "boolean"
+          },
+          "requestDaysBefore": {
+            "type": "integer",
+            "format": "int32"
           },
           "blocks": {
             "type": [
@@ -4383,7 +4403,10 @@
           "weeks",
           "status",
           "version",
-          "locked"
+          "locked",
+          "dueAt",
+          "requestAt",
+          "requestSent"
         ],
         "type": "object",
         "properties": {
@@ -4411,6 +4434,23 @@
             "format": "int32"
           },
           "locked": {
+            "type": "boolean"
+          },
+          "dueAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "requestAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "requestSent": {
             "type": "boolean"
           }
         }

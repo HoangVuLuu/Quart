@@ -241,6 +241,25 @@ export function byDay<T extends { date: string }>(shifts: T[]): { date: string; 
 }
 
 /** The Monday on or after a date, as "yyyy-mm-dd": periods start on a Monday (FR-090). */
+/** A calendar date moved by whole days, as "yyyy-mm-dd". */
+export function addDays(date: string, days: number): string {
+  const day = new Date(`${date}T00:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + days);
+  return day.toISOString().slice(0, 10);
+}
+
+/**
+ * The deadline offered when a period is opened (FR-091): three days before it starts, the day before when
+ * that is too soon, or tomorrow for a period that has already started. The manager can change it.
+ */
+export function suggestedDueDate(startDate: string, today: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return '';
+  const three = addDays(startDate, -3);
+  if (three > today) return three;
+  const one = addDays(startDate, -1);
+  return one > today ? one : addDays(today, 1);
+}
+
 export function mondayOnOrAfter(date: string): string {
   const day = new Date(`${date}T00:00:00Z`);
   day.setUTCDate(day.getUTCDate() + ((8 - day.getUTCDay()) % 7));

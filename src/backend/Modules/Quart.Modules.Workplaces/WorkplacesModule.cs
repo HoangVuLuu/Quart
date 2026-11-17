@@ -121,7 +121,8 @@ internal sealed class WorkplaceReader(WorkplacesDb db, IUserDirectory users) : I
                 settings.ClosingFairness,
                 settings.ClaimsNeedApproval,
                 settings.TradesNeedApproval,
-                settings.PublishChecks),
+                settings.PublishChecks,
+                settings.RequestDaysBefore),
             blocks.Select(block => new TemplateBlock(
                 block.Id,
                 block.Days.Select(day => (IsoDayOfWeek)day).ToList(),

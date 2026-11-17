@@ -12,6 +12,18 @@ export function formatDateTime(value: Date | string, language: string): string {
   );
 }
 
+// "Friday, Nov. 6, 6:00 p.m." or "vendredi 6 nov., 18 h 00": a deadline, with its weekday (FR-091, FR-262).
+export function formatDue(value: Date | string, language: string): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return new Intl.DateTimeFormat(localeFor(language), {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+}
+
 const relativeUnits: [Intl.RelativeTimeFormatUnit, number][] = [
   ['day', 86_400],
   ['hour', 3_600],

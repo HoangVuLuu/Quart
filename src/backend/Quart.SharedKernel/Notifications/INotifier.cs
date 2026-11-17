@@ -31,6 +31,7 @@ public static class NotificationTypes
     public const string AvailabilityReopened = "availability.reopened";
     public const string AvailabilitySent = "availability.sent";
     public const string AvailabilityNoteAdded = "availability.note_added";
+    public const string AvailabilityDue = "availability.due";
     public const string SchedulePublished = "schedule.published";
     public const string ScheduleChanged = "schedule.changed";
     public const string ShiftOffered = "shift.offered";
@@ -58,6 +59,7 @@ public static class NotificationTypes
             [AvailabilityReopened] = ["periodStart"],
             [AvailabilitySent] = ["name", "periodStart"],
             [AvailabilityNoteAdded] = ["name", "periodStart"],
+            [AvailabilityDue] = ["periodStart", "sent", "total"],
             [SchedulePublished] = ["periodStart", "version"],
             [ScheduleChanged] = ["periodStart", "added", "removed"],
             [ShiftOffered] = Shift,

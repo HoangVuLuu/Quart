@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { messageKeyFor } from '../../i18n/errors';
+import { formatDue } from '../../i18n/format';
 import { Button } from '../../ui/Button';
 import { buttonClassName } from '../../ui/button-styles';
 import { Card } from '../../ui/Card';
@@ -10,11 +11,17 @@ import { HeroCard } from '../../ui/HeroCard';
 import { Stepper } from '../../ui/Stepper';
 import { TextField } from '../../ui/TextField';
 import { FormError } from '../identity/FormError';
-import { mondayOnOrAfter, useCreatePeriod, useDraftActions, useTeamAvailability } from '../scheduling/data';
+import {
+  mondayOnOrAfter,
+  suggestedDueDate,
+  useCreatePeriod,
+  useDraftActions,
+  useTeamAvailability,
+} from '../scheduling/data';
 
 /** Mockups 1k and 1k2: who has sent, and the two ways to start building. Either one locks availability (FR-100). */
 export function ReadyToBuild({ periodId }: { periodId: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const team = useTeamAvailability(periodId).data;
   const actions = useDraftActions(periodId);
   const missing = team?.people.filter((person) => person.status !== 'sent') ?? [];
@@ -39,6 +46,16 @@ export function ReadyToBuild({ periodId }: { periodId: string }) {
           {team ? t('schedule.ready.sent', { sent: team.sentCount, total: team.total }) : null}{' '}
           {t('schedule.ready.locks')}
         </p>
+        {team?.period.dueAt && (
+          <p className="mt-1">
+            {t('schedule.ready.due', { when: formatDue(team.period.dueAt, i18n.language) })}
+          </p>
+        )}
+        {team?.period.requestAt && !team.period.requestSent && (
+          <p className="mt-1">
+            {t('schedule.ready.requestLater', { when: formatDue(team.period.requestAt, i18n.language) })}
+          </p>
+        )}
         <div className="mt-4 flex flex-wrap gap-2">
           <Button loading={actions.generate.isPending} onClick={() => actions.generate.mutate(null)}>
             {t('schedule.ready.generate')}
@@ -67,7 +84,10 @@ export function ReadyToBuild({ periodId }: { periodId: string }) {
   );
 }
 
-/** Opens the next period: a Monday and 1 to 4 weeks (FR-090). Everyone who works shifts is asked for their availability. */
+/**
+ * Opens the next period: a Monday, 1 to 4 weeks (FR-090) and when availability is due (FR-091). Everyone who
+ * works shifts is asked for their availability, now or on the day set in Edit Generator.
+ */
 export function OpenPeriodCard({ after }: { after?: string }) {
   const { t } = useTranslation();
   const create = useCreatePeriod();
@@ -77,6 +97,10 @@ export function OpenPeriodCard({ after }: { after?: string }) {
     : today;
   const [startDate, setStartDate] = useState(mondayOnOrAfter(earliest > today ? earliest : today));
   const [weeks, setWeeks] = useState(2);
+  // Follows the start date until the manager picks a deadline of their own.
+  const [chosenDue, setChosenDue] = useState<string | null>(null);
+  const dueDate = chosenDue ?? suggestedDueDate(startDate, today);
+  const [dueTime, setDueTime] = useState('18:00');
 
   return (
     <Card>
@@ -92,9 +116,30 @@ export function OpenPeriodCard({ after }: { after?: string }) {
           onChange={(event) => setStartDate(event.target.value)}
         />
         <Stepper label={t('schedule.open.weeks')} value={weeks} min={1} max={4} onChange={setWeeks} />
+        <div className="grid grid-cols-[3fr_2fr] gap-3">
+          <TextField
+            label={t('schedule.open.dueDate')}
+            hint={t('schedule.open.dueDateHint')}
+            type="date"
+            required
+            value={dueDate}
+            onChange={(event) => setChosenDue(event.target.value)}
+          />
+          <TextField
+            label={t('schedule.open.dueTime')}
+            type="time"
+            step={900}
+            required
+            value={dueTime}
+            onChange={(event) => setDueTime(event.target.value)}
+          />
+        </div>
         <FormError message={create.error ? t(messageKeyFor(create.error)) : undefined} />
         <div className="flex flex-wrap gap-2">
-          <Button loading={create.isPending} onClick={() => create.mutate({ startDate, weeks })}>
+          <Button
+            loading={create.isPending}
+            onClick={() => create.mutate({ startDate, weeks, dueDate, dueTime })}
+          >
             {t('schedule.open.submit')}
           </Button>
           <Link to="/generator" className={buttonClassName('white')}>

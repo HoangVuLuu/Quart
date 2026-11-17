@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate } from 'react-router';
 import { SubPage } from '../../app/SubPage';
 import { messageKeyFor } from '../../i18n/errors';
-import { formatDateRange, formatNumber } from '../../i18n/format';
+import { formatDateRange, formatDue, formatNumber } from '../../i18n/format';
 import { Button } from '../../ui/Button';
 import { buttonClassName } from '../../ui/button-styles';
 import { Card } from '../../ui/Card';
@@ -41,6 +41,11 @@ export function TeamAvailabilityPage() {
       context={`${formatDateRange(data.period.startDate, data.period.endDate, i18n.language)} · ${t('home.period.sent', { sent: data.sentCount, total: data.total })}`}
     >
       <div className="flex flex-col gap-4">
+        {data.period.dueAt && !data.period.locked && (
+          <p className="text-sm font-bold">
+            {t('teamAvailability.due', { when: formatDue(data.period.dueAt, i18n.language) })}
+          </p>
+        )}
         {view.me.worksShifts && (
           <Link to="/availability" className={buttonClassName('dark', 'w-full')}>
             {t('teamAvailability.mine')}

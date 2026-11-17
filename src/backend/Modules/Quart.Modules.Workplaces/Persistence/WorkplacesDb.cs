@@ -221,6 +221,9 @@ internal sealed class WorkplaceSettings
 
     public bool ClosingFairness { get; set; } = true;
 
+    /// <summary>0 to 28: days before a period starts that its availability request goes out; 0 means when it is opened (FR-091).</summary>
+    public int RequestDaysBefore { get; set; }
+
     public bool ClaimsNeedApproval { get; set; }
 
     public bool TradesNeedApproval { get; set; }
