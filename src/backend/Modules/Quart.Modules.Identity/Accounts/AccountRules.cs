@@ -62,6 +62,17 @@ public interface IBreachedPasswordCheck
 }
 
 /// <summary>
+/// Development only, when <see cref="Setting"/> is true: knows no breach, so nothing leaves the machine.
+/// The browser tests use it; every other environment ignores the setting.
+/// </summary>
+internal sealed class OfflineBreachedPasswordCheck : IBreachedPasswordCheck
+{
+    public const string Setting = "Auth:OfflineBreachedPasswordCheck";
+
+    public Task<bool> IsBreachedAsync(string password, CancellationToken cancellationToken) => Task.FromResult(false);
+}
+
+/// <summary>
 /// The Have I Been Pwned range API with k-anonymity: only the first 5 characters of the SHA-1 hash leave the
 /// server, never the password. If the service is slow or down the password is allowed, with a warning.
 /// </summary>

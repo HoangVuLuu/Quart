@@ -138,9 +138,9 @@ spec: 10.1, NFR-001
 **Goal.** The one flow that must never break is tested in a real browser on every pull request.
 
 **Tasks**
-- [ ] Playwright with Chromium and **WebKit** (iPhone viewport). Run against the app and a Postgres container in CI.
-- [ ] Flow: admin creates a period → two employees send availability → admin generates, edits one shift, publishes → employee sees the shift → admin updates → only that employee is notified.
-- [ ] Test data is created through the API, not by clicking, to keep the run fast.
+- [x] Playwright with Chromium and **WebKit** (iPhone viewport). Run against the app and a Postgres container in CI.
+- [x] Flow: admin creates a period → two employees send availability → admin generates, edits one shift, publishes → employee sees the shift → admin updates → only that employee is notified.
+- [x] Test data is created through the API, not by clicking, to keep the run fast.
 
 **Done when**
 - [ ] The suite runs on every pull request in under 5 minutes.

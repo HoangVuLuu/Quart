@@ -79,12 +79,15 @@ export function DraftEditor({ periodId, onDone }: DraftEditorProps) {
 
   function publish() {
     setConfirming(false);
-    actions.publish.mutate(true, {
-      onSuccess: () => {
+    // Not mutate's onSuccess: publishing refreshes the period, which can unmount this editor first, and
+    // React Query then skips that callback, so the toast never showed. The error shows from the mutation.
+    actions.publish.mutateAsync(true).then(
+      () => {
         toast(published ? t('draft.updated') : t('draft.publishedToast'));
         onDone?.();
       },
-    });
+      () => undefined,
+    );
   }
 
   function askToPublish() {

@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
 using NodaTime;
 
 namespace Quart.Api.Tests;
@@ -189,6 +191,38 @@ public sealed class AccountTests(PostgresFixture postgres)
         }
         Assert.NotEmpty(asked);
         Assert.All(asked, path => Assert.Matches("^/range/[0-9A-F]{5}$", path));
+    }
+
+    [Fact]
+    public async Task The_browser_tests_can_skip_the_breach_check_in_Development()
+    {
+        await using var app = await TestApp.StartAsync(postgres, settings: new Dictionary<string, string?>
+        {
+            ["Auth:OfflineBreachedPasswordCheck"] = "true",
+        });
+        using var client = app.Browser();
+
+        using var response = await client.PostAsJsonAsync("/api/auth/sign-up", new { fullName = "Ana Lima", email = "ana@quart.test", password = TestApp.BreachedPassword }, Cancellation);
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Outside_Development_the_breach_check_cannot_be_skipped()
+    {
+        // The password is refused before the database is reached, so no database is needed here.
+        await using var factory = new QuartApiFactory(
+            "Host=127.0.0.1;Port=1;Database=quart;Username=quart;Password=none;Timeout=2",
+            environment: "Staging",
+            services: services => services.ConfigureAll<HttpClientFactoryOptions>(options =>
+                options.HttpMessageHandlerBuilderActions.Add(builder => builder.PrimaryHandler = new PwnedPasswordsStub())),
+            settings: new Dictionary<string, string?> { ["Auth:OfflineBreachedPasswordCheck"] = "true" });
+        using var client = factory.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/api/auth/sign-up", new { fullName = "Ana Lima", email = "ana@quart.test", password = TestApp.BreachedPassword }, Cancellation);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("auth.password_breached", await TestUser.CodeOfAsync(response));
     }
 
     [Fact]

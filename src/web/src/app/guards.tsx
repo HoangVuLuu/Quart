@@ -21,7 +21,10 @@ export function SignedOutOnly() {
   return me.data ? <Navigate to="/workplaces" replace /> : <Outlet />;
 }
 
-/** Full-screen pages still show toasts, like the tabs do. */
+/**
+ * One toast area for the tabs and the full-screen pages alike, so a toast shown just before moving between
+ * them ("Saved" in Edit Generator, then the Schedule tab) is not lost with the page that showed it.
+ */
 export function WithToasts() {
   return (
     <ToastProvider>

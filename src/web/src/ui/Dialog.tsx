@@ -16,7 +16,8 @@ type DialogProps = {
 
 // A small centred card for a short question ("Delete this post?"). Radix traps the focus inside while
 // it is open, closes it on Escape, and puts the focus back on whatever opened it. For anything with
-// detail, use the Sheet instead.
+// detail, use the Sheet instead. Never taller than the screen: a long list (the issues before publishing)
+// scrolls inside it, so its buttons can always be reached on a phone (found by tests/e2e, M6-09).
 export function Dialog({ trigger, open, onOpenChange, title, description, children }: DialogProps) {
   const { t } = useTranslation();
 
@@ -26,7 +27,7 @@ export function Dialog({ trigger, open, onOpenChange, title, description, childr
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="fixed inset-0 z-30 bg-scrim data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
         <RadixDialog.Content
-          className="fixed top-1/2 left-1/2 z-40 w-[calc(100%-2.5rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-card bg-surface-2 p-6 shadow-float data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in"
+          className="fixed top-1/2 left-1/2 z-40 max-h-[calc(100dvh-2.5rem)] w-[calc(100%-2.5rem)] max-w-md -translate-x-1/2 overflow-y-auto overscroll-contain -translate-y-1/2 rounded-card bg-surface-2 p-6 shadow-float data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in"
           // Radix warns when there is nothing to describe the dialog; say that on purpose.
           {...(description ? {} : { 'aria-describedby': undefined })}
         >

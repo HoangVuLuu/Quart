@@ -77,6 +77,65 @@ jobs:
       - run: npm run build
       - run: npm run csp:check
 
+  e2e:
+    # The core loop in a real browser, Chromium and WebKit at phone size (M6-09, tests/e2e). No secrets:
+    # the API runs in Development against its own Postgres and Mailpit, and never calls outside services.
+    name: Browser tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      # Through mirrors, not Docker Hub, for the same reason as the jobs above.
+      postgres:
+        image: mirror.gcr.io/library/postgres:17-alpine
+        env:
+          POSTGRES_DB: quart
+          POSTGRES_USER: quart
+          POSTGRES_PASSWORD: quart_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U quart -d quart" --health-interval 5s --health-timeout 3s --health-retries 10
+      mailpit:
+        image: ghcr.io/axllent/mailpit:latest
+        ports:
+          - 8025:8025
+          - 1025:1025
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            src/web/package-lock.json
+            tests/e2e/package-lock.json
+      - run: dotnet build src/backend/Quart.Api --configuration Release
+      - name: Build the web app
+        working-directory: src/web
+        run: |
+          npm ci
+          npm run build
+      - run: npm ci
+        working-directory: tests/e2e
+      - name: Install Chromium and WebKit
+        working-directory: tests/e2e
+        run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test
+        working-directory: tests/e2e
+      # The trace replays every step with the page as it was: npx playwright show-trace <trace.zip>.
+      - name: Keep the traces of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces
+          path: |
+            tests/e2e/test-results
+            tests/e2e/playwright-report
+          retention-days: 7
+
   container:
     name: Container image
     needs: [backend, frontend]
