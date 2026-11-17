@@ -102,8 +102,8 @@ export function ProfilePage() {
       void navigate('/workplaces');
     },
   });
-  const error =
-    updateMe.error ?? updateMember.error ?? updateSettings.error ?? regenerate.error ?? leave.error;
+  // The "works shifts" refusal is shown beside its switch, where the tap happened.
+  const error = updateMe.error ?? updateSettings.error ?? regenerate.error ?? leave.error;
   if (!me) return null;
 
   function changeLanguage(language: Language) {
@@ -201,6 +201,7 @@ export function ProfilePage() {
             disabled={updateMember.isPending}
             onCheckedChange={(worksShifts) => updateMember.mutate(worksShifts)}
           />
+          <FormError message={updateMember.error ? t(messageKeyFor(updateMember.error)) : undefined} />
         </Card>
       )}
 

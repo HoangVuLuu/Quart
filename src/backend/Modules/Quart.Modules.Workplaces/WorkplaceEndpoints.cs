@@ -13,6 +13,7 @@ using Quart.SharedKernel;
 using Quart.SharedKernel.Access;
 using Quart.SharedKernel.Directory;
 using Quart.SharedKernel.Notifications;
+using Quart.SharedKernel.Scheduling;
 
 namespace Quart.Modules.Workplaces;
 
@@ -27,6 +28,7 @@ internal static class WorkplaceEndpoints
     public const string LevelInvalid = "workplace.level_invalid";
     public const string HoursInvalid = "workplace.hours_invalid";
     public const string OwnerCannotLeave = "workplace.owner_cannot_leave";
+    public const string HasUpcomingShifts = "workplace.has_upcoming_shifts";
 
     // No 0 or O, no 1, I or L: nobody has to ask "is that a zero?" (FR-033).
     public const string JoinCodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -252,14 +254,23 @@ internal static class WorkplaceEndpoints
         return TypedResults.Ok(views);
     }
 
-    /// <summary>Levels, "works shifts" and the maximum are set only by people who manage levels (5.4). They can set wanted hours too; so can the person (UpdateMyselfAsync).</summary>
+    /// <summary>
+    /// Levels, "works shifts" and the maximum are set only by people who manage levels (5.4). They can set wanted
+    /// hours too; so can the person (UpdateMyselfAsync). "Works shifts" cannot be turned off while the person still
+    /// holds a shift that has not started, since they would vanish from the draft tools but stay on the shift (D1).
+    /// </summary>
     private static async Task<Results<NoContent, ProblemHttpResult>> UpdateMemberAsync(
-        Guid workplaceId, Guid membershipId, UpdateMemberRequest request, WorkplacesDb db, CancellationToken cancellationToken)
+        Guid workplaceId, Guid membershipId, UpdateMemberRequest request, WorkplacesDb db, IScheduleLedger ledger, CancellationToken cancellationToken)
     {
         var membership = await db.Memberships.SingleOrDefaultAsync(x => x.Id == membershipId && x.WorkplaceId == workplaceId && x.LeftAt == null, cancellationToken);
         if (membership is null)
         {
             return Problems.NotFound();
+        }
+        if (membership.WorksShifts && request.WorksShifts == false
+            && await ledger.HasUpcomingAsync(workplaceId, membershipId, cancellationToken))
+        {
+            return Problems.Conflict(HasUpcomingShifts);
         }
         if (request.Level is { } level)
         {

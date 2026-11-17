@@ -69,6 +69,7 @@ const errorKeys = {
   'template.time_invalid': 'errors.template.time_invalid',
   'template.too_many_blocks': 'errors.template.too_many_blocks',
   'workplace.already_member': 'errors.workplace.already_member',
+  'workplace.has_upcoming_shifts': 'errors.workplace.has_upcoming_shifts',
   'workplace.hours_invalid': 'errors.workplace.hours_invalid',
   'workplace.invitation_invalid': 'errors.workplace.invitation_invalid',
   'workplace.join_code_unknown': 'errors.workplace.join_code_unknown',

@@ -170,6 +170,22 @@ describe('the schedule tab', () => {
     });
   });
 
+  it('says why "I work shifts too" cannot be turned off while the owner still has shifts (D1)', async () => {
+    signedIn('owner', {
+      [`PATCH ${base}/members/${workplace('owner').me.membershipId}`]: status(409, {
+        code: 'workplace.has_upcoming_shifts',
+      }),
+    });
+    renderApp('/profile');
+    const user = userEvent.setup();
+
+    const toggle = await screen.findByRole('switch', { name: /I work shifts too/ });
+    await user.click(toggle);
+
+    await screen.findByText(en.errors.workplace.has_upcoming_shifts);
+    expect(toggle).toBeChecked();
+  });
+
   it('shows staff their own shifts and never asks for a draft', async () => {
     const calls = signedIn('employee', {
       [`GET ${base}/periods/current`]: { live: published, next: null },

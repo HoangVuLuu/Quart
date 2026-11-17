@@ -124,6 +124,13 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
         return (await ToLiveAsync(workplaceId, shifts, cancellationToken)).FirstOrDefault();
     }
 
+    public Task<bool> HasUpcomingAsync(Guid workplaceId, Guid membershipId, CancellationToken cancellationToken)
+    {
+        var now = clock.GetCurrentInstant();
+        var periods = db.Periods.Where(x => x.WorkplaceId == workplaceId).Select(x => x.Id);
+        return db.Assignments.AnyAsync(x => x.MembershipId == membershipId && x.StartsAt > now && periods.Contains(x.PeriodId), cancellationToken);
+    }
+
     public async Task<LedgerResult> TransferAsync(Guid workplaceId, Guid shiftId, Guid? from, LedgerPerson to, string source, CancellationToken cancellationToken)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
@@ -194,7 +201,7 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
         var result = await CommitAsync(first.PeriodId, transaction, cancellationToken);
         if (result == LedgerResult.Applied && second.PeriodId != first.PeriodId)
         {
-            await BumpAsync(second.PeriodId, cancellationToken);
+            await ScheduleHistory.BumpAsync(db, second.PeriodId, clock.GetCurrentInstant(), cancellationToken);
         }
         return result;
     }
@@ -245,7 +252,7 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
         try
         {
             await db.SaveChangesAsync(cancellationToken);
-            await BumpAsync(periodId, cancellationToken);
+            await ScheduleHistory.BumpAsync(db, periodId, clock.GetCurrentInstant(), cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return LedgerResult.Applied;
         }
@@ -255,24 +262,6 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
             db.ChangeTracker.Clear();
             return LedgerResult.Overlap;
         }
-    }
-
-    /// <summary>Every change to the live schedule is a new version, kept as history (FR-164).</summary>
-    private async Task BumpAsync(Guid periodId, CancellationToken cancellationToken)
-    {
-        var period = await db.Periods.SingleAsync(x => x.Id == periodId, cancellationToken);
-        var live = await db.Assignments.AsNoTracking().Where(x => x.PeriodId == periodId && !x.IsDraft).ToListAsync(cancellationToken);
-        period.Version++;
-        db.ScheduleVersions.Add(new ScheduleVersion
-        {
-            Id = Guid.NewGuid(),
-            PeriodId = periodId,
-            Version = period.Version,
-            PublishedAt = clock.GetCurrentInstant(),
-            PublishedBy = Guid.Empty,
-            Snapshot = DraftEndpoints.Snapshot(live),
-        });
-        await db.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<IReadOnlyList<LiveShift>> ToLiveAsync(Guid workplaceId, List<Shift> shifts, CancellationToken cancellationToken)
@@ -300,15 +289,48 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
     }
 }
 
-/// <summary>Nobody who has left stays on the schedule: their future shifts become open (FR-038, M5-10). Running it twice changes nothing.</summary>
+/// <summary>
+/// Nobody who has left stays on the schedule: their future shifts become open (FR-038, M5-10). Each published
+/// period that changes gets a new version, like any other change to the live schedule (FR-164). Running it
+/// twice changes nothing: the second run finds no shifts, so it adds no version.
+/// </summary>
 internal sealed class ReleaseShiftsOnLeave(SchedulingDb db, IClock clock) : IMemberLeftHandler
 {
     public async Task HandleAsync(Guid workplaceId, Guid membershipId, CancellationToken cancellationToken)
     {
         var now = clock.GetCurrentInstant();
         var periods = db.Periods.Where(x => x.WorkplaceId == workplaceId).Select(x => x.Id);
-        await db.Assignments
-            .Where(x => x.MembershipId == membershipId && x.StartsAt > now && periods.Contains(x.PeriodId))
-            .ExecuteDeleteAsync(cancellationToken);
+        var released = db.Assignments.Where(x => x.MembershipId == membershipId && x.StartsAt > now && periods.Contains(x.PeriodId));
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var changedLive = await released.Where(x => !x.IsDraft).Select(x => x.PeriodId).Distinct().ToListAsync(cancellationToken);
+        await released.ExecuteDeleteAsync(cancellationToken);
+        foreach (var periodId in changedLive.Order())
+        {
+            await ScheduleHistory.BumpAsync(db, periodId, now, cancellationToken);
+        }
+        await transaction.CommitAsync(cancellationToken);
+    }
+}
+
+/// <summary>Every change to the live schedule is a new version, kept as history (FR-164).</summary>
+internal static class ScheduleHistory
+{
+    /// <summary>Raises the period's version and stores a snapshot of its live assignments, as they are now.</summary>
+    public static async Task BumpAsync(SchedulingDb db, Guid periodId, Instant now, CancellationToken cancellationToken)
+    {
+        var period = await db.Periods.SingleAsync(x => x.Id == periodId, cancellationToken);
+        var live = await db.Assignments.AsNoTracking().Where(x => x.PeriodId == periodId && !x.IsDraft).ToListAsync(cancellationToken);
+        period.Version++;
+        db.ScheduleVersions.Add(new ScheduleVersion
+        {
+            Id = Guid.NewGuid(),
+            PeriodId = periodId,
+            Version = period.Version,
+            PublishedAt = now,
+            PublishedBy = Guid.Empty,
+            Snapshot = DraftEndpoints.Snapshot(live),
+        });
+        await db.SaveChangesAsync(cancellationToken);
     }
 }

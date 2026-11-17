@@ -152,6 +152,7 @@
     },
     "workplace": {
       "already_member": "Tu fais déjà partie de ce lieu de travail.",
+      "has_upcoming_shifts": "Cette personne a encore des quarts à venir. Retire-la d’abord de ces quarts, puis réessaie.",
       "hours_invalid": "Les heures vont de 0 à 80.",
       "invitation_invalid": "Cette invitation n’est pas valide, a déjà été utilisée ou a expiré.",
       "join_code_unknown": "Aucun lieu de travail n’a ce code. Vérifie-le avec ton gérant.",
