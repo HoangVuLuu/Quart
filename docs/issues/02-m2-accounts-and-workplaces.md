@@ -14,10 +14,12 @@ spec: Q-06, 12.1, FR-211
 
 **Goal.** Verification and reset emails need a provider before M2-03 can ship to staging.
 
+**Decided 2026-11-17:** Amazon SES in its Montreal region (`ca-central-1`), so email stays in Quebec (12.1, Q-06 answered). There is no domain yet, so the setup moves to go-live: task 6.1 in `docs/plans/remaining-work.md`. Until then, emails are checked in Mailpit.
+
 **Tasks**
-- [ ] Compare two or three providers on: a free tier that covers about 15 people, a verified sending domain, SMTP support (so local Mailpit and the real provider share one code path), and where the data is processed.
-- [ ] Raise the processing location with Philippe. It is the one known exception to keeping data in Quebec (12.1).
-- [ ] Record the choice in `docs/decisions/` and answer Q-06 in the spec. Enable two-factor on the provider account (tick it in M0-02).
+- [x] Compare two or three providers on: a free tier that covers about 15 people, a verified sending domain, SMTP support (so local Mailpit and the real provider share one code path), and where the data is processed.
+- [x] Raise the processing location with Philippe. Not needed if SES keeps the data in Montreal; confirm that in AWS's terms during 6.1.
+- [ ] Record the choice in `docs/decisions/` (done in 6.1) and answer Q-06 in the spec (done). Enable two-factor on the AWS account (tick it in M0-02).
 
 **Done when**
 - [ ] A decision record exists, and staging has SMTP credentials stored as Container App secrets.

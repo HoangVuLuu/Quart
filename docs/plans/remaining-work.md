@@ -1,6 +1,6 @@
 # Quart: plan for the remaining work
 
-Written 2026-11-17, after pull requests #153 and #159; security rules added the same day after a security review. It is a build plan for a coding agent (Claude
+Written 2026-11-17, after pull requests #153 and #159; security rules added the same day after a security review. Updated the same day with Hoang's answers (section 6) and a new order: everything that can be built without a domain first, going live last (phase 6). It is a build plan for a coding agent (Claude
 Opus) working in this repository, with Hoang reviewing and merging.
 
 **How to read it.** Sections 1 to 3 are rules and method: read them once, fully, before the first
@@ -218,8 +218,9 @@ here and a convenience disagree, the rule wins; if a rule and the spec disagree,
 **Data and logs**
 
 - Logs hold IDs only (decision 0012): no names, emails, tokens, request bodies or query strings.
-- Collect the least that works. A new personal field needs a line in the privacy page (task 1.8) and
-  a retention rule (task 1.7) in the same PR.
+- Collect the least that works. A new personal field needs a line in the privacy page and
+  a retention rule (task 1.7) in the same PR. The privacy page comes late (task 6.2): until it exists,
+  add the line to the list in `docs/legal/privacy-items.md` (create it if missing) so 6.2 picks it up.
 - Deleting is real: when a person leaves or deletes their account, their future data goes and their
   past data loses their name (FR-009).
 
@@ -249,7 +250,7 @@ each; "not applicable" is a fine answer when true):
   it locked. Two-factor (4.2) and a per-address limit reduce the value of guessing; a softer lockout
   is a product decision.
 - The lockout answer reveals that the account exists, after five tries.
-- Cookies do not use the `__Host-` prefix. Add it together with the custom domain (1.9), since it
+- Cookies do not use the `__Host-` prefix. Add it together with the custom domain (6.3), since it
   signs everyone out.
 - The antiforgery token is a double-submit cookie, not bound to the session. Safe while no other
   site shares the domain; revisit if a subdomain ever hosts something else.
@@ -306,7 +307,8 @@ in a row), periods and availability (send, notes, reopen, manual remind), draft 
 keep, add and remove by hand, issues with block / confirm / show), publishing and updating with
 versions, published schedule for staff, periods published ahead of time, give away, claim, trade with
 optional approval, in-app notifications, installable web app (manifest and icons, no service worker),
-French and English, dark mode, swipe shortcuts.
+French and English, dark mode, swipe shortcuts, and a browser test of the whole core loop in
+Chromium and WebKit, run in CI (task 0.1, #162).
 
 Not built: everything in section 5.
 
@@ -320,33 +322,34 @@ tests. Keep them green; add to them with every feature.
 Each line is one pull request unless it says otherwise. "Needs" means a decision or an account from
 section 6. Do phases in order; inside a phase the order is a suggestion.
 
-### Phase 0: safety net (do first, about 1 PR)
+Hoang's rule (2026-11-17): build and test every feature first, locally and on staging; go live last.
+Nothing in phases 1 to 5 needs the domain. Emails are built and checked in Mailpit; files go to a
+local folder in Development. Only phase 6 needs the domain and production.
+
+### Phase 0: safety net (done)
 
 | # | Plan ID | Work | Needs |
 | --- | --- | --- | --- |
-| 0.1 | M6-09 (part) | Playwright end-to-end test of the core loop, run in CI | nothing |
+| 0.1 | M6-09 (part) | Playwright end-to-end test of the core loop, run in CI. **Done in #162.** | nothing |
 
-### Phase 1: needed before real staff use it
+### Phase 1: core features staff need
 
 | # | Plan ID | Work | Needs |
 | --- | --- | --- | --- |
-| 1.1 | review items | Three review fixes: "works shifts" off with future shifts; version on leave; open-period shift edits note | D1 |
-| 1.2 | M2-01, M5-05 | Email provider settings and notification emails | D2 |
+| 1.1 | review items | Three review fixes: "works shifts" off with future shifts (refuse); version on leave; open-period shift edits note | nothing (D1 answered) |
+| 1.2 | M5-05, FR-211 | Notification emails, built and checked in Mailpit | nothing (real provider in 6.1) |
 | 1.3 | M2-07 | Change password while signed in; change email | nothing |
 | 1.4 | M4-05 | Availability request with a deadline and automatic reminders | nothing |
 | 1.5 | M5-11 | Same person in two workplaces | nothing |
-| 1.6 | M2-16 | Delete my account | D3 |
-| 1.7 | M6-05 | Retention: nightly deletion | D3 |
-| 1.8 | M6-03, M6-04 | Privacy policy page, data arrangement, incident runbook | D4 |
-| 1.9 | M6-01, M6-02 | Production environment, release deploys, custom domain | D5 |
-| 1.10 | M6-08 | Encrypted nightly backup | D5 |
+| 1.6 | M2-16 | Delete my account | nothing (D3 answered) |
+| 1.7 | M6-05 | Retention: nightly deletion | nothing (D3 answered) |
 
 ### Phase 2: phone experience
 
 | # | Plan ID | Work | Needs |
 | --- | --- | --- | --- |
-| 2.1 | M8-05 | Service worker: instant opening, offline "My shifts" | D5 (final address) |
-| 2.2 | M8-06 | Web push with the iPhone install guide | D5 |
+| 2.1 | M8-05 | Service worker: instant opening, offline "My shifts" | nothing (tried on staging) |
+| 2.2 | M8-06 | Web push with the iPhone install guide | nothing (tried on staging) |
 | 2.3 | M8-07 | Notification preferences and bundling | nothing |
 
 ### Phase 3: scheduling extras
@@ -354,10 +357,10 @@ section 6. Do phases in order; inside a phase the order is a suggestion.
 | # | Plan ID | Work | Needs |
 | --- | --- | --- | --- |
 | 3.1 | M4-01 | Edit one period's shifts (closure, longer hours) | nothing |
-| 3.2 | M4-08 | Template changes reach an open period (FR-069) | D1 |
+| 3.2 | M4-08 | Template changes reach an open period (FR-069) | nothing (D1 answered: build it) |
 | 3.3 | M5-08 | Reuse a past schedule | nothing |
 | 3.4 | M3-04 | Rename a shift | nothing |
-| 3.5 | M7-05, M7-08 | Unclaimed give-away alert; tell both people when a trade expires | nothing |
+| 3.5 | M7-05, M7-08 | Unclaimed give-away alert (24 hours by default, Q-08); tell both people when a trade expires | nothing |
 
 ### Phase 4: accounts and team extras
 
@@ -366,20 +369,32 @@ section 6. Do phases in order; inside a phase the order is a suggestion.
 | 4.1 | M2-06 | Step-up: confirm the password before sensitive actions | nothing |
 | 4.2 | M2-08 | Two-factor authentication | nothing |
 | 4.3 | M2-13 | Admins, permission grants, ownership transfer | nothing |
-| 4.4 | M2-17 | Sign in with Google | D6 |
+| 4.4 | M2-17 | Sign in with Google (Google's app verification waits for 6.3) | D6 |
 | 4.5 | M2-18 | Social links on the team page | nothing |
 
 ### Phase 5: later milestones
 
 | # | Plan ID | Work | Needs |
 | --- | --- | --- | --- |
-| 5.1 | M8-02 | Stored files (needed by photos and payslips) | D5 |
+| 5.1 | M8-02 | Stored files (needed by photos and payslips) | nothing (local folder now; production storage in 6.3) |
 | 5.2 | M8-01, M8-03, M8-04 | News: posts, photos, thumbs-up (3 PRs) | nothing |
 | 5.3 | M9-03 | Calendar feed of my shifts | nothing |
-| 5.4 | M9-01, M9-02, M9-04 | Google Calendar free/busy import and app verification | D6 |
+| 5.4 | M9-01, M9-02, M9-04 | Google Calendar free/busy import; app verification waits for 6.3 | D6 |
 | 5.5 | M3-05 | Drag to create shifts on a desktop calendar | nothing |
-| 5.6 | BL-01 | Time-off requests | D7 |
-| 5.7 | BL-02 | Payslips | D7 |
+| 5.6 | BL-01 | Time-off requests. **Not now: after the pilot (D7).** | D7 |
+| 5.7 | BL-02 | Payslips. **Not now: after the pilot (D7).** | D7 |
+
+### Phase 6: go live (last)
+
+Start only when Hoang says the app is ready. Staff must install the app from the final address,
+never from staging: an installed app and its push subscriptions are tied to the web address.
+
+| # | Plan ID | Work | Needs |
+| --- | --- | --- | --- |
+| 6.1 | M2-01, M6-02 (part) | Turn on real email: Amazon SES account, domain records, settings | D5 (domain) |
+| 6.2 | M6-03, M6-04 | Privacy policy page, data arrangement, incident runbook | D4 |
+| 6.3 | M6-01, M6-02 | Production environment, release deploys, custom domain | D5 |
+| 6.4 | M6-08 | Encrypted nightly backup | D5 |
 
 ---
 
@@ -422,7 +437,7 @@ accessibility or real-device parts of it remain.
 
 1. **"Works shifts" turned off while the person holds future shifts.** Today the shifts stay but the
    person vanishes from the evaluator and the draft tools (`DraftBuilder.LoadAsync` keeps only
-   `WorksShifts` members). Recommended (decision D1): **refuse the switch** with a conflict code
+   `WorksShifts` members). Decided (D1): **refuse the switch** with a conflict code
    such as `workplace.has_upcoming_shifts`, and tell the admin to remove the shifts first. Workplaces
    must not read Scheduling tables: add `Task<bool> HasUpcomingAsync(Guid workplaceId, Guid
    membershipId, ...)` to `IScheduleLedger` (count draft and published assignments with
@@ -433,10 +448,10 @@ accessibility or real-device parts of it remain.
    delete, for each affected published period, add a `ScheduleVersion` the same way
    `ScheduleLedger.BumpAsync` does (move that method somewhere both can call). Test: version goes up
    by one and the snapshot no longer has the person.
-3. **Shift edits and open periods.** Nothing to code here if 3.2 is planned; otherwise keep the note
-   on the Edit Generator page as it is.
+3. **Shift edits and open periods.** Nothing to code: 3.2 is planned (D1). Keep the note on the Edit
+   Generator page as it is until then.
 
-### 1.2 Email provider and notification emails (M2-01, M5-05). Size M
+### 1.2 Notification emails (M5-05, FR-211). Size M
 
 **What exists.** `IEmailOutbox.EnqueueAsync(EmailRequest(To, Template, Language, Parameters))`,
 an outbox table in the Notifications module, templates for verification and reset, SMTP settings in
@@ -444,11 +459,9 @@ an outbox table in the Notifications module, templates for verification and rese
 Staging has none of these set, so no email leaves staging today.
 
 **Shape.**
-- Provider (decision D2): the code speaks SMTP, so any provider with SMTP works with settings only.
-  Write `docs/decisions/00NN-email-provider.md` with the choice and why (data location, price, DKIM).
-- `scripts/azure/provision-staging.sh`: add the `Email__*` settings as Container Apps secrets on the
-  app **and on the tick job** (the tick sends the outbox). Document the DNS records (SPF, DKIM,
-  DMARC) in `docs/runbooks/staging.md`.
+- Provider (D2, decided): Amazon SES in Montreal. **Not in this task.** There is no domain yet, so
+  every email here is built and checked in Mailpit; the code speaks SMTP, so 6.1 connects SES with
+  settings only. Do not add `Email__*` secrets to staging here.
 - Notification emails (FR-211; check the exact wording in the spec): when `INotifier.NotifyAsync`
   stores a notification of a type that deserves an email, also enqueue an email for the recipient.
   Start with: schedule published, schedule changed, availability requested, availability reminder,
@@ -547,46 +560,8 @@ Test that the draft view of workplace B contains nothing that identifies workpla
 - What to delete and after how long is in the spec's retention table (search "retention"): typically
   expired sessions and tokens, old notifications, sent outbox rows, availability notes of old
   periods, finished marketplace requests. Delete in batches with a limit per run; log counts only.
-- Add a table to the privacy page (1.8) that states the same periods; one constant per period shared
-  by the job and by a test that the page text matches.
-
-### 1.8 Privacy policy, data arrangement, incident runbook (M6-03, M6-04). Size S (code) plus documents
-
-- A public page `/privacy` in both languages, linked from sign-up, sign-in and Profile. Content from
-  the spec's privacy section (search "Law 25"): what is collected, why, where it is stored (Montreal),
-  how long, who to contact, how to delete an account. **Mark the text as a draft for Hoang to have
-  reviewed; do not present it as legal advice.**
-- Sign-up records the version of the policy the person accepted (a column on the account).
-- `docs/legal/data-arrangement.md` (the agreement between Hoang and Philippe) and
-  `docs/runbooks/incident.md` (who does what within which delay when data leaks): write them as
-  fill-in documents from the issue's checklist.
-
-### 1.9 Production environment, release deploys, custom domain (M6-01, M6-02). Size M
-
-- Copy the staging pattern: `scripts/azure/provision-production.sh` from `provision-staging.sh`
-  (resource names from a variable, never hard-coded twice), `appsettings.Production.json`, and a
-  workflow `deploy-production.yml` triggered by a release tag (`v*`), reusing the staging steps:
-  build image, run the migrate job, run the tick job once, update the app, smoke test, and **roll
-  back to the previous revision if the smoke test fails** (staging has no rollback today: add it to
-  both).
-- Production differences: minimum replicas 1 during opening hours or always (decision D5),
-  `Auth` and `Workplaces` rate limits at their defaults, `Features:Lab` off, its own database and its
-  own Data Protection keys, connection string with a small `Maximum Pool Size` for the Supabase
-  session pooler.
-- Custom domain: bind it to the Container App with a managed certificate; set `Email:PublicUrl`, the
-  cookie domain and the allowed origin to it; redirect the default Azure host to it. Write the DNS
-  records Hoang must create in `docs/runbooks/production.md`.
-- Everything Hoang must do by hand (Azure login, secrets in GitHub, DNS) goes in that runbook as
-  numbered steps with the exact commands.
-
-### 1.10 Encrypted nightly backup (M6-08). Size S to M
-
-- A scheduled GitHub Actions workflow (or a Container Apps job): `pg_dump` in custom format, encrypt
-  with a public key (`age` or `gpg`; the private key never enters CI), upload to storage in Canada
-  (decision D5), keep N days, delete older ones.
-- A restore drill documented in `docs/runbooks/backup.md` and tried once against a scratch database:
-  a backup that was never restored is not a backup.
-- An alert when the workflow fails (a notification to Hoang's email through GitHub is enough).
+- One constant per period, shared by the job. The privacy page (6.2, built later) shows a table of
+  the same periods from those constants, with a test that the page text matches.
 
 ### 2.1 Service worker: instant opening and offline "My shifts" (M8-05). Size M
 
@@ -826,23 +801,83 @@ of it too), and the feed holds only the person's own shifts with no co-worker na
 Backlog items without a settled design. Before any code: write a one-page proposal in
 `docs/decisions` (data kept, who sees what, retention, how it meets Law 25; payslips are sensitive
 documents and depend on 5.1), get Hoang's answer on D7, then split into issues with
-`scripts/github/create-issues.mjs`.
+`scripts/github/create-issues.mjs`. **D7 answered 2026-11-17: not before the pilot. Do not start.**
+
+### 6.1 Turn on real email: Amazon SES (M2-01, M6-02 part). Size S
+
+Decided (D2): Amazon SES in the Montreal region (`ca-central-1`), so email stays in Quebec. Task 1.2
+already built every email against Mailpit; this task only connects the real provider.
+
+- Needs the domain from D5. Hoang creates the AWS account (two-factor on the root user, then an IAM
+  user limited to sending), verifies the domain in SES, and asks AWS for production access (new
+  accounts start in a sandbox that only sends to verified addresses). Write each step in
+  `docs/runbooks/email.md` with what to click.
+- DNS records for SPF, DKIM (SES "Easy DKIM") and DMARC go in the same runbook. `Email:From` is
+  `no-reply@<domain>`.
+- SMTP credentials as Container Apps secrets on the app **and the tick job**, for staging and then
+  production. Turn off any open or click tracking.
+- Before go-live, confirm in AWS's data processing terms that SES in `ca-central-1` keeps the data in
+  that region (spec 12.1); if not, tell Hoang so Philippe can be told.
+- Write `docs/decisions/00NN-email-provider.md` (choice, why, data location, price).
+
+**Check.** A verification email reaches a real Gmail inbox from staging, not in spam, with DKIM and
+SPF shown as "PASS" in Gmail's "Show original".
+
+### 6.2 Privacy policy, data arrangement, incident runbook (M6-03, M6-04). Size S (code) plus documents
+
+- A public page `/privacy` in both languages, linked from sign-up, sign-in and Profile. Content from
+  the spec's privacy section (search "Law 25"): what is collected, why, where it is stored (Montreal),
+  how long, who to contact, how to delete an account. **Mark the text as a draft for Hoang to have
+  reviewed; do not present it as legal advice.**
+- Sign-up records the version of the policy the person accepted (a column on the account).
+- `docs/legal/data-arrangement.md` (the agreement between Hoang and Philippe) and
+  `docs/runbooks/incident.md` (who does what within which delay when data leaks): write them as
+  fill-in documents from the issue's checklist.
+
+### 6.3 Production environment, release deploys, custom domain (M6-01, M6-02). Size M
+
+- Copy the staging pattern: `scripts/azure/provision-production.sh` from `provision-staging.sh`
+  (resource names from a variable, never hard-coded twice), `appsettings.Production.json`, and a
+  workflow `deploy-production.yml` triggered by a release tag (`v*`), reusing the staging steps:
+  build image, run the migrate job, run the tick job once, update the app, smoke test, and **roll
+  back to the previous revision if the smoke test fails** (staging has no rollback today: add it to
+  both).
+- Production differences: minimum replicas 1 during opening hours or always (decision D5),
+  `Auth` and `Workplaces` rate limits at their defaults, `Features:Lab` off, its own database and its
+  own Data Protection keys, connection string with a small `Maximum Pool Size` for the Supabase
+  session pooler.
+- Custom domain: bind it to the Container App with a managed certificate; set `Email:PublicUrl`, the
+  cookie domain and the allowed origin to it; redirect the default Azure host to it. Write the DNS
+  records Hoang must create in `docs/runbooks/production.md`.
+- Everything Hoang must do by hand (Azure login, secrets in GitHub, DNS) goes in that runbook as
+  numbered steps with the exact commands.
+
+### 6.4 Encrypted nightly backup (M6-08). Size S to M
+
+- A scheduled GitHub Actions workflow (or a Container Apps job): `pg_dump` in custom format, encrypt
+  with a public key (`age` or `gpg`; the private key never enters CI), upload to storage in Canada
+  (decision D5), keep N days, delete older ones.
+- A restore drill documented in `docs/runbooks/backup.md` and tried once against a scratch database:
+  a backup that was never restored is not a backup.
+- An alert when the workflow fails (a notification to Hoang's email through GitHub is enough).
 
 ---
 
 ## 6. What Hoang must decide or provide
 
-Ask for these at the start of the phase that needs them, all at once.
+Ask for these at the start of the phase that needs them, all at once. Answers given on 2026-11-17
+are in the spec's decision log (section 17).
 
-| ID | Question | Recommended default | Blocks |
+| ID | Question | Answer, or recommended default | Blocks |
 | --- | --- | --- | --- |
-| D1 | "Works shifts" turned off for someone with future shifts: refuse, or free their shifts? Should shift edits reach an open period (FR-069)? | Refuse the switch. Yes, build FR-069 in phase 3. | 1.1, 3.2 |
-| D2 | Which email provider, and which address emails come from | Any SMTP provider that can keep data in Canada or the EU and signs with DKIM; `no-reply@<domain>` | 1.2 |
-| D3 | Retention periods and what a deleted account leaves behind | The spec's retention table and FR-009, unchanged | 1.6, 1.7 |
-| D4 | Who reviews the privacy text; contact name and email for privacy requests | Hoang as the contact; a short review by someone qualified before go-live | 1.8 |
-| D5 | Domain name; Azure subscription for production; always-on or scale to zero; where backups and files are stored | One always-on replica in production; storage in a Canadian region | 1.9, 1.10, 2.1, 2.2, 5.1 |
-| D6 | A Google Cloud project with OAuth credentials | Created by Hoang; client ID and secret given as secrets | 4.4, 5.4 |
-| D7 | Whether time-off and payslips are wanted at all, and their rules | Decide after the pilot | 5.6, 5.7 |
+| D1 | "Works shifts" turned off for someone with future shifts: refuse, or free their shifts? Should shift edits reach an open period (FR-069)? | **Answered:** refuse the switch. Yes, build FR-069 in phase 3. | 1.1, 3.2 |
+| D2 | Which email provider, and which address emails come from | **Answered:** Amazon SES, Montreal region (`ca-central-1`). Address `no-reply@<domain>` once the domain exists. | 6.1 |
+| D3 | Retention periods and what a deleted account leaves behind | **Answered:** the spec's retention table and FR-009, unchanged, including published schedules kept 2 months with no export. | 1.6, 1.7 |
+| D4 | Who reviews the privacy text; contact name and email for privacy requests | Hoang as the contact; a short review by someone qualified before go-live | 6.2 |
+| D5 | Domain name (after the final product name, Q-05); Azure subscription for production; always-on or scale to zero; where backups and files are stored | One always-on replica in production; storage in a Canadian region. Hoang owns no domain yet. | 6.1, 6.3, 6.4 |
+| D6 | A Google Cloud project with OAuth credentials | Created by Hoang (a free test project is enough to build); client ID and secret given as secrets | 4.4, 5.4 |
+| D7 | Whether time-off and payslips are wanted at all, and their rules | **Answered:** after the pilot | 5.6, 5.7 |
+| Q-08 | Hours before an unclaimed give-away alerts the admins | **Answered:** 24 hours by default, a workplace setting | 3.5 |
 
 Things only Hoang can do: buy the domain and create DNS records, create accounts (email provider,
 Google Cloud), add secrets in GitHub and Azure, try features on a real iPhone and Android phone,
