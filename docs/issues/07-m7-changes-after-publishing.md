@@ -88,7 +88,7 @@ spec: FR-183, Q-08, AD-029
 **Goal.** Philippe hears about a shift nobody has taken while there is still time to act.
 
 **Backend**
-- [ ] A workplace setting "alert when still unclaimed N hours before" (default to be agreed under Q-08; ask Philippe before shipping).
+- [ ] A workplace setting "alert when still unclaimed N hours before", 24 hours by default (Q-08, answered 2026-11-17).
 - [ ] A job scheduled for each offer; when it runs, it checks the current state and does nothing if the shift was taken.
 
 **Done when**
