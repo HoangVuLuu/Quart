@@ -1,9 +1,9 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import i18n from '../../i18n';
 import en from '../../i18n/locales/en.json';
-import { fakeApi, me, renderApp, status, type ApiCall } from '../../test/app';
+import { fakeApi, me, renderApp, signedIn, status, type ApiCall } from '../../test/app';
 
 const signedOut = { 'GET /api/me': status(401, { code: 'common.unauthorized' }) };
 
@@ -154,5 +154,64 @@ describe('emailed links', () => {
     renderApp('/verify-email?token=abc123');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(en.errors.auth.link_used);
+  });
+});
+
+describe('changing the password and the email (M2-07)', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  it('asks for the current password and shows a wrong one under its field', async () => {
+    const calls = signedIn('employee', {
+      'POST /api/me/password': status(400, {
+        code: 'common.validation',
+        errors: [{ code: 'auth.current_password_wrong', path: 'currentPassword' }],
+      }),
+    });
+    renderApp('/profile');
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: en.profile.changePassword.row }));
+    const sheet = within(await screen.findByRole('dialog', { name: en.profile.changePassword.title }));
+    await user.type(sheet.getByLabelText(en.profile.changePassword.current), 'old one');
+    await user.type(sheet.getByLabelText(en.profile.changePassword.new), 'a brand new passphrase');
+    await user.type(sheet.getByLabelText(en.auth.confirmPassword), 'a brand new passphrase');
+    await user.click(sheet.getByRole('button', { name: en.profile.changePassword.save }));
+
+    expect(await sheet.findByText(en.errors.auth.current_password_wrong)).toBeInTheDocument();
+    expect(calls.find((call) => call.path === '/api/me/password')?.body).toEqual({
+      currentPassword: 'old one',
+      newPassword: 'a brand new passphrase',
+    });
+  });
+
+  it('sends a link to the new address and says nothing has changed yet', async () => {
+    const calls = signedIn('employee', { 'POST /api/me/email': status(202) });
+    renderApp('/profile');
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: new RegExp(me.email) }));
+    const sheet = within(await screen.findByRole('dialog', { name: en.profile.changeEmail.title }));
+    await user.type(sheet.getByLabelText(en.profile.changeEmail.new), 'sophie.new@quart.test');
+    await user.type(sheet.getByLabelText(en.profile.changeEmail.current), 'my password');
+    await user.click(sheet.getByRole('button', { name: en.profile.changeEmail.send }));
+
+    expect(await screen.findByRole('dialog', { name: en.profile.changeEmail.sentTitle })).toBeInTheDocument();
+    expect(calls.find((call) => call.path === '/api/me/email')?.body).toEqual({
+      email: 'sophie.new@quart.test',
+      currentPassword: 'my password',
+    });
+  });
+
+  it('confirms a new email from its link, once', async () => {
+    const calls = fakeApi({ ...signedOut, 'POST /api/me/email/confirm': status(204) });
+    renderApp('/confirm-email?token=xyz789');
+
+    expect(await screen.findByRole('heading', { name: en.auth.confirmEmail.done })).toBeInTheDocument();
+    const confirmations = calls.filter((call) => call.path === '/api/me/email/confirm');
+    expect(confirmations).toHaveLength(1);
+    expect(confirmations[0]?.body).toEqual({ token: 'xyz789' });
+    expect(screen.getByRole('link', { name: en.auth.signIn.submit })).toHaveAttribute('href', '/sign-in');
   });
 });

@@ -151,6 +151,21 @@ internal static class EmailRenderer
             ["en"] = ("Reset your Quart password", "Hi {name},\n\nOpen this link to choose a new password. It works once and expires in 45 minutes.\n\n{link}\n\nIf you did not ask for this, you can ignore this email: your password stays the same."),
             ["fr"] = ("Réinitialise ton mot de passe Quart", "Bonjour {name},\n\nOuvre ce lien pour choisir un nouveau mot de passe. Il fonctionne une seule fois et expire dans 45 minutes.\n\n{link}\n\nSi tu n'as rien demandé, tu peux ignorer ce courriel : ton mot de passe reste le même."),
         }),
+        [EmailTemplates.PasswordChanged] = ("/forgot-password", new()
+        {
+            ["en"] = ("Your Quart password was changed", "Hi {name},\n\nThe password of your Quart account was just changed, and your other devices were signed out.\n\nIf you did not do this, reset your password now:\n\n{link}"),
+            ["fr"] = ("Ton mot de passe Quart a été changé", "Bonjour {name},\n\nLe mot de passe de ton compte Quart vient d'être changé, et tes autres appareils ont été déconnectés.\n\nSi ce n'était pas toi, réinitialise ton mot de passe maintenant :\n\n{link}"),
+        }),
+        [EmailTemplates.ChangeEmail] = ("/confirm-email?token=", new()
+        {
+            ["en"] = ("Confirm your new email for Quart", "Hi {name},\n\nOpen this link to use this address for your Quart account. It works once and expires in 24 hours.\n\n{link}\n\nIf you did not ask for this, you can ignore this email: nothing changes."),
+            ["fr"] = ("Confirme ton nouveau courriel pour Quart", "Bonjour {name},\n\nOuvre ce lien pour utiliser cette adresse avec ton compte Quart. Il fonctionne une seule fois et expire dans 24 heures.\n\n{link}\n\nSi tu n'as rien demandé, tu peux ignorer ce courriel : rien ne change."),
+        }),
+        [EmailTemplates.EmailChanged] = ("/sign-in", new()
+        {
+            ["en"] = ("Your Quart email was changed", "Hi {name},\n\nYour Quart account now uses another email address, and your other devices were signed out. Emails from Quart no longer come here.\n\nIf you did not do this, tell your manager right away."),
+            ["fr"] = ("Ton courriel Quart a été changé", "Bonjour {name},\n\nTon compte Quart utilise maintenant une autre adresse courriel, et tes autres appareils ont été déconnectés. Les courriels de Quart n'arriveront plus ici.\n\nSi ce n'était pas toi, avertis ton gérant tout de suite."),
+        }),
     };
 
     public static bool Knows(string template) => Templates.ContainsKey(template) || NotificationEmails.Knows(template);

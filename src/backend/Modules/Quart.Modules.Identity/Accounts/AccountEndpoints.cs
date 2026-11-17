@@ -36,6 +36,8 @@ internal static class AccountEndpoints
     public const string LinkInvalid = "auth.link_invalid";
     public const string LinkExpired = "auth.link_expired";
     public const string LinkUsed = "auth.link_used";
+    public const string CurrentPasswordWrong = "auth.current_password_wrong";
+    public const string EmailSame = "auth.email_same";
 
     /// <summary>At most one link email per account and purpose in this time, so the form cannot flood a mailbox.</summary>
     private static readonly Duration LinkEmailInterval = Duration.FromMinutes(1);
@@ -75,6 +77,12 @@ internal static class AccountEndpoints
 
         endpoints.MapGet("/api/me", GetMeAsync).RequireUser().WithName("GetMe");
         endpoints.MapPatch("/api/me", UpdateMeAsync).RequireUser().WithName("UpdateMe");
+        // Both ask for the current password, so they share the sign-in limit and count towards lockout (M2-07).
+        endpoints.MapPost("/api/me/password", ChangePasswordAsync).RequireUser().RequireRateLimiting(RateLimitPolicy).WithName("ChangePassword");
+        endpoints.MapPost("/api/me/email", ChangeEmailAsync).RequireUser().RequireRateLimiting(RateLimitPolicy).WithName("ChangeEmail");
+        // Public on purpose: the link may open in a browser that is not signed in. The single-use token sent to
+        // the new address, after the current password was given, is the proof (section 1.6).
+        endpoints.MapPost("/api/me/email/confirm", ConfirmEmailChangeAsync).RequireRateLimiting(RateLimitPolicy).WithName("ConfirmEmailChange");
     }
 
     /// <summary>
@@ -338,6 +346,191 @@ internal static class AccountEndpoints
         return TypedResults.Ok(ToMe(user));
     }
 
+    /// <summary>
+    /// Changes the password while signed in (M2-07): the current password first, then the sign-up rules. The
+    /// address on file is told before the change, every other session ends, and this browser stays signed in.
+    /// </summary>
+    private static async Task<Results<NoContent, ProblemHttpResult>> ChangePasswordAsync(
+        ChangePasswordRequest request,
+        HttpContext http,
+        UserManager<QuartUser> users,
+        IBreachedPasswordCheck breaches,
+        IdentityDb db,
+        IEmailOutbox emails,
+        IClock clock,
+        CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(http.CurrentUserId().ToString());
+        if (user is null)
+        {
+            return Problems.Unauthorized();
+        }
+        if (await CheckCurrentPasswordAsync(users, user, request.CurrentPassword) is { } refused)
+        {
+            return refused;
+        }
+        if (AccountRules.CheckPassword(request.NewPassword, "newPassword") is { } passwordError)
+        {
+            return Problems.Validation(passwordError);
+        }
+        if (await breaches.IsBreachedAsync(request.NewPassword!, cancellationToken))
+        {
+            return Problems.Validation(new FieldError(AccountRules.PasswordBreached, "newPassword"));
+        }
+
+        await emails.EnqueueAsync(
+            new EmailRequest(user.Email!, EmailTemplates.PasswordChanged, user.Language, new Dictionary<string, string> { ["name"] = user.DisplayName }),
+            cancellationToken);
+        user.PasswordHash = users.PasswordHasher.HashPassword(user, request.NewPassword!);
+        await users.UpdateSecurityStampAsync(user);
+        // A reset link still in the mailbox would undo this change: it goes too.
+        await RetireLinksAsync(db, user.Id, AccountLink.ResetPassword, clock.GetCurrentInstant(), cancellationToken);
+        await EndOtherSessionsAsync(http, db, user, cancellationToken);
+        return TypedResults.NoContent();
+    }
+
+    /// <summary>
+    /// First step of an email change (M2-07): sends a link to the new address. The answer is the same whether
+    /// or not that address already has an account, and nothing is sent to it then, so addresses cannot be probed.
+    /// </summary>
+    private static async Task<Results<Accepted, ProblemHttpResult>> ChangeEmailAsync(
+        ChangeEmailRequest request,
+        HttpContext http,
+        UserManager<QuartUser> users,
+        IdentityDb db,
+        IEmailOutbox emails,
+        IClock clock,
+        CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(http.CurrentUserId().ToString());
+        if (user is null)
+        {
+            return Problems.Unauthorized();
+        }
+        if (await CheckCurrentPasswordAsync(users, user, request.CurrentPassword) is { } refused)
+        {
+            return refused;
+        }
+        var email = AccountRules.CleanEmail(request.Email);
+        if (!AccountRules.IsEmail(email))
+        {
+            return Problems.Validation(new FieldError(AccountRules.EmailInvalid, "email"));
+        }
+        if (string.Equals(email, user.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            return Problems.Validation(new FieldError(EmailSame, "email"));
+        }
+        if (await users.FindByEmailAsync(email) is not null)
+        {
+            return TypedResults.Accepted((string?)null);
+        }
+
+        var now = clock.GetCurrentInstant();
+        // One link a minute per account, so the form cannot flood a mailbox. Asking again later retires the
+        // earlier link, so only the newest address can ever be confirmed.
+        var recent = now + VerifyLifetime - LinkEmailInterval;
+        if (await db.AccountLinks.AnyAsync(x => x.UserId == user.Id && x.Purpose == AccountLink.ChangeEmail && x.UsedAt == null && x.ExpiresAt > recent, cancellationToken))
+        {
+            return TypedResults.Accepted((string?)null);
+        }
+        await RetireLinksAsync(db, user.Id, AccountLink.ChangeEmail, now, cancellationToken);
+        var token = WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
+        db.AccountLinks.Add(new AccountLink
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            Purpose = AccountLink.ChangeEmail,
+            TokenHash = Hash(token),
+            ExpiresAt = now + VerifyLifetime,
+            PendingEmail = email,
+        });
+        await db.SaveChangesAsync(cancellationToken);
+        await emails.EnqueueAsync(
+            new EmailRequest(email, EmailTemplates.ChangeEmail, user.Language, new Dictionary<string, string> { ["token"] = token, ["name"] = user.DisplayName }),
+            cancellationToken);
+        return TypedResults.Accepted((string?)null);
+    }
+
+    /// <summary>
+    /// Second step: the link from the new mailbox swaps the address. The old address is told first, and every
+    /// session ends except this browser's, if it belongs to the same person.
+    /// </summary>
+    private static async Task<Results<NoContent, ProblemHttpResult>> ConfirmEmailChangeAsync(
+        TokenRequest request,
+        HttpContext http,
+        UserManager<QuartUser> users,
+        IdentityDb db,
+        IEmailOutbox emails,
+        IClock clock,
+        CancellationToken cancellationToken)
+    {
+        var (link, problem) = await FindLinkAsync(db, clock, request.Token, AccountLink.ChangeEmail, cancellationToken);
+        if (link is null)
+        {
+            return problem!;
+        }
+        var user = await users.FindByIdAsync(link.UserId.ToString());
+        // Someone may have signed up with the new address since the link was sent.
+        if (user is null || link.PendingEmail is not { } email || await users.FindByEmailAsync(email) is not null)
+        {
+            return Problems.Validation(new FieldError(LinkInvalid, "token"));
+        }
+
+        var now = clock.GetCurrentInstant();
+        link.UsedAt = now;
+        await db.SaveChangesAsync(cancellationToken);
+        await emails.EnqueueAsync(
+            new EmailRequest(user.Email!, EmailTemplates.EmailChanged, user.Language, new Dictionary<string, string> { ["name"] = user.DisplayName }),
+            cancellationToken);
+
+        user.Email = email;
+        user.UserName = email;
+        user.EmailConfirmed = true;
+        await users.UpdateNormalizedEmailAsync(user);
+        await users.UpdateNormalizedUserNameAsync(user);
+        var updated = await users.UpdateSecurityStampAsync(user);
+        if (!updated.Succeeded)
+        {
+            return Problems.Validation(new FieldError(LinkInvalid, "token"));
+        }
+        // Links sent to the old address (a reset, an older change) must not work any more.
+        await RetireLinksAsync(db, user.Id, AccountLink.ResetPassword, now, cancellationToken);
+        await RetireLinksAsync(db, user.Id, AccountLink.ChangeEmail, now, cancellationToken);
+        await EndOtherSessionsAsync(http, db, user, cancellationToken);
+        return TypedResults.NoContent();
+    }
+
+    /// <summary>Null when the password is right; otherwise the refusal. A wrong one counts towards the lockout (FR-007).</summary>
+    private static async Task<ProblemHttpResult?> CheckCurrentPasswordAsync(UserManager<QuartUser> users, QuartUser user, string? password)
+    {
+        if (await users.IsLockedOutAsync(user))
+        {
+            return Problems.Forbidden(LockedOut);
+        }
+        if (await users.CheckPasswordAsync(user, password ?? string.Empty))
+        {
+            await users.ResetAccessFailedCountAsync(user);
+            return null;
+        }
+        await users.AccessFailedAsync(user);
+        return await users.IsLockedOutAsync(user)
+            ? Problems.Forbidden(LockedOut)
+            : Problems.Validation(new FieldError(CurrentPasswordWrong, "currentPassword"));
+    }
+
+    /// <summary>Ends every session of the account except this browser's, when this browser is that person's.</summary>
+    private static async Task EndOtherSessionsAsync(HttpContext http, IdentityDb db, QuartUser user, CancellationToken cancellationToken)
+    {
+        string? current = null;
+        if (http.User.UserId() == user.Id)
+        {
+            var result = await http.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+            current = result.Properties?.Items.TryGetValue(SessionTicketStore.SessionItem, out var id) == true ? id : null;
+        }
+        // A session from before its row ID was remembered cannot be told apart: it ends too, and the person signs in again.
+        await db.Sessions.Where(x => x.UserId == user.Id && x.Id != current).ExecuteDeleteAsync(cancellationToken);
+    }
+
     private static Me ToMe(QuartUser user) =>
         new(user.Id, user.FullName, user.DisplayName, user.Email!, user.Language, user.IsPlatformAdmin);
 
@@ -414,6 +607,10 @@ public sealed record TokenRequest(string? Token);
 public sealed record ResetPasswordRequest(string? Token, string? Password);
 
 public sealed record UpdateMeRequest(string? DisplayName, string? Language);
+
+public sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
+
+public sealed record ChangeEmailRequest(string? Email, string? CurrentPassword);
 
 /// <summary>The signed-in account. Memberships come from <c>GET /api/workplaces</c>.</summary>
 public sealed record Me(Guid Id, string FullName, string DisplayName, string Email, string Language, bool IsPlatformAdmin);

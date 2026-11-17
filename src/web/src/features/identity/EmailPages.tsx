@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
@@ -10,6 +10,7 @@ import { PasswordField, TextField } from '../../ui/TextField';
 import { AuthLayout } from './AuthLayout';
 import { FormError } from './FormError';
 import { fieldErrors } from './fieldErrors';
+import { meKey, useMe } from './session';
 import { minPasswordLength } from './SignUpPage';
 
 /** After signing up: "check your email", with a way to send the link again (M2-03). */
@@ -83,6 +84,55 @@ export function VerifyEmailPage() {
       {!verify.isPending && (
         <Link to="/sign-in" className={buttonClassName('dark', 'mt-4 w-full')}>
           {t('auth.signIn.submit')}
+        </Link>
+      )}
+    </AuthLayout>
+  );
+}
+
+/**
+ * The link sent to a new address (M2-07). Works whether or not this browser is signed in; once it has,
+ * every other device is signed out, so a signed-in browser goes back to Profile and any other to sign-in.
+ */
+export function ConfirmEmailChangePage() {
+  const { t } = useTranslation();
+  const client = useQueryClient();
+  const me = useMe();
+  const [params] = useSearchParams();
+  const token = params.get('token') ?? '';
+  const confirm = useMutation({
+    mutationFn: () => unwrap(api.POST('/api/me/email/confirm', { body: { token } })),
+    onSuccess: () => client.invalidateQueries({ queryKey: meKey }),
+  });
+  // The link works once, so it is sent once, even when React mounts the screen twice in development.
+  const sent = useRef(false);
+  const { mutate } = confirm;
+  useEffect(() => {
+    if (!sent.current) {
+      sent.current = true;
+      mutate();
+    }
+  }, [mutate]);
+  const errors = fieldErrors(confirm.error, t);
+
+  return (
+    <AuthLayout
+      title={
+        confirm.isError
+          ? t('auth.confirmEmail.failed')
+          : confirm.isSuccess
+            ? t('auth.confirmEmail.done')
+            : t('auth.confirmEmail.working')
+      }
+      mascot
+    >
+      {confirm.isSuccess && (
+        <p className="text-center text-[15px] text-muted">{t('auth.confirmEmail.doneText')}</p>
+      )}
+      <FormError message={errors.token ?? errors.form} />
+      {!confirm.isPending && (
+        <Link to={me.data ? '/profile' : '/sign-in'} className={buttonClassName('dark', 'mt-4 w-full')}>
+          {me.data ? t('auth.confirmEmail.continue') : t('auth.signIn.submit')}
         </Link>
       )}
     </AuthLayout>

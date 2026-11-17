@@ -18,4 +18,7 @@ public static class EmailTemplates
     public const string VerifyEmail = "verify_email";
     public const string AlreadyRegistered = "already_registered";
     public const string ResetPassword = "reset_password";
+    public const string PasswordChanged = "password_changed";
+    public const string ChangeEmail = "change_email";
+    public const string EmailChanged = "email_changed";
 }
