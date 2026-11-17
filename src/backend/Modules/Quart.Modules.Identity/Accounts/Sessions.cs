@@ -22,6 +22,12 @@ internal sealed class SessionTicketStore(IServiceScopeFactory scopes, IClock clo
 {
     private static readonly Duration Lifetime = Duration.FromDays(30);
 
+    /// <summary>
+    /// The stored ticket remembers its own row's ID, so a request can end every other session of the person
+    /// and keep its own (a password or email change, M2-07). The ID is the hash, never the cookie's key.
+    /// </summary>
+    public const string SessionItem = "quart.session";
+
     // The cookie carries the key; the table keeps only its hash. Someone who reads the database (a leaked
     // backup, a too-broad query) cannot turn a row into a signed-in browser.
     private static string Hash(string key) =>
@@ -31,6 +37,7 @@ internal sealed class SessionTicketStore(IServiceScopeFactory scopes, IClock clo
     {
         var id = WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
         var now = clock.GetCurrentInstant();
+        ticket.Properties.Items[SessionItem] = Hash(id);
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IdentityDb>();
         db.Sessions.Add(new Session

@@ -8,6 +8,7 @@ import { EditGeneratorPage } from '../features/generator/EditGeneratorPage';
 import { HomePage } from '../features/home/HomePage';
 import {
   CheckEmailPage,
+  ConfirmEmailChangePage,
   ForgotPasswordPage,
   ResetPasswordPage,
   VerifyEmailPage,
@@ -75,6 +76,7 @@ export const routes: RouteObject[] = [
       // Emailed links work whether or not this browser is signed in.
       { path: 'check-email', element: <CheckEmailPage /> },
       { path: 'verify-email', element: <VerifyEmailPage /> },
+      { path: 'confirm-email', element: <ConfirmEmailChangePage /> },
       { path: 'reset-password', element: <ResetPasswordPage /> },
       {
         element: <RequireSession />,

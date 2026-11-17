@@ -81,8 +81,10 @@
     },
     "auth": {
       "antiforgery": "Ta session doit être actualisée. Recharge la page et réessaie.",
+      "current_password_wrong": "Ton mot de passe actuel n’est pas le bon.",
       "email_invalid": "Entre une adresse courriel valide.",
       "email_not_verified": "Vérifie d’abord ton courriel : ouvre le lien que nous t’avons envoyé.",
+      "email_same": "C’est déjà ton courriel.",
       "invalid_credentials": "Courriel ou mot de passe incorrect.",
       "language_invalid": "Choisis le français ou l’anglais.",
       "link_expired": "Ce lien a expiré. Demandes-en un nouveau.",
@@ -615,6 +617,13 @@
       "subtitle": "Tu seras déconnecté partout ailleurs.",
       "password": "Nouveau mot de passe",
       "submit": "Enregistrer le mot de passe"
+    },
+    "confirmEmail": {
+      "working": "Vérification de ton lien…",
+      "done": "Courriel changé",
+      "doneText": "Ton compte utilise maintenant cette adresse. Tes autres appareils ont été déconnectés.",
+      "failed": "Ce lien n’a pas fonctionné",
+      "continue": "Continuer"
     }
   },
   "workplaces": {
@@ -937,6 +946,25 @@
       "text": "Ton gérant les voit quand il prépare l’horaire. C’est un souhait, pas une promesse.",
       "label": "Heures par semaine",
       "save": "Enregistrer"
+    },
+    "changePassword": {
+      "row": "Changer le mot de passe",
+      "title": "Changer le mot de passe",
+      "text": "Tes autres appareils seront déconnectés.",
+      "current": "Mot de passe actuel",
+      "new": "Nouveau mot de passe",
+      "save": "Changer le mot de passe",
+      "done": "Mot de passe changé"
+    },
+    "changeEmail": {
+      "title": "Changer de courriel",
+      "text": "On envoie un lien à la nouvelle adresse. Ton courriel change quand tu l’ouvres.",
+      "new": "Nouveau courriel",
+      "current": "Mot de passe actuel",
+      "send": "Envoyer le lien",
+      "sentTitle": "Regarde ta nouvelle boîte de réception",
+      "sentText": "Si {{email}} peut être utilisé, un lien est en route. Il fonctionne pendant 24 heures. Ton courriel reste le même tant que tu ne l’as pas ouvert.",
+      "close": "Fermer"
     }
   },
   "install": {

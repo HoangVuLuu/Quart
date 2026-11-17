@@ -92,6 +92,7 @@ internal sealed class AccountLink
 {
     public const string VerifyEmail = "verify_email";
     public const string ResetPassword = "reset_password";
+    public const string ChangeEmail = "change_email";
 
     public Guid Id { get; set; }
 
@@ -115,6 +116,9 @@ internal sealed class AccountLink
 
     /// <summary>The full name typed in that same attempt.</summary>
     public string? PendingFullName { get; set; }
+
+    /// <summary>For a <see cref="ChangeEmail"/> link: the new address, applied only when the link sent to it is opened (M2-07).</summary>
+    public string? PendingEmail { get; set; }
 }
 
 /// <summary>

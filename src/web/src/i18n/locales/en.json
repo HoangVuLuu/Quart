@@ -81,8 +81,10 @@
     },
     "auth": {
       "antiforgery": "Your session needs a refresh. Reload the page and try again.",
+      "current_password_wrong": "Your current password is not right.",
       "email_invalid": "Enter a valid email address.",
       "email_not_verified": "Verify your email first: open the link we sent you.",
+      "email_same": "This is already your email.",
       "invalid_credentials": "Wrong email or password.",
       "language_invalid": "Choose French or English.",
       "link_expired": "This link has expired. Ask for a new one.",
@@ -615,6 +617,13 @@
       "subtitle": "You will be logged out everywhere else.",
       "password": "New password",
       "submit": "Save password"
+    },
+    "confirmEmail": {
+      "working": "Checking your link…",
+      "done": "Email changed",
+      "doneText": "Your account now uses this address. Your other devices were signed out.",
+      "failed": "This link did not work",
+      "continue": "Continue"
     }
   },
   "workplaces": {
@@ -937,6 +946,25 @@
       "text": "Your manager sees this when building the schedule. It is a wish, not a promise.",
       "label": "Hours per week",
       "save": "Save"
+    },
+    "changePassword": {
+      "row": "Change password",
+      "title": "Change password",
+      "text": "Your other devices will be signed out.",
+      "current": "Current password",
+      "new": "New password",
+      "save": "Change password",
+      "done": "Password changed"
+    },
+    "changeEmail": {
+      "title": "Change email",
+      "text": "We’ll send a link to the new address. Your email changes once you open it.",
+      "new": "New email",
+      "current": "Current password",
+      "send": "Send the link",
+      "sentTitle": "Check your new inbox",
+      "sentText": "If {{email}} can be used, a link is on its way. It works for 24 hours. Your email stays the same until you open it.",
+      "close": "Close"
     }
   },
   "install": {

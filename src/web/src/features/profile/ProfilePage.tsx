@@ -20,6 +20,7 @@ import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
 import { initialsOf, useMe, useSignOut, useUpdateMe } from '../identity/session';
 import { useRefreshWorkplace } from '../scheduling/data';
+import { ChangeEmailSheet, ChangePasswordSheet } from './AccountSheets';
 import { rememberWorkplace, useWorkplace } from '../workplaces/workplace';
 
 function GroupLabel({ children }: { children: string }) {
@@ -30,8 +31,8 @@ const rowLink =
   'flex min-h-12 items-center justify-between gap-3 border-b border-line py-2 font-bold last:border-b-0';
 
 // Mockups 1g (staff) and 1o (admins). Staff change their own wanted hours from the "Edit" link, as on
-// 1g (FR-037). Email and push switches, Google Calendar, changing the password
-// while signed in and deleting the account arrive with M2-07, M2-16, M8 and M9.
+// 1g (FR-037). The Email row and "Change password" open sheets (M2-07). Email and push switches, Google
+// Calendar and deleting the account arrive with M2-16, M8 and M9.
 export function ProfilePage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ export function ProfilePage() {
   const signOutEverywhere = useSignOut(true);
   const refresh = useRefreshWorkplace();
   const [dark, setDark] = useState(currentTheme() === 'dark');
+  const [accountSheet, setAccountSheet] = useState<'email' | 'password' | null>(null);
   const [name, setName] = useState(me?.displayName ?? '');
   const [leaving, setLeaving] = useState(false);
   const [editingHours, setEditingHours] = useState(false);
@@ -318,10 +320,14 @@ export function ProfilePage() {
 
       <GroupLabel>{t('profile.account')}</GroupLabel>
       <Card className="py-2">
-        <div className={rowLink}>
+        <button type="button" className={`${rowLink} w-full`} onClick={() => setAccountSheet('email')}>
           <span>{t('auth.email')}</span>
           <span className="min-w-0 truncate text-sm text-muted">{me.email}</span>
-        </div>
+        </button>
+        <button type="button" className={`${rowLink} w-full`} onClick={() => setAccountSheet('password')}>
+          <span>{t('profile.changePassword.row')}</span>
+          <span aria-hidden="true">›</span>
+        </button>
         <button
           type="button"
           className={`${rowLink} w-full`}
@@ -349,6 +355,8 @@ export function ProfilePage() {
           {t('profile.signOut')}
         </button>
       </Card>
+      <ChangeEmailSheet open={accountSheet === 'email'} onClose={() => setAccountSheet(null)} />
+      <ChangePasswordSheet open={accountSheet === 'password'} onClose={() => setAccountSheet(null)} />
       {view.me.role !== 'owner' && (
         <Button variant="danger" onClick={() => setLeaving(true)}>
           {t('profile.leave')}
