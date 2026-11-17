@@ -12,7 +12,7 @@ ARG VITE_SHOW_DEV_PAGES=false
 RUN npm run build
 
 # ---- 2. Build and publish the API ----
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS api
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS api
 WORKDIR /repo
 COPY global.json Directory.Build.props Directory.Packages.props ./
 COPY src/backend/ src/backend/
