@@ -114,9 +114,12 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
         await shift.click();
       }
       await expect(staff.getByRole('status')).toContainText('7 shifts');
+      // A note typed before the first Send goes with it (it was once lost when the form rebuilt itself).
+      if (person === sophie) await staff.getByLabel('Note for your manager').fill('Exams that week');
       await staff.getByRole('button', { name: 'Send', exact: true }).click();
       await expect(toast(staff, 'Availability sent')).toBeVisible();
     }
+    await expect(sophie.page.getByText('Exams that week', { exact: true })).toBeVisible();
   });
 
   await test.step('the owner generates, takes Sophie off the last closing, and publishes', async () => {

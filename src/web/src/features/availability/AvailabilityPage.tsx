@@ -98,12 +98,21 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
   }
 
   function send() {
-    actions.send.mutate([...selected], {
-      onSuccess: () => {
-        if (note.trim() !== '') actions.addNote.mutate(note.trim(), { onSuccess: () => setNote('') });
+    const text = note.trim();
+    // Not mutate's onSuccess: once the server says "sent", this form is rebuilt (see its key), and React
+    // Query skips the callback of a form that is gone. The toast was lost, and so was a note typed
+    // before the first Send (found by tests/e2e). Errors show from the mutations themselves.
+    actions.send.mutateAsync([...selected]).then(
+      () => {
         toast(t('availability.sentToast'));
+        if (text !== '')
+          actions.addNote.mutateAsync(text).then(
+            () => setNote(''),
+            () => undefined,
+          );
       },
-    });
+      () => undefined,
+    );
   }
 
   return (
