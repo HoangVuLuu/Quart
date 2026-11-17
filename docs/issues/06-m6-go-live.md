@@ -143,7 +143,7 @@ spec: 10.1, NFR-001
 - [x] Test data is created through the API, not by clicking, to keep the run fast.
 
 **Done when**
-- [ ] The suite runs on every pull request in under 5 minutes.
+- [x] The suite runs on every pull request in under 5 minutes.
 
 ## M6-10 · Accessibility review of every v1 screen
 labels: type:chore, area:a11y, stack:frontend, size:M
