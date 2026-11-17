@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -101,11 +102,18 @@ public static class IdentityModule
                 .Configure<DatabaseKeyRepository>((options, repository) => options.XmlRepository = repository);
         }
 
-        services.AddHttpClient<IBreachedPasswordCheck, PwnedPasswordsCheck>(client =>
+        services.AddHttpClient<PwnedPasswordsCheck>(client =>
         {
             client.BaseAddress = new Uri("https://api.pwnedpasswords.com/");
             client.Timeout = TimeSpan.FromSeconds(2);
         });
+        // The browser tests (tests/e2e) must not call the real service from CI. Development only: any other
+        // environment ignores the setting and always checks.
+        services.AddTransient<IBreachedPasswordCheck>(provider =>
+            provider.GetRequiredService<IHostEnvironment>().IsDevelopment()
+            && provider.GetRequiredService<IConfiguration>().GetValue<bool>(OfflineBreachedPasswordCheck.Setting)
+                ? new OfflineBreachedPasswordCheck()
+                : provider.GetRequiredService<PwnedPasswordsCheck>());
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddAccountRateLimit();
         return services;

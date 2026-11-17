@@ -21,3 +21,4 @@ take the next number, and never edit an accepted record: supersede it with a new
 | 0010 | The visual design comes from the design prototype      | Accepted |
 | 0011 | Each module owns one DbContext, schema and history     | Accepted |
 | 0012 | Logs are small, structured and free of personal data   | Accepted |
+| 0013 | Browser tests with Playwright, against the built app   | Accepted |

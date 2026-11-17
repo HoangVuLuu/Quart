@@ -74,6 +74,21 @@ node scripts/dev/seed.mjs
    `dotnet run --project src/backend/Quart.Api -- grant-platform-admin you@example.com`
 3. Log in → *Create a workplace* → open the invitation link it shows, logged in as the future owner.
 
+## Browser tests (the whole loop in Chromium and Safari's engine)
+
+```bash
+scripts/dev/e2e.sh                     # both engines, from an empty test database
+scripts/dev/e2e.sh --project webkit    # Safari's engine only
+scripts/dev/e2e.sh --headed            # watch the browsers do it
+```
+
+It builds the API and the web app, then plays the core loop at phone size: Edit Generator saved twice,
+a period opened, availability sent by two staff, generate, edit, publish, give away and claim, update.
+It uses port 5090 and its own database (`quart_e2e`), so `scripts/dev/start.sh` can keep running. When a
+step fails, open its replay: `cd tests/e2e && npx playwright show-trace test-results/<folder>/trace.zip`.
+The same test runs on every pull request ("Browser tests" in CI; a failed run keeps the traces as an
+artifact named `playwright-traces`).
+
 ## If something does not work
 
 | What you see | What to do |

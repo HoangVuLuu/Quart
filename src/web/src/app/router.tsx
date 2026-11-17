@@ -86,28 +86,28 @@ export const routes: RouteObject[] = [
             element: <WorkplaceGate />,
             children: [
               {
-                element: <AppShell />,
-                children: [
-                  {
-                    // Catches a failure in any screen, keeping the shell around it.
-                    errorElement: <RootErrorPage />,
-                    children: [
-                      { index: true, element: <HomePage /> },
-                      { path: 'schedule', element: <SchedulePage /> },
-                      { path: 'trade', element: <TradePage /> },
-                      { path: 'alerts', element: <AlertsPage /> },
-                      { path: 'profile', element: <ProfilePage /> },
-                      { path: 'diagnostics/error', element: <ForcedErrorPage /> },
-                      ...devPages,
-                      { path: '*', element: <NotFoundPage /> },
-                    ],
-                  },
-                ],
-              },
-              {
-                // Opened from a tab, with a back arrow and no tab bar (mockups 1e, 1w, 1m, 1k3).
                 element: <WithToasts />,
                 children: [
+                  {
+                    element: <AppShell />,
+                    children: [
+                      {
+                        // Catches a failure in any screen, keeping the shell around it.
+                        errorElement: <RootErrorPage />,
+                        children: [
+                          { index: true, element: <HomePage /> },
+                          { path: 'schedule', element: <SchedulePage /> },
+                          { path: 'trade', element: <TradePage /> },
+                          { path: 'alerts', element: <AlertsPage /> },
+                          { path: 'profile', element: <ProfilePage /> },
+                          { path: 'diagnostics/error', element: <ForcedErrorPage /> },
+                          ...devPages,
+                          { path: '*', element: <NotFoundPage /> },
+                        ],
+                      },
+                    ],
+                  },
+                  // Opened from a tab, with a back arrow and no tab bar (mockups 1e, 1w, 1m, 1k3).
                   { path: 'team', element: <TeamPage /> },
                   { path: 'availability', element: <AvailabilityPage /> },
                   { path: 'availability/team', element: <TeamAvailabilityPage /> },
