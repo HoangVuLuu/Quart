@@ -84,6 +84,9 @@ internal sealed class EmailOutbox(
             .SendAsync(new OutgoingEmail(message.Recipient, rendered.Subject, rendered.Body), cancellationToken);
 
         message.SentAt = clock.GetCurrentInstant();
+        // The parameters can hold a one-time link. Once the email has left, nothing here needs them, and a
+        // copy of this table must not be a list of working reset links.
+        message.Parameters = "{}";
         await db.SaveChangesAsync(cancellationToken);
     }
 }

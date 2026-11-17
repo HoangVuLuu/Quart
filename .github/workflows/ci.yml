@@ -24,6 +24,12 @@ jobs:
       # GitHub sets CI=true, so warnings fail the build here (Directory.Build.props).
       - run: dotnet restore Quart.slnx
       - run: dotnet build Quart.slnx --configuration Release --no-restore
+      # A package with a published security advisory fails the build, whoever's change it is: update it
+      # (or the package that pulls it in) before anything else merges.
+      - name: No NuGet package with a known vulnerability
+        run: |
+          dotnet list Quart.slnx package --vulnerable --include-transitive | tee vulnerable.txt
+          ! grep -q "has the following vulnerable packages" vulnerable.txt
       # The build rewrites the OpenAPI document. A difference means an endpoint changed without it.
       - name: OpenAPI document is up to date
         run: git diff --exit-code src/web/openapi || (echo "::error::src/web/openapi/quart.json is stale. Build the API and commit it, then run 'npm run api:generate' in src/web." && exit 1)
@@ -53,6 +59,9 @@ jobs:
           cache: npm
           cache-dependency-path: src/web/package-lock.json
       - run: npm ci
+      # Only what ships to browsers. Build tools are kept current by Dependabot.
+      - name: No shipped npm package with a known high-severity vulnerability
+        run: npm audit --omit=dev --audit-level=high
       - name: TypeScript client matches the OpenAPI document
         run: |
           npm run api:generate
