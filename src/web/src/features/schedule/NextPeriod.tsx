@@ -8,7 +8,6 @@ import { api, unwrap } from '../../lib/api/client';
 import { Button } from '../../ui/Button';
 import { buttonClassName } from '../../ui/button-styles';
 import { HeroCard } from '../../ui/HeroCard';
-import { Stepper } from '../../ui/Stepper';
 import { TextField } from '../../ui/TextField';
 import { FormError } from '../identity/FormError';
 import { mondayOnOrAfter, useCreatePeriod, useTeamAvailability, type NextPeriod } from '../scheduling/data';
@@ -66,8 +65,8 @@ export function NextPeriodBox({ next, after }: { next: NextPeriod | null; after?
 }
 
 /**
- * Opens the next period: a Monday and 1 to 4 weeks (FR-090), starting from the length set in Edit generator
- * rules (7, 2026-11-18: it used to start at 2 whatever the rule said). Everyone who works shifts is asked.
+ * Opens the next period on a Monday. Its length is the one set in Edit generator rules, shown here but only
+ * changed there (FR-090, 2026-11-18). Everyone who works shifts is asked.
  */
 function OpenPeriodBox({ after }: { after?: string }) {
   const { t } = useTranslation();
@@ -85,9 +84,6 @@ function OpenPeriodBox({ after }: { after?: string }) {
     ? new Date(Date.parse(`${after}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10)
     : today;
   const [startDate, setStartDate] = useState(mondayOnOrAfter(earliest > today ? earliest : today));
-  // Follows the rule until the manager picks a length for this one period.
-  const [chosenWeeks, setChosenWeeks] = useState<number | null>(null);
-  const weeks = chosenWeeks ?? rules?.periodWeeks ?? 2;
 
   return (
     <HeroCard eyebrow={t('home.period.none')} title={t('schedule.open.title')} headingLevel={2}>
@@ -101,12 +97,12 @@ function OpenPeriodBox({ after }: { after?: string }) {
           value={startDate}
           onChange={(event) => setStartDate(event.target.value)}
         />
-        <Stepper label={t('schedule.open.weeks')} value={weeks} min={1} max={4} onChange={setChosenWeeks} />
+        {rules && <p className="text-sm">{t('schedule.open.length', { count: rules.periodWeeks })}</p>}
         <FormError message={create.error ? t(messageKeyFor(create.error)) : undefined} />
         <Button
           className="self-start"
           loading={create.isPending}
-          onClick={() => create.mutate({ startDate, weeks })}
+          onClick={() => create.mutate({ startDate })}
         >
           {t('schedule.open.submit')}
         </Button>

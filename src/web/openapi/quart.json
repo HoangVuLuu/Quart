@@ -3417,18 +3417,13 @@
       },
       "CreatePeriodRequest": {
         "required": [
-          "startDate",
-          "weeks"
+          "startDate"
         ],
         "type": "object",
         "properties": {
           "startDate": {
             "type": "string",
             "format": "date"
-          },
-          "weeks": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },

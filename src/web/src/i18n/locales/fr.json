@@ -126,7 +126,6 @@
       "start_not_monday": "Une période commence un lundi.",
       "template_empty": "Ajoute d’abord tes quarts dans la page Modifier le générateur.",
       "unfinished_exists": "Publie la période en cours avant d’en ouvrir une autre.",
-      "weeks_invalid": "Une période dure de 1 à 4 semaines.",
       "already_started": "Cette période est déjà commencée, elle ne peut plus être annulée."
     },
     "schedule": {
@@ -238,8 +237,9 @@
       "text": "Tous ceux qui font des quarts reçoivent une demande de disponibilités.",
       "start": "Début",
       "startHint": "Un lundi.",
-      "weeks": "Semaines",
-      "submit": "Ouvrir la période"
+      "submit": "Ouvrir la période",
+      "length_one": "Dure {{count}} semaine, selon les règles du générateur.",
+      "length_other": "Dure {{count}} semaines, selon les règles du générateur."
     },
     "box": {
       "open": "La prochaine période est ouverte",

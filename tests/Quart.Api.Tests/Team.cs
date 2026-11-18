@@ -50,10 +50,17 @@ public sealed class Team
     }
 
     /// <summary>Opens a period starting on <paramref name="monday"/> (default: Monday 9 November 2026).</summary>
+    /// <summary>Opens a period of <paramref name="weeks"/>: the length lives in the generator rules only (FR-090).</summary>
     public async Task OpenPeriodAsync(int weeks = 1, LocalDate? monday = null)
     {
         var start = monday ?? new LocalDate(2026, 11, 9);
-        var period = await Owner.PostAsync($"{Base}/periods", new { startDate = start.ToString("yyyy-MM-dd", null), weeks });
+        var rules = await Owner.GetAsync($"{Base}/generator");
+        if (rules["periodWeeks"]!.GetValue<int>() != weeks)
+        {
+            rules["periodWeeks"] = weeks;
+            await Owner.SendAsync(HttpMethod.Put, $"{Base}/generator", rules);
+        }
+        var period = await Owner.PostAsync($"{Base}/periods", new { startDate = start.ToString("yyyy-MM-dd", null) });
         PeriodId = Guid.Parse(period["id"]!.GetValue<string>());
     }
 

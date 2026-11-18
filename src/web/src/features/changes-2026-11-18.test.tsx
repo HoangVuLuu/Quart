@@ -126,28 +126,20 @@ describe('changes of 2026-11-18', () => {
     expect(router.state.location.pathname).toBe('/alerts');
   });
 
-  it('opens the next period with the length set in the generator rules (7)', async () => {
+  it('opens the next period with the length from the generator rules, which only shows here (7, FR-090)', async () => {
     const calls = signedIn('owner', {
       [`GET ${base}/periods/current`]: { live: null, next: null, upcoming: [] },
-      [`GET ${base}/generator`]: { periodWeeks: 1 },
+      [`GET ${base}/generator`]: { periodWeeks: 3 },
       [`POST ${base}/periods`]: period,
     });
     renderApp('/schedule');
 
-    const box = within(
-      (await screen.findByRole('heading', { name: en.schedule.open.title })).closest('section, div')!
-        .parentElement!,
-    );
-    await waitFor(() => expect(box.getByText('1')).toBeInTheDocument());
+    expect(await screen.findByText('Lasts 3 weeks, as set in the generator rules.')).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /weeks/i })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: en.schedule.open.submit }));
 
-    expect(
-      (
-        calls.find((call) => call.method === 'POST' && call.path === `${base}/periods`)?.body as {
-          weeks: number;
-        }
-      ).weeks,
-    ).toBe(1);
+    const body = calls.find((call) => call.method === 'POST' && call.path === `${base}/periods`)?.body;
+    expect(body).toEqual({ startDate: expect.any(String) as string });
   });
 
   it('lets a manager cancel the next period after an "Are you sure?", then offers to open a new one', async () => {

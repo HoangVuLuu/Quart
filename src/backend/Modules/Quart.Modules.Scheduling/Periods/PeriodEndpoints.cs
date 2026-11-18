@@ -21,7 +21,6 @@ using Period = Persistence.Period;
 internal static class PeriodEndpoints
 {
     public const string StartNotMonday = "period.start_not_monday";
-    public const string WeeksInvalid = "period.weeks_invalid";
     public const string Overlaps = "period.overlaps";
     public const string TemplateEmpty = "period.template_empty";
     public const string UnfinishedExists = "period.unfinished_exists";
@@ -106,17 +105,15 @@ internal static class PeriodEndpoints
         {
             return Problems.Validation(new FieldError(StartNotMonday, "startDate"));
         }
-        if (request.Weeks is < 1 or > 4)
-        {
-            return Problems.Validation(new FieldError(WeeksInvalid, "weeks"));
-        }
         var template = await directory.GetTemplateAsync(workplaceId, cancellationToken);
         if (template is null || template.Blocks.Count == 0)
         {
             return Problems.Conflict(TemplateEmpty);
         }
 
-        var end = start.PlusDays((request.Weeks * 7) - 1);
+        // The length is set only in Edit generator rules (FR-090, 2026-11-18).
+        var weeks = template.Rules.PeriodWeeks;
+        var end = start.PlusDays((weeks * 7) - 1);
         var existing = await db.Periods.AsNoTracking().Where(x => x.WorkplaceId == workplaceId).ToListAsync(cancellationToken);
         if (existing.Any(x => x.Status != Period.Published))
         {
@@ -132,7 +129,7 @@ internal static class PeriodEndpoints
             Id = Guid.NewGuid(),
             WorkplaceId = workplaceId,
             StartDate = start,
-            Weeks = request.Weeks,
+            Weeks = weeks,
             Status = Period.Collecting,
             TimeZone = template.TimeZone.Id,
             Rules = RulesJson(template),
@@ -167,7 +164,7 @@ internal static class PeriodEndpoints
         await db.SaveChangesAsync(cancellationToken);
 
         var members = await directory.GetMembersAsync(workplaceId, cancellationToken);
-        var parameters = new Dictionary<string, string> { ["periodStart"] = Support.IsoDate(start), ["weeks"] = request.Weeks.ToString(System.Globalization.CultureInfo.InvariantCulture) };
+        var parameters = new Dictionary<string, string> { ["periodStart"] = Support.IsoDate(start), ["weeks"] = weeks.ToString(System.Globalization.CultureInfo.InvariantCulture) };
         await notifier.NotifyAsync(
             members.Where(x => x.WorksShifts)
                 .Select(x => new NotificationRequest(workplaceId, x.MembershipId, x.UserId, NotificationTypes.AvailabilityRequested, parameters))
@@ -231,9 +228,8 @@ internal static class CancelPeriod
 /// <summary>The rules a period was created with, kept on the period (FR-068).</summary>
 internal sealed record PeriodRules(int? MaxConsecutiveShifts, bool OpeningFairness, bool ClosingFairness, Dictionary<string, string> PublishChecks);
 
-/// <param name="StartDate">A Monday.</param>
-/// <param name="Weeks">1 to 4 (FR-090).</param>
-public sealed record CreatePeriodRequest(DateOnly StartDate, int Weeks);
+/// <param name="StartDate">A Monday. The length comes from the generator rules (FR-090).</param>
+public sealed record CreatePeriodRequest(DateOnly StartDate);
 
 /// <param name="Status">"collecting", "building" or "published".</param>
 /// <param name="Version">0 until first published.</param>

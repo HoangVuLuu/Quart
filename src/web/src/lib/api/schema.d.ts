@@ -1134,8 +1134,6 @@ export interface components {
     CreatePeriodRequest: {
       /** Format: date */
       startDate: string;
-      /** Format: int32 */
-      weeks: number;
     };
     CreateWorkplaceRequest: {
       name: null | string;

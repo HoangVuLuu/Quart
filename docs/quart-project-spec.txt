@@ -377,8 +377,9 @@ FR-073  The Edit Generator page has two tabs: General (period length, maximum
 FR-090  The admin sets a period length of 1, 2, 3 or 4 weeks per period.
         "Monthly" means 4-week blocks, not calendar months, so that weeks and
         hours targets stay aligned. The setting is on the Edit Generator page's
-        General tab (mockup 1k3). Changing the period length mid-period adds
-        weeks with no submitted availability.
+        General tab (mockup 1k3), and only there: opening a period asks for
+        its start date only and shows the length from the rules (2026-11-18).
+        A change applies to the next period opened, never to one already open.
 FR-091  The admin sets how many days before the period starts the availability
         request goes out, and a submission deadline. Automatic reminders are
         sent to anyone who has not submitted.
@@ -1916,6 +1917,8 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             FR-102); back arrows return to the previous page; the first
             period now uses the period length from the generator rules (bug).
             The Trade count includes empty slots, by Hoang's choice.
+            The period length is set only in the generator rules; the
+            open-period box no longer asks for it (FR-090).
             Also added: an admin can cancel a period (FR-104), including a
             published one before it starts; its data is deleted, and who
             sent availability or holds a shift in it is told.

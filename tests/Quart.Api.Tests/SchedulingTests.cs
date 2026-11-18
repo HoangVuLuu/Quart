@@ -77,10 +77,11 @@ public sealed class SchedulingTests(PostgresFixture postgres)
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
 
-        Assert.Equal("period.start_not_monday", (await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-10", weeks = 2 })).Code);
-        Assert.Equal("period.weeks_invalid", (await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-09", weeks = 5 })).Code);
+        Assert.Equal("period.start_not_monday", (await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-10" })).Code);
+        // The length comes from the generator rules (two weeks here); the request has none (FR-090).
         await team.OpenPeriodAsync(weeks: 2);
-        Assert.Equal("period.unfinished_exists", (await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-23", weeks = 2 })).Code);
+        Assert.Equal(2, (await team.Owner.GetAsync($"{team.Base}/periods/current"))["next"]!["period"]!["weeks"]!.GetValue<int>());
+        Assert.Equal("period.unfinished_exists", (await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-23" })).Code);
 
         var mine = await team.Staff[0].GetAsync($"{team.Period}/availability/me");
         // Two weeks of two shifts a day (spec 2.2).
@@ -102,7 +103,7 @@ public sealed class SchedulingTests(PostgresFixture postgres)
         var owner = await app.PersonAsync("Philippe Roy");
         var workplaceId = await app.WorkplaceAsync(owner, withTemplate: false);
 
-        var result = await owner.TryAsync(HttpMethod.Post, $"/api/workplaces/{workplaceId}/periods", new { startDate = "2026-11-09", weeks = 2 });
+        var result = await owner.TryAsync(HttpMethod.Post, $"/api/workplaces/{workplaceId}/periods", new { startDate = "2026-11-09" });
 
         Assert.Equal((HttpStatusCode.Conflict, "period.template_empty"), result);
     }

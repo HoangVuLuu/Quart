@@ -51,7 +51,6 @@ const errorKeys = {
   'period.start_not_monday': 'errors.period.start_not_monday',
   'period.template_empty': 'errors.period.template_empty',
   'period.unfinished_exists': 'errors.period.unfinished_exists',
-  'period.weeks_invalid': 'errors.period.weeks_invalid',
   'schedule.already_on_shift': 'errors.schedule.already_on_shift',
   'schedule.cannot_clear_published': 'errors.schedule.cannot_clear_published',
   'schedule.double_booking': 'errors.schedule.double_booking',

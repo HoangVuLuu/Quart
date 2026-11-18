@@ -126,7 +126,6 @@
       "start_not_monday": "A period starts on a Monday.",
       "template_empty": "Add your shifts in the Edit Generator page first.",
       "unfinished_exists": "Publish the period you are working on before opening another.",
-      "weeks_invalid": "A period lasts 1 to 4 weeks.",
       "already_started": "This period has already started, so it can't be cancelled."
     },
     "schedule": {
@@ -238,8 +237,9 @@
       "text": "Everyone who works shifts is asked for their availability.",
       "start": "Starts on",
       "startHint": "A Monday.",
-      "weeks": "Weeks",
-      "submit": "Open period"
+      "submit": "Open period",
+      "length_one": "Lasts {{count}} week, as set in the generator rules.",
+      "length_other": "Lasts {{count}} weeks, as set in the generator rules."
     },
     "box": {
       "open": "Next period is open",
