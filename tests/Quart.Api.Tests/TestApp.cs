@@ -127,13 +127,13 @@ public sealed partial class TestApp : IAsyncDisposable
     };
 
     /// <summary>A new account that joins with the code, then gets its level from the owner.</summary>
-    public async Task<TestUser> JoinAsync(TestUser owner, Guid workplaceId, string fullName, int level = 1, decimal desiredHours = 20)
+    public async Task<TestUser> JoinAsync(TestUser owner, Guid workplaceId, string fullName, int level = 1)
     {
         var person = await PersonAsync(fullName);
         var code = (await owner.GetAsync($"/api/workplaces/{workplaceId}"))["joinCode"]!.GetValue<string>();
         await person.PostAsync("/api/workplaces/join", new { code });
         person.MembershipId = await MembershipIdAsync(person, workplaceId);
-        await owner.SendAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/members/{person.MembershipId}", new { level, desiredWeeklyHours = desiredHours });
+        await owner.SendAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/members/{person.MembershipId}", new { level });
         return person;
     }
 

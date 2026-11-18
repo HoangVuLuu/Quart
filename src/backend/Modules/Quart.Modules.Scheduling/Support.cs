@@ -28,7 +28,8 @@ internal static class Support
         date.At(time).InZoneLeniently(zone).ToInstant();
 
     public static PeriodSummary Summarize(Period period) =>
-        new(period.Id, period.StartDate.ToDateOnly(), period.EndDate.ToDateOnly(), period.Weeks, period.Status, period.Version, period.LockedAt is not null);
+        new(period.Id, period.StartDate.ToDateOnly(), period.EndDate.ToDateOnly(), period.Weeks, period.Status, period.Version, period.LockedAt is not null,
+            period.Version == 0 && period.DraftSavedAt is not null);
 
     public static PeriodRules RulesOf(Period period) =>
         JsonSerializer.Deserialize<PeriodRules>(period.Rules, JsonSerializerOptions.Web)

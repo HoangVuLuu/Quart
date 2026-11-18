@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
+using Quart.Modules.Scheduling.Drafts;
 using Quart.Modules.Scheduling.Persistence;
 using Quart.SharedKernel;
 using Quart.SharedKernel.Access;
@@ -48,6 +49,16 @@ internal static class PeriodEndpoints
         var published = periods.Where(x => x.Version > 0 && x.EndDate >= Support.Today(clock, x.TimeZone)).ToList();
         var live = published.FirstOrDefault();
         var next = periods.FirstOrDefault(x => x.Status != Period.Published);
+        // 4.3: a Building Schedule page that went quiet counts as left, unsaved, before anyone reads the lock.
+        if (next is { SessionSeenAt: not null })
+        {
+            var tracked = await db.Periods.SingleAsync(x => x.Id == next.Id, cancellationToken);
+            if (await BuildSession.SettleAsync(db, tracked, clock.GetCurrentInstant(), cancellationToken))
+            {
+                await db.SaveChangesAsync(cancellationToken);
+                next = tracked;
+            }
+        }
 
         // The home cards and the tab bar need the open period's progress without a second request.
         NextPeriod? nextView = null;
@@ -66,7 +77,14 @@ internal static class PeriodEndpoints
                 member.WorksShifts && (next.LockedAt is null || mine?.ReopenedAt is not null),
                 sent);
         }
-        return TypedResults.Ok(new CurrentPeriods(live is null ? null : Support.Summarize(live), nextView, published.Skip(1).Select(Support.Summarize).ToList()));
+        // Home's "hours this week" target: the number the caller gave with the live period's availability (BR-032).
+        var liveHours = live is null
+            ? null
+            : await db.Availabilities.AsNoTracking()
+                .Where(x => x.PeriodId == live.Id && x.MembershipId == member.MembershipId && x.Status == Availability.Sent)
+                .Select(x => x.DesiredWeeklyHours)
+                .FirstOrDefaultAsync(cancellationToken);
+        return TypedResults.Ok(new CurrentPeriods(live is null ? null : Support.Summarize(live), nextView, published.Skip(1).Select(Support.Summarize).ToList(), liveHours));
     }
 
     /// <summary>
@@ -166,12 +184,14 @@ public sealed record CreatePeriodRequest(DateOnly StartDate, int Weeks);
 
 /// <param name="Status">"collecting", "building" or "published".</param>
 /// <param name="Version">0 until first published.</param>
-public sealed record PeriodSummary(Guid Id, DateOnly StartDate, DateOnly EndDate, int Weeks, string Status, int Version, bool Locked);
+/// <param name="DraftSaved">An unpublished draft was saved: the Schedule page offers "Continue building" (4.3).</param>
+public sealed record PeriodSummary(Guid Id, DateOnly StartDate, DateOnly EndDate, int Weeks, string Status, int Version, bool Locked, bool DraftSaved);
 
 /// <param name="Live">The published period that is running or coming up; null when there is none.</param>
 /// <param name="Next">The period still collecting availability or being built; null when there is none.</param>
 /// <param name="Upcoming">Periods already published that start after <paramref name="Live"/>, soonest first.</param>
-public sealed record CurrentPeriods(PeriodSummary? Live, NextPeriod? Next, IReadOnlyList<PeriodSummary> Upcoming);
+/// <param name="MyLiveWeeklyHours">Hours per week the caller asked for in the live period; null if none (BR-032).</param>
+public sealed record CurrentPeriods(PeriodSummary? Live, NextPeriod? Next, IReadOnlyList<PeriodSummary> Upcoming, decimal? MyLiveWeeklyHours);
 
 /// <param name="MyAvailability">"not_sent" or "sent".</param>
 /// <param name="CanEditAvailability">False once building has started, unless an admin reopened it for the caller.</param>

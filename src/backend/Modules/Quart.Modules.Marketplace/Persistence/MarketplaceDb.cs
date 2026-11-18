@@ -20,6 +20,8 @@ internal sealed class MarketplaceDb(DbContextOptions<MarketplaceDb> options) : D
 
     public DbSet<Trade> Trades => Set<Trade>();
 
+    public DbSet<SeenItem> SeenItems => Set<SeenItem>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
@@ -45,8 +47,23 @@ internal sealed class MarketplaceDb(DbContextOptions<MarketplaceDb> options) : D
             trade.HasIndex(x => new { x.WorkplaceId, x.Status });
         });
 
+        modelBuilder.Entity<SeenItem>(seen => seen.HasKey(x => new { x.MembershipId, x.ItemKey }));
+
         modelBuilder.UseSnakeCaseNames();
     }
+}
+
+/// <summary>
+/// A Trade tab item the person has opened, so the tab's count drops by one (2.4, 2026-11-18). Keys are
+/// "slot:{shiftId}", "offer:{giveAwayId}" and "trade:{tradeId}".
+/// </summary>
+internal sealed class SeenItem
+{
+    public Guid MembershipId { get; set; }
+
+    public required string ItemKey { get; set; }
+
+    public Instant SeenAt { get; set; }
 }
 
 /// <summary>A published shift its holder wants someone else to take. They stay on it until someone does (FR-180, FR-181).</summary>

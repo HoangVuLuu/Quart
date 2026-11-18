@@ -356,22 +356,6 @@ export interface paths {
     patch: operations['UpdateMember'];
     trace?: never;
   };
-  '/api/workplaces/{workplaceId}/me': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: operations['UpdateMyMembership'];
-    trace?: never;
-  };
   '/api/workplaces/{workplaceId}/leave': {
     parameters: {
       query?: never;
@@ -580,6 +564,70 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/heartbeat': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['KeepBuilding'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/save': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['SaveDraft'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/leave': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['LeaveBuilding'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/clear': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ClearDraft'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/workplaces/{workplaceId}/periods/{periodId}/draft/generate': {
     parameters: {
       query?: never;
@@ -702,6 +750,22 @@ export interface paths {
     get: operations['GetMarketplace'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/marketplace/seen': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['MarkTradeItemSeen'];
     delete?: never;
     options?: never;
     head?: never;
@@ -916,6 +980,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/workplaces/{workplaceId}/notifications/{notificationId}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['MarkNotificationRead'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -958,6 +1038,8 @@ export interface components {
     };
     AvailabilityRequest: {
       shiftIds: null | string[];
+      /** Format: double */
+      desiredWeeklyHours?: null | number;
     };
     AvailabilityShift: {
       /** Format: uuid */
@@ -1015,6 +1097,7 @@ export interface components {
       membershipId: string;
       name: string;
       fromName: null | string;
+      wouldMissLevel: boolean;
     };
     ConflictPair: {
       blockId: string;
@@ -1047,6 +1130,8 @@ export interface components {
       live: null | components['schemas']['PeriodSummary'];
       next: null | components['schemas']['NextPeriod'];
       upcoming: components['schemas']['PeriodSummary'][];
+      /** Format: double */
+      myLiveWeeklyHours: null | number;
     };
     DraftAssignment: {
       /** Format: uuid */
@@ -1069,7 +1154,7 @@ export interface components {
       /** Format: int32 */
       level: number;
       /** Format: double */
-      desiredWeeklyHours: number;
+      desiredWeeklyHours: null | number;
       /** Format: double */
       maxWeeklyHours: null | number;
       availability: string;
@@ -1110,6 +1195,7 @@ export interface components {
       /** Format: int32 */
       openSlots: number;
       hasUnpublishedChanges: boolean;
+      hasUnsavedChanges: boolean;
       shifts: components['schemas']['DraftShift'][];
       people: components['schemas']['DraftPerson'][];
       issues: components['schemas']['DraftIssue'][];
@@ -1233,6 +1319,9 @@ export interface components {
       offers: components['schemas']['OfferView'][];
       claims: components['schemas']['ClaimView'][];
       trades: components['schemas']['TradeView'][];
+      mine: components['schemas']['MyShiftView'][];
+      /** Format: int32 */
+      unseen: number;
     };
     Me: {
       /** Format: uuid */
@@ -1271,11 +1360,9 @@ export interface components {
       email: string;
       role: string;
       /** Format: int32 */
-      level: number;
+      level: null | number;
       isMe: boolean;
       worksShifts: null | boolean;
-      /** Format: double */
-      desiredWeeklyHours: null | number;
       /** Format: double */
       maxWeeklyHours: null | number;
     };
@@ -1294,6 +1381,8 @@ export interface components {
       status: string;
       canEdit: boolean;
       hasPrevious: boolean;
+      /** Format: double */
+      desiredWeeklyHours: null | number;
       shifts: components['schemas']['AvailabilityShift'][];
       notes: components['schemas']['AvailabilityNoteView'][];
     };
@@ -1302,13 +1391,16 @@ export interface components {
       membershipId: string;
       role: string;
       /** Format: int32 */
-      level: number;
+      level: null | number;
       worksShifts: boolean;
-      /** Format: double */
-      desiredWeeklyHours: number;
       /** Format: double */
       maxWeeklyHours: null | number;
       permissions: string[];
+    };
+    MyShiftView: {
+      shift: components['schemas']['ShiftRef'];
+      offered: boolean;
+      tradePending: boolean;
     };
     MyWorkplace: {
       /** Format: uuid */
@@ -1353,12 +1445,14 @@ export interface components {
       requested: boolean;
       wouldMissLevel: boolean;
       onShift: boolean;
+      seen: boolean;
     };
     OpenShiftView: {
       shift: components['schemas']['ShiftRef'];
       /** Format: int32 */
       openSlots: number;
       requested: boolean;
+      seen: boolean;
     };
     PeriodSummary: {
       /** Format: uuid */
@@ -1373,6 +1467,7 @@ export interface components {
       /** Format: int32 */
       version: number;
       locked: boolean;
+      draftSaved: boolean;
     };
     PublishRequest: {
       confirmed: boolean;
@@ -1425,6 +1520,9 @@ export interface components {
       period: components['schemas']['PeriodSummary'];
       shifts: components['schemas']['ScheduleShift'][];
     };
+    SeenRequest: {
+      key: null | string;
+    };
     ShiftRef: {
       /** Format: uuid */
       id: string;
@@ -1467,7 +1565,7 @@ export interface components {
       /** Format: double */
       hoursOffered: number;
       /** Format: double */
-      desiredWeeklyHours: number;
+      desiredWeeklyHours: null | number;
       notes: components['schemas']['AvailabilityNoteView'][];
     };
     TokenRequest: {
@@ -1491,13 +1589,12 @@ export interface components {
       coworkerName: string;
       gets: components['schemas']['ShiftRef'];
       wouldMissLevel: boolean;
+      seen: boolean;
     };
     UpdateMemberRequest: {
       /** Format: int32 */
       level: null | number;
       worksShifts: null | boolean;
-      /** Format: double */
-      desiredWeeklyHours: null | number;
       /** Format: double */
       maxWeeklyHours: null | number;
       clearMaxWeeklyHours: null | boolean;
@@ -1505,10 +1602,6 @@ export interface components {
     UpdateMeRequest: {
       displayName: null | string;
       language: null | string;
-    };
-    UpdateMyMembershipRequest: {
-      /** Format: double */
-      desiredWeeklyHours: number;
     };
     UpdateSettingsRequest: {
       claimsNeedApproval: null | boolean;
@@ -2312,39 +2405,6 @@ export interface operations {
       };
     };
   };
-  UpdateMyMembership: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        workplaceId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateMyMembershipRequest'];
-      };
-    };
-    responses: {
-      /** @description No Content */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Any error, as problem details with a machine-readable code (AD-023). */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['ApiProblem'];
-        };
-      };
-    };
-  };
   LeaveWorkplace: {
     parameters: {
       query?: never;
@@ -2839,6 +2899,130 @@ export interface operations {
       };
     };
   };
+  KeepBuilding: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  SaveDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DraftView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  LeaveBuilding: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ClearDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DraftView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
   GenerateDraft: {
     parameters: {
       query?: never;
@@ -3100,6 +3284,37 @@ export interface operations {
         content: {
           'application/json': components['schemas']['MarketplaceBoard'];
         };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  MarkTradeItemSeen: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SeenRequest'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Any error, as problem details with a machine-readable code (AD-023). */
       default: {
@@ -3490,6 +3705,36 @@ export interface operations {
       header?: never;
       path: {
         workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  MarkNotificationRead: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        notificationId: string;
       };
       cookie?: never;
     };

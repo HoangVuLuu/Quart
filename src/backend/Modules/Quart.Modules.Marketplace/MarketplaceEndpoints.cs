@@ -32,6 +32,7 @@ internal static class MarketplaceEndpoints
     public const string NothingToClaim = "marketplace.nothing_to_claim";
     public const string NoLongerPending = "marketplace.no_longer_pending";
     public const string TradeInvalid = "marketplace.trade_invalid";
+    public const string ItemInvalid = "marketplace.item_invalid";
 
     private static readonly Duration TradeLifetime = Duration.FromDays(14);
     private static readonly LocalTimePattern TimePattern = LocalTimePattern.CreateWithInvariantCulture("HH:mm");
@@ -40,6 +41,7 @@ internal static class MarketplaceEndpoints
     {
         var group = endpoints.MapGroup("/api/workplaces/{workplaceId:guid}/marketplace");
         group.MapGet("/", GetBoardAsync).AllowAnyMember().WithName("GetMarketplace");
+        group.MapPost("/seen", MarkSeenAsync).AllowAnyMember().WithName("MarkTradeItemSeen");
         group.MapPost("/give-aways", OfferAsync).AllowAnyMember().WithName("GiveAwayShift");
         group.MapDelete("/give-aways/{giveAwayId:guid}", CancelOfferAsync).AllowAnyMember().WithName("CancelGiveAway");
         group.MapPost("/claims", ClaimAsync).AllowAnyMember().WithName("ClaimShift");
@@ -68,11 +70,12 @@ internal static class MarketplaceEndpoints
             .OrderBy(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
         var myClaims = claims.Where(x => x.MembershipId == member.MembershipId).ToList();
+        var seen = (await db.SeenItems.AsNoTracking().Where(x => x.MembershipId == member.MembershipId).Select(x => x.ItemKey).ToListAsync(cancellationToken)).ToHashSet();
 
         var openShifts = context.Shifts.Values
             .Where(x => x.OpenSlots > 0 && x.Holders.All(h => h.MembershipId != member.MembershipId))
             .OrderBy(x => x.Start)
-            .Select(x => new OpenShiftView(Ref(x), x.OpenSlots, myClaims.Any(c => c.ShiftId == x.Id && c.GiveAwayId == null)))
+            .Select(x => new OpenShiftView(Ref(x), x.OpenSlots, myClaims.Any(c => c.ShiftId == x.Id && c.GiveAwayId == null), seen.Contains(SlotKey(x.Id))))
             .ToList();
 
         var offerViews = offers
@@ -91,21 +94,29 @@ internal static class MarketplaceEndpoints
                     context.NameOf(x.FromMembershipId),
                     mine,
                     myClaims.Any(c => c.GiveAwayId == x.Id),
-                    // FR-186: a warning, never a block.
-                    !mine && !shift.LevelsCoveredBy(after),
-                    shift.Holders.Any(h => h.MembershipId == member.MembershipId));
+                    // FR-186: a warning, never a block; and only for people who manage levels (3.1).
+                    approver && !mine && !shift.LevelsCoveredBy(after),
+                    shift.Holders.Any(h => h.MembershipId == member.MembershipId),
+                    seen.Contains(OfferKey(x.Id)));
             })
             .ToList();
 
         var claimViews = approver
             ? claims.Where(x => context.Shifts.ContainsKey(x.ShiftId))
                 .OrderBy(x => context.Shifts[x.ShiftId].Start).ThenBy(x => x.CreatedAt)
-                .Select(x => new ClaimView(
-                    x.Id,
-                    Ref(context.Shifts[x.ShiftId]),
-                    x.MembershipId,
-                    context.NameOf(x.MembershipId),
-                    offers.FirstOrDefault(o => o.Id == x.GiveAwayId) is { } offer ? context.NameOf(offer.FromMembershipId) : null))
+                .Select(x =>
+                {
+                    var shift = context.Shifts[x.ShiftId];
+                    var offer = offers.FirstOrDefault(o => o.Id == x.GiveAwayId);
+                    return new ClaimView(
+                        x.Id,
+                        Ref(shift),
+                        x.MembershipId,
+                        context.NameOf(x.MembershipId),
+                        offer is null ? null : context.NameOf(offer.FromMembershipId),
+                        // 3.3: the approver sees a broken level rule as a warning and may approve anyway.
+                        context.Members.TryGetValue(x.MembershipId, out var claimant) && !shift.LevelsCoveredBy(After(shift, offer?.FromMembershipId, new LedgerPerson(claimant.MembershipId, claimant.UserId, claimant.Level))));
+                })
                 .ToList()
             : [];
 
@@ -120,11 +131,64 @@ internal static class MarketplaceEndpoints
                 Ref(context.Shifts[x.AShiftId]),
                 context.NameOf(x.BMembershipId),
                 Ref(context.Shifts[x.BShiftId]),
-                !LevelsHold(context, x)))
+                approver && !LevelsHold(context, x),
+                seen.Contains(TradeKey(x.Id))))
             .ToList();
 
-        return TypedResults.Ok(new MarketplaceBoard(context.Rules.ClaimsNeedApproval, context.Rules.TradesNeedApproval, openShifts, offerViews, claimViews, tradeViews));
+        // 2.2: the caller's own upcoming shifts, to give away or trade, with what is already under way.
+        var mineViews = context.Shifts.Values
+            .Where(x => x.Holders.Any(h => h.MembershipId == member.MembershipId))
+            .OrderBy(x => x.Start)
+            .Select(x => new MyShiftView(
+                Ref(x),
+                offers.Any(o => o.ShiftId == x.Id && o.FromMembershipId == member.MembershipId),
+                trades.Any(t => (t.AMembershipId == member.MembershipId && t.AShiftId == x.Id) || (t.BMembershipId == member.MembershipId && t.BShiftId == x.Id))))
+            .ToList();
+
+        // 2.4: what the Trade tab counts until opened: empty slots, shifts others give away, trades asked of the caller.
+        var unseen = openShifts.Count(x => !x.Seen)
+            + offerViews.Count(x => !x.Mine && !x.OnShift && !x.Seen)
+            + tradeViews.Count(x => x.Role == "coworker" && x.Status == Trade.Requested && !x.Seen);
+
+        return TypedResults.Ok(new MarketplaceBoard(context.Rules.ClaimsNeedApproval, context.Rules.TradesNeedApproval, openShifts, offerViews, claimViews, tradeViews, mineViews, unseen));
     }
+
+    /// <summary>Opening a Trade tab item takes it off the tab's count (2.4). Only the caller's own record changes.</summary>
+    private static async Task<Results<NoContent, ProblemHttpResult>> MarkSeenAsync(
+        SeenRequest request, HttpContext http, MarketplaceDb db, IClock clock, CancellationToken cancellationToken)
+    {
+        var member = http.Member();
+        var key = request.Key ?? string.Empty;
+        var parts = key.Split(':');
+        if (parts.Length != 2 || parts[0] is not ("slot" or "offer" or "trade") || !Guid.TryParse(parts[1], out var id))
+        {
+            return Problems.Validation(new FieldError(ItemInvalid, "key"));
+        }
+        var normalized = $"{parts[0]}:{id:D}";
+        if (!await db.SeenItems.AnyAsync(x => x.MembershipId == member.MembershipId && x.ItemKey == normalized, cancellationToken))
+        {
+            db.SeenItems.Add(new SeenItem { MembershipId = member.MembershipId, ItemKey = normalized, SeenAt = clock.GetCurrentInstant() });
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                // Two taps at once: the other one already recorded it.
+            }
+        }
+        return TypedResults.NoContent();
+    }
+
+    private static string SlotKey(Guid shiftId) => $"slot:{shiftId:D}";
+
+    private static string OfferKey(Guid giveAwayId) => $"offer:{giveAwayId:D}";
+
+    private static string TradeKey(Guid tradeId) => $"trade:{tradeId:D}";
+
+    /// <summary>Who would be on the shift if <paramref name="claimant"/> took it, from the giver or an empty slot.</summary>
+    private static IEnumerable<LedgerPerson> After(LiveShift shift, Guid? from, LedgerPerson claimant) =>
+        shift.Holders.Where(h => h.MembershipId != from).Append(claimant);
 
     /// <summary>Offers a shift the caller holds, any time before it starts (FR-180, FR-182).</summary>
     private static async Task<Results<NoContent, ProblemHttpResult>> OfferAsync(
@@ -243,6 +307,8 @@ internal static class MarketplaceEndpoints
             return TypedResults.Ok(new ClaimResult(Applied: false));
         }
 
+        // 3.2: workers claim freely whatever the levels; without approval the managers hear about a broken rule (3.3).
+        var levelsHeld = shift.LevelsCoveredBy(After(shift, offer?.FromMembershipId, new LedgerPerson(member.MembershipId, member.UserId, member.Level)));
         var result = await ledger.TransferAsync(
             workplaceId, shift.Id, offer?.FromMembershipId, new LedgerPerson(member.MembershipId, member.UserId, member.Level), "claim", cancellationToken);
         if (ProblemFor(result) is { } problem)
@@ -257,6 +323,10 @@ internal static class MarketplaceEndpoints
         }
         var told = context.Approvers.Concat(context.Members.Values.Where(x => x.MembershipId == offer?.FromMembershipId)).DistinctBy(x => x.MembershipId);
         await context.NotifyAsync(told.Where(x => x.MembershipId != member.MembershipId), NotificationTypes.ShiftClaimed, shift, member.MembershipId, cancellationToken);
+        if (!levelsHeld)
+        {
+            await context.NotifyAsync(context.Approvers.Where(x => x.MembershipId != member.MembershipId), NotificationTypes.ShiftMissingLevel, shift, member.MembershipId, cancellationToken);
+        }
         return TypedResults.Ok(new ClaimResult(Applied: true));
     }
 
@@ -406,7 +476,9 @@ internal static class MarketplaceEndpoints
         {
             return Problems.Conflict(NoLongerPending);
         }
-        if (context.Rules.TradesNeedApproval)
+        // 2.6: a manager who is one of the two people does not approve their own trade: it applies on acceptance.
+        var managerIsParty = context.Approvers.Any(x => x.MembershipId == trade.AMembershipId || x.MembershipId == trade.BMembershipId);
+        if (context.Rules.TradesNeedApproval && !managerIsParty)
         {
             trade.Status = Trade.AwaitingApproval;
             await db.SaveChangesAsync(cancellationToken);
@@ -417,7 +489,7 @@ internal static class MarketplaceEndpoints
             }
             return TypedResults.NoContent();
         }
-        return await ApplyTradeAsync(context, db, ledger, trade, requireLevels: false, cancellationToken);
+        return await ApplyTradeAsync(context, db, ledger, trade, approved: false, cancellationToken);
     }
 
     private static Task<Results<NoContent, ProblemHttpResult>> DeclineTradeAsync(
@@ -433,7 +505,11 @@ internal static class MarketplaceEndpoints
         Guid workplaceId, Guid tradeId, HttpContext http, MarketplaceDb db, IScheduleLedger ledger, IWorkplaceDirectory directory, INotifier notifier, IClock clock, CancellationToken cancellationToken) =>
         CloseTradeAsync(workplaceId, tradeId, http, db, ledger, directory, notifier, clock, Trade.Rejected, cancellationToken);
 
-    /// <summary>Re-checks everything at the moment of approval, then applies the swap whole or not at all (FR-192).</summary>
+    /// <summary>
+    /// Re-checks at the moment of approval, then applies the swap whole or not at all (FR-192). Both people
+    /// must still hold their shifts and nobody may end up double-booked; a broken level rule is only the
+    /// warning the approver already saw, and approving overrides it (3.3, 2026-11-18).
+    /// </summary>
     private static async Task<Results<NoContent, ProblemHttpResult>> ApproveTradeAsync(
         Guid workplaceId, Guid tradeId, MarketplaceDb db, IScheduleLedger ledger, IWorkplaceDirectory directory, INotifier notifier, IClock clock, CancellationToken cancellationToken)
     {
@@ -447,17 +523,19 @@ internal static class MarketplaceEndpoints
         {
             return Problems.Conflict(NoLongerPending);
         }
-        return await ApplyTradeAsync(context, db, ledger, trade, requireLevels: true, cancellationToken);
+        return await ApplyTradeAsync(context, db, ledger, trade, approved: true, cancellationToken);
     }
 
+    /// <param name="approved">An approver decided; otherwise it applied without one, and a broken level rule alerts the managers (3.3).</param>
     private static async Task<Results<NoContent, ProblemHttpResult>> ApplyTradeAsync(
-        Context context, MarketplaceDb db, IScheduleLedger ledger, Trade trade, bool requireLevels, CancellationToken cancellationToken)
+        Context context, MarketplaceDb db, IScheduleLedger ledger, Trade trade, bool approved, CancellationToken cancellationToken)
     {
         var parties = context.Members.Values.Where(x => x.MembershipId == trade.AMembershipId || x.MembershipId == trade.BMembershipId).ToList();
+        var levelsHeld = context.Shifts.ContainsKey(trade.AShiftId) && context.Shifts.ContainsKey(trade.BShiftId) && LevelsHold(context, trade);
         var result = context.Members.TryGetValue(trade.AMembershipId, out var a) && context.Members.TryGetValue(trade.BMembershipId, out var b)
             ? await ledger.SwapAsync(
                 trade.WorkplaceId, trade.AShiftId, new LedgerPerson(a.MembershipId, a.UserId, a.Level),
-                trade.BShiftId, new LedgerPerson(b.MembershipId, b.UserId, b.Level), requireLevels, cancellationToken)
+                trade.BShiftId, new LedgerPerson(b.MembershipId, b.UserId, b.Level), requireLevels: false, cancellationToken)
             : LedgerResult.Taken;
         var shift = context.Shifts.GetValueOrDefault(trade.AShiftId);
 
@@ -468,6 +546,13 @@ internal static class MarketplaceEndpoints
             if (shift is not null)
             {
                 await context.NotifyAsync(parties, NotificationTypes.TradeApplied, shift, trade.AMembershipId, cancellationToken);
+                if (!approved && !levelsHeld)
+                {
+                    var broken = LevelsCovered(context, trade, first: true) ? context.Shifts[trade.BShiftId] : shift;
+                    await context.NotifyAsync(
+                        context.Approvers.Where(x => parties.All(p => p.MembershipId != x.MembershipId)),
+                        NotificationTypes.ShiftMissingLevel, broken, trade.AMembershipId, cancellationToken);
+                }
             }
             return TypedResults.NoContent();
         }
@@ -517,18 +602,22 @@ internal static class MarketplaceEndpoints
         return TypedResults.NoContent();
     }
 
-    private static bool LevelsHold(Context context, Trade trade)
+    private static bool LevelsHold(Context context, Trade trade) =>
+        LevelsCovered(context, trade, first: true) && LevelsCovered(context, trade, first: false);
+
+    /// <summary>Whether one side of the swap keeps its required level: the requester's shift (first) or the coworker's.</summary>
+    private static bool LevelsCovered(Context context, Trade trade, bool first)
     {
         if (!context.Members.TryGetValue(trade.AMembershipId, out var a) || !context.Members.TryGetValue(trade.BMembershipId, out var b))
         {
             return false;
         }
-        var first = context.Shifts[trade.AShiftId];
-        var second = context.Shifts[trade.BShiftId];
         var personA = new LedgerPerson(a.MembershipId, a.UserId, a.Level);
         var personB = new LedgerPerson(b.MembershipId, b.UserId, b.Level);
-        return first.LevelsCoveredBy(first.Holders.Where(x => x.MembershipId != a.MembershipId).Append(personB))
-            && second.LevelsCoveredBy(second.Holders.Where(x => x.MembershipId != b.MembershipId).Append(personA));
+        var shift = context.Shifts[first ? trade.AShiftId : trade.BShiftId];
+        return first
+            ? shift.LevelsCoveredBy(shift.Holders.Where(x => x.MembershipId != a.MembershipId).Append(personB))
+            : shift.LevelsCoveredBy(shift.Holders.Where(x => x.MembershipId != b.MembershipId).Append(personA));
     }
 
     private static ProblemHttpResult? ProblemFor(LedgerResult result) => result switch
@@ -669,26 +758,39 @@ public sealed record TradeRequest(Guid MyShiftId, Guid TheirShiftId, Guid TheirM
 
 public sealed record ShiftRef(Guid Id, Guid PeriodId, DateOnly Date, string Start, string End);
 
+/// <param name="Mine">The caller's own upcoming shifts, for "My shifts to trade" (2.2).</param>
+/// <param name="Unseen">The Trade tab's count: items the caller has not opened yet (2.4).</param>
 public sealed record MarketplaceBoard(
     bool ClaimsNeedApproval,
     bool TradesNeedApproval,
     IReadOnlyList<OpenShiftView> OpenShifts,
     IReadOnlyList<OfferView> Offers,
     IReadOnlyList<ClaimView> Claims,
-    IReadOnlyList<TradeView> Trades);
+    IReadOnlyList<TradeView> Trades,
+    IReadOnlyList<MyShiftView> Mine,
+    int Unseen);
 
 /// <param name="Requested">The caller already asked for it and is waiting for an admin.</param>
-public sealed record OpenShiftView(ShiftRef Shift, int OpenSlots, bool Requested);
+/// <param name="Seen">The caller has opened it, so it no longer counts on the Trade tab.</param>
+public sealed record OpenShiftView(ShiftRef Shift, int OpenSlots, bool Requested, bool Seen);
+
+/// <param name="Offered">The caller is giving it away.</param>
+/// <param name="TradePending">It is in a trade that is not finished yet.</param>
+public sealed record MyShiftView(ShiftRef Shift, bool Offered, bool TradePending);
+
+/// <param name="Key">"slot:{shiftId}", "offer:{giveAwayId}" or "trade:{tradeId}".</param>
+public sealed record SeenRequest(string? Key);
 
 /// <param name="Mine">The caller is the one giving it away.</param>
-/// <param name="WouldMissLevel">Taking it would leave the shift without its required level: a warning, not a block (FR-186).</param>
+/// <param name="WouldMissLevel">Taking it would leave the shift without its required level: a warning, not a block (FR-186). Always false for people who do not manage levels (3.1).</param>
 /// <param name="OnShift">The caller already works this shift, so cannot take it.</param>
-public sealed record OfferView(Guid Id, ShiftRef Shift, Guid FromMembershipId, string FromName, bool Mine, bool Requested, bool WouldMissLevel, bool OnShift);
+public sealed record OfferView(Guid Id, ShiftRef Shift, Guid FromMembershipId, string FromName, bool Mine, bool Requested, bool WouldMissLevel, bool OnShift, bool Seen);
 
 /// <param name="FromName">Who is giving the shift away; null for an empty slot.</param>
-public sealed record ClaimView(Guid Id, ShiftRef Shift, Guid MembershipId, string Name, string? FromName);
+/// <param name="WouldMissLevel">Approving would leave the shift without its required level: a warning the approver may override (3.3).</param>
+public sealed record ClaimView(Guid Id, ShiftRef Shift, Guid MembershipId, string Name, string? FromName, bool WouldMissLevel);
 
 /// <param name="Status">"requested" or "awaiting_approval".</param>
 /// <param name="Role">The caller's part: "requester", "coworker" or "approver".</param>
-/// <param name="WouldMissLevel">Applying it now would leave a shift without its required level (FR-192).</param>
-public sealed record TradeView(Guid Id, string Status, string Role, string RequesterName, ShiftRef Gives, string CoworkerName, ShiftRef Gets, bool WouldMissLevel);
+/// <param name="WouldMissLevel">Applying it now would leave a shift without its required level: a warning for the approver only (3.1, 3.3).</param>
+public sealed record TradeView(Guid Id, string Status, string Role, string RequesterName, ShiftRef Gives, string CoworkerName, ShiftRef Gets, bool WouldMissLevel, bool Seen);

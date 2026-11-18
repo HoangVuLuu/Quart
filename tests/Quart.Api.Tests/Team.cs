@@ -40,7 +40,7 @@ public sealed class Team
         var workplaceId = await app.WorkplaceAsync(owner);
         owner.MembershipId = await TestApp.MembershipIdAsync(owner, workplaceId);
         // FR-036: Philippe works shifts too.
-        await owner.SendAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/members/{owner.MembershipId}", new { worksShifts = true, desiredWeeklyHours = 20 });
+        await owner.SendAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/members/{owner.MembershipId}", new { worksShifts = true });
         var staff = new List<TestUser>();
         foreach (var (name, level) in new[] { ("Lea Martin", 3), ("Marc Gagnon", 3), ("Nora Singh", 2), ("Omar Haddad", 2), ("Paul Chen", 1), ("Rita Lopez", 1) })
         {
@@ -58,11 +58,12 @@ public sealed class Team
     }
 
     /// <summary>The person says they can work every shift for which <paramref name="canWork"/> is true, and sends.</summary>
-    public async Task SendAvailabilityAsync(TestUser person, Func<JsonNode, bool>? canWork = null)
+    /// <param name="hours">Hours per week wanted this period, sent with the availability (BR-032).</param>
+    public async Task SendAvailabilityAsync(TestUser person, Func<JsonNode, bool>? canWork = null, decimal hours = 20)
     {
         var mine = await person.GetAsync($"{Period}/availability/me");
         var shiftIds = mine["shifts"]!.AsArray().Where(x => canWork?.Invoke(x!) ?? true).Select(x => x!["id"]!.GetValue<string>()).ToList();
-        await person.PostAsync($"{Period}/availability/me/send", new { shiftIds });
+        await person.PostAsync($"{Period}/availability/me/send", new { shiftIds, desiredWeeklyHours = hours });
     }
 
     /// <summary>A period where everyone can work everything, generated and published as version 1.</summary>

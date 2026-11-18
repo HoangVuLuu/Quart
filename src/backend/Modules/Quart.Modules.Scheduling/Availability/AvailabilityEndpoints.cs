@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
+using Quart.Modules.Scheduling.Drafts;
 using Quart.Modules.Scheduling.Periods;
 using Quart.Modules.Scheduling.Persistence;
 using Quart.SharedKernel;
@@ -28,6 +29,11 @@ internal static class AvailabilityEndpoints
     public const string NoteEmpty = "availability.note_empty";
     public const string NoteTooLong = "availability.note_too_long";
     public const string TooManyNotes = "availability.too_many_notes";
+    public const string HoursRequired = "availability.hours_required";
+    public const string HoursInvalid = "availability.hours_invalid";
+
+    /// <summary>A week has 168 hours; anything from 0 up to that is accepted, with no warning (BR-032).</summary>
+    private const decimal MaxHours = 168;
 
     public static void MapAvailability(this IEndpointRouteBuilder endpoints)
     {
@@ -43,13 +49,14 @@ internal static class AvailabilityEndpoints
     }
 
     private static async Task<Results<Ok<MyAvailability>, ProblemHttpResult>> GetMineAsync(
-        Guid workplaceId, Guid periodId, HttpContext http, SchedulingDb db, CancellationToken cancellationToken)
+        Guid workplaceId, Guid periodId, HttpContext http, SchedulingDb db, IClock clock, CancellationToken cancellationToken)
     {
         var member = http.Member();
         if (await FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
         {
             return Problems.NotFound();
         }
+        await SettleVisitAsync(db, period, clock, cancellationToken);
         if (!member.WorksShifts)
         {
             return Problems.Forbidden(NotShiftWorker);
@@ -81,11 +88,22 @@ internal static class AvailabilityEndpoints
             return Problems.Forbidden(NotShiftWorker);
         }
 
+        await SettleVisitAsync(db, period, clock, cancellationToken);
         var availability = await GetOrAddAsync(db, periodId, member.MembershipId, cancellationToken);
-        // FR-100: read-only once building starts, except for the one person an admin reopened (FR-101).
+        // FR-100: read-only while the manager builds, except for the one person an admin reopened (FR-101).
         if (period.LockedAt is not null && availability.ReopenedAt is null)
         {
             return Problems.Conflict(Locked);
+        }
+
+        if (request.DesiredWeeklyHours is < 0 or > MaxHours)
+        {
+            return Problems.Validation(new FieldError(HoursInvalid, "desiredWeeklyHours"));
+        }
+        // BR-032: one number per period, needed to send. Saving a draft may leave it empty.
+        if (send && (request.DesiredWeeklyHours ?? availability.DesiredWeeklyHours) is null)
+        {
+            return Problems.Validation(new FieldError(HoursRequired, "desiredWeeklyHours"));
         }
 
         var wanted = (request.ShiftIds ?? []).Distinct().ToList();
@@ -98,6 +116,10 @@ internal static class AvailabilityEndpoints
         availability.Blocks.RemoveAll(x => !wanted.Contains(x.ShiftId));
         var had = availability.Blocks.Select(x => x.ShiftId).ToHashSet();
         availability.Blocks.AddRange(wanted.Where(id => !had.Contains(id)).Select(id => new AvailabilityBlock { AvailabilityId = availability.Id, ShiftId = id }));
+        if (request.DesiredWeeklyHours is { } hours)
+        {
+            availability.DesiredWeeklyHours = hours;
+        }
         if (send)
         {
             availability.Status = Availability.Sent;
@@ -223,7 +245,7 @@ internal static class AvailabilityEndpoints
                     sent ? Availability.Sent : Availability.NotSent,
                     answer?.ReopenedAt is not null,
                     sent ? answer!.Blocks.Sum(block => shifts.TryGetValue(block.ShiftId, out var shift) ? shift.Hours : 0) / period.Weeks : 0,
-                    person.DesiredWeeklyHours,
+                    sent ? answer!.DesiredWeeklyHours : null,
                     mayReadNotes
                         ? (answer?.Notes ?? []).OrderBy(x => x.CreatedAt).Select(x => new AvailabilityNoteView(x.Id, x.Body, x.CreatedAt.ToDateTimeOffset())).ToList()
                         : []);
@@ -279,6 +301,15 @@ internal static class AvailabilityEndpoints
     internal static Task<Period?> FindPeriodAsync(SchedulingDb db, Guid workplaceId, Guid periodId, CancellationToken cancellationToken) =>
         db.Periods.SingleOrDefaultAsync(x => x.Id == periodId && x.WorkplaceId == workplaceId, cancellationToken);
 
+    /// <summary>A Building Schedule page that went quiet counts as left, unsaved, so availability unlocks (4.3).</summary>
+    private static async Task SettleVisitAsync(SchedulingDb db, Period period, IClock clock, CancellationToken cancellationToken)
+    {
+        if (await BuildSession.SettleAsync(db, period, clock.GetCurrentInstant(), cancellationToken))
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
     private static async Task<Availability> GetOrAddAsync(SchedulingDb db, Guid periodId, Guid membershipId, CancellationToken cancellationToken)
     {
         var availability = await db.Availabilities
@@ -302,11 +333,19 @@ internal static class AvailabilityEndpoints
         var selected = availability?.Blocks.Select(x => x.ShiftId).ToHashSet() ?? [];
         var shifts = await db.Shifts.AsNoTracking().Where(x => x.PeriodId == period.Id).ToListAsync(cancellationToken);
         var hasPrevious = await db.Periods.AnyAsync(x => x.WorkplaceId == period.WorkplaceId && x.StartDate < period.StartDate, cancellationToken);
+        // BR-032: until this period has a number, offer the one from the person's most recent earlier period.
+        var hours = availability?.DesiredWeeklyHours ?? await db.Availabilities.AsNoTracking()
+            .Where(x => x.MembershipId == membershipId && x.DesiredWeeklyHours != null
+                && db.Periods.Any(p => p.Id == x.PeriodId && p.WorkplaceId == period.WorkplaceId && p.StartDate < period.StartDate))
+            .OrderByDescending(x => db.Periods.Where(p => p.Id == x.PeriodId).Select(p => p.StartDate).First())
+            .Select(x => x.DesiredWeeklyHours)
+            .FirstOrDefaultAsync(cancellationToken);
         return new MyAvailability(
             Support.Summarize(period),
             availability?.Status ?? Availability.NotSent,
             period.LockedAt is null || availability?.ReopenedAt is not null,
             hasPrevious,
+            hours,
             shifts.OrderBy(x => x.Date).ThenBy(x => x.StartTime)
                 .Select(x => new AvailabilityShift(x.Id, x.SourceBlockId, x.Date.ToDateOnly(), Support.Time(x.StartTime), Support.Time(x.EndTime), x.Hours, selected.Contains(x.Id)))
                 .ToList(),
@@ -329,7 +368,8 @@ internal static class AvailabilityEndpoints
     private static Dictionary<string, string> PeriodParameters(Period period) => new() { ["periodStart"] = Support.IsoDate(period.StartDate) };
 }
 
-public sealed record AvailabilityRequest(IReadOnlyList<Guid>? ShiftIds);
+/// <param name="DesiredWeeklyHours">Hours per week wanted in this period (BR-032). Required to send; null leaves it as it was.</param>
+public sealed record AvailabilityRequest(IReadOnlyList<Guid>? ShiftIds, decimal? DesiredWeeklyHours = null);
 
 public sealed record NoteRequest(string? Body);
 
@@ -343,11 +383,13 @@ public sealed record SuggestedAvailability(IReadOnlyList<Guid> ShiftIds);
 /// <param name="Status">"not_sent" or "sent".</param>
 /// <param name="CanEdit">False once building has started, unless an admin reopened it for this person. Notes stay possible.</param>
 /// <param name="HasPrevious">Whether "Same as last period" has anything to offer (FR-095).</param>
+/// <param name="DesiredWeeklyHours">This period's number, or, until there is one, the person's number from their last period; null the first time (BR-032).</param>
 public sealed record MyAvailability(
     PeriodSummary Period,
     string Status,
     bool CanEdit,
     bool HasPrevious,
+    decimal? DesiredWeeklyHours,
     IReadOnlyList<AvailabilityShift> Shifts,
     IReadOnlyList<AvailabilityNoteView> Notes);
 
@@ -367,5 +409,5 @@ public sealed record TeamAvailabilityRow(
     string Status,
     bool Reopened,
     decimal HoursOffered,
-    decimal DesiredWeeklyHours,
+    decimal? DesiredWeeklyHours,
     IReadOnlyList<AvailabilityNoteView> Notes);
