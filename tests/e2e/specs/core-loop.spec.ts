@@ -201,7 +201,7 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
     await sophie.page.goto('/alerts');
     const sophieChanges = await sophie.page.getByText(/^Your schedule changed/).count();
 
-    await page.getByRole('link', { name: 'Schedule' }).click();
+    await page.goto('/schedule');
     await page.getByRole('link', { name: 'Edit current schedule' }).click();
     await expect(page.getByRole('heading', { name: 'Editing Schedule' })).toBeVisible();
     await page
