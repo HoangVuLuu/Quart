@@ -270,4 +270,58 @@ public sealed class ChangeListTests(PostgresFixture postgres)
         Assert.Equal(unread - 1, (await lea.GetAsync($"{team.Base}/notifications"))["unread"]!.GetValue<int>());
         Assert.Equal(HttpStatusCode.NotFound, (await team.Staff[1].TryAsync(Post, $"{team.Base}/notifications/{first}/read")).Status);
     }
+
+    // Cancelling a period ----------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task Cancelling_a_period_deletes_it_frees_its_dates_and_tells_who_sent()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        var (lea, marc) = (team.Staff[0], team.Staff[1]);
+        await team.OpenPeriodAsync();
+        await team.SendAvailabilityAsync(lea);
+        await team.Owner.PostAsync($"{team.Period}/draft/start");
+
+        // Only someone who manages the schedule may cancel.
+        Assert.Equal(HttpStatusCode.Forbidden, (await lea.TryAsync(HttpMethod.Delete, team.Period)).Status);
+        await team.Owner.SendAsync(HttpMethod.Delete, team.Period);
+
+        Assert.Equal(HttpStatusCode.NotFound, (await lea.TryAsync(HttpMethod.Get, $"{team.Period}/availability/me")).Status);
+        Assert.Null((await lea.GetAsync($"{team.Base}/periods/current"))["next"]);
+        Assert.Contains("period.cancelled", await team.NotificationTypesAsync(lea));
+        Assert.DoesNotContain("period.cancelled", await team.NotificationTypesAsync(marc));
+        Assert.DoesNotContain("period.cancelled", await team.NotificationTypesAsync(team.Owner));
+
+        // The same dates can be opened again, with the rules as they are now.
+        await team.OpenPeriodAsync();
+        Assert.Equal("not_sent", (await lea.GetAsync($"{team.Period}/availability/me"))["status"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task A_published_period_can_be_cancelled_until_it_starts_and_its_trades_close()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        var schedule = await team.PublishAsync();
+        var giver = team.Staff.First(person => Team.ShiftsOf(schedule, person).Count > 0);
+        var shift = Team.ShiftsOf(schedule, giver)[0];
+        await giver.PostAsync($"{team.Base}/marketplace/give-aways", new { shiftId = Team.Id(shift) });
+        var period = team.Period;
+
+        await team.Owner.SendAsync(HttpMethod.Delete, period);
+
+        // Everyone holding a shift is told, and the offer on a shift that no longer exists is gone.
+        foreach (var person in team.Staff.Where(person => Team.ShiftsOf(schedule, person).Count > 0))
+        {
+            Assert.Contains("period.cancelled", await team.NotificationTypesAsync(person));
+        }
+        Assert.Empty((await team.Staff[^1].GetAsync($"{team.Base}/marketplace"))["offers"]!.AsArray());
+        Assert.Equal(HttpStatusCode.NotFound, (await team.Owner.TryAsync(HttpMethod.Get, $"{period}/schedule")).Status);
+
+        // Once a published period has started, it stays.
+        await team.PublishAsync(monday: new LocalDate(2026, 11, 16));
+        app.Clock.Advance(Duration.FromDays(14));
+        Assert.Equal((HttpStatusCode.Conflict, "period.already_started"), await team.Owner.TryAsync(HttpMethod.Delete, team.Period));
+    }
 }

@@ -46,6 +46,7 @@ const errorKeys = {
   'marketplace.shift_started': 'errors.marketplace.shift_started',
   'marketplace.shift_taken': 'errors.marketplace.shift_taken',
   'marketplace.trade_invalid': 'errors.marketplace.trade_invalid',
+  'period.already_started': 'errors.period.already_started',
   'period.overlaps': 'errors.period.overlaps',
   'period.start_not_monday': 'errors.period.start_not_monday',
   'period.template_empty': 'errors.period.template_empty',

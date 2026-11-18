@@ -125,7 +125,8 @@
       "start_not_monday": "Une période commence un lundi.",
       "template_empty": "Ajoute d’abord tes quarts dans la page Modifier le générateur.",
       "unfinished_exists": "Publie la période en cours avant d’en ouvrir une autre.",
-      "weeks_invalid": "Une période dure de 1 à 4 semaines."
+      "weeks_invalid": "Une période dure de 1 à 4 semaines.",
+      "already_started": "Cette période est déjà commencée, elle ne peut plus être annulée."
     },
     "schedule": {
       "already_on_shift": "Cette personne est déjà sur le quart.",
@@ -858,6 +859,9 @@
         "applied": "L’échange du {{date}}, {{start}}–{{end}} est fait",
         "rejected": "L’échange du {{date}}, {{start}}–{{end}} n’a pas été appliqué",
         "expired": "L’échange du {{date}}, {{start}}–{{end}} a expiré"
+      },
+      "period": {
+        "cancelled": "La période du {{periodStart}} a été annulée"
       }
     },
     "markOneRead": "Marquer comme lu : {{text}}"
@@ -1010,5 +1014,14 @@
     "leaveTitle": "Quitter sans enregistrer?",
     "leaveText": "Tes changements depuis le dernier enregistrement seront perdus.",
     "leave": "Quitter"
+  },
+  "cancelPeriod": {
+    "button": "Annuler la période",
+    "title": "Annuler cette période?",
+    "text": "La période {{range}} et tout ce qu’elle contient seront supprimés pour de bon : disponibilités, notes et brouillon. Tous ceux qui ont envoyé leurs disponibilités seront avertis. Tu pourras ensuite ouvrir une nouvelle période.",
+    "textPublished": "La période {{range}} et tout ce qu’elle contient seront supprimés pour de bon : l’horaire publié, les disponibilités et les notes. Les dons et échanges de ses quarts sont annulés. Tous ceux qui ont envoyé leurs disponibilités ou qui travaillent un quart seront avertis.",
+    "confirm": "Annuler la période",
+    "keep": "La garder",
+    "done": "Période annulée"
   }
 }

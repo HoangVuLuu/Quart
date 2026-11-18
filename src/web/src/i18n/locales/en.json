@@ -125,7 +125,8 @@
       "start_not_monday": "A period starts on a Monday.",
       "template_empty": "Add your shifts in the Edit Generator page first.",
       "unfinished_exists": "Publish the period you are working on before opening another.",
-      "weeks_invalid": "A period lasts 1 to 4 weeks."
+      "weeks_invalid": "A period lasts 1 to 4 weeks.",
+      "already_started": "This period has already started, so it can't be cancelled."
     },
     "schedule": {
       "already_on_shift": "This person is already on the shift.",
@@ -858,6 +859,9 @@
         "applied": "The trade for {{date}}, {{start}}–{{end}} is done",
         "rejected": "The trade for {{date}}, {{start}}–{{end}} was not applied",
         "expired": "The trade for {{date}}, {{start}}–{{end}} expired"
+      },
+      "period": {
+        "cancelled": "The period starting {{periodStart}} was cancelled"
       }
     },
     "markOneRead": "Mark as read: {{text}}"
@@ -1010,5 +1014,14 @@
     "leaveTitle": "Leave without saving?",
     "leaveText": "Your changes since the last save will be lost.",
     "leave": "Leave"
+  },
+  "cancelPeriod": {
+    "button": "Cancel period",
+    "title": "Cancel this period?",
+    "text": "The period {{range}} and everything in it will be deleted for good: availability, notes and the draft. Everyone who sent availability will be told. You can then open a new period.",
+    "textPublished": "The period {{range}} and everything in it will be deleted for good: the published schedule, availability and notes. Give-aways and trades on its shifts are cancelled. Everyone who sent availability or works a shift will be told.",
+    "confirm": "Cancel the period",
+    "keep": "Keep it",
+    "done": "Period cancelled"
   }
 }

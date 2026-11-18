@@ -10,6 +10,7 @@ import { Skeleton } from '../../ui/Skeleton';
 import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
 import {
+  hasStarted,
   leaveBuilding,
   sendHeartbeat,
   useCurrentPeriods,
@@ -17,6 +18,7 @@ import {
   useDraftActions,
 } from '../scheduling/data';
 import { useWorkplace } from '../workplaces/workplace';
+import { CancelPeriodButton } from './CancelPeriod';
 import { DraftEditor } from './DraftEditor';
 
 /** How often the open page says it is still there; the server ends a visit after two minutes of silence. */
@@ -128,6 +130,14 @@ function BuildingVisit({ periodId, mode }: { periodId: string; mode: 'build' | '
               <Button variant="white" className="min-h-11 px-4 text-sm" onClick={() => setClearing(true)}>
                 {t('building.clear')}
               </Button>
+            )}
+            {draft.data && (mode === 'build' || !hasStarted(draft.data.period)) && (
+              <CancelPeriodButton
+                period={draft.data.period}
+                onCancelling={() => {
+                  unsavedNow.current = false;
+                }}
+              />
             )}
           </div>
           <FormError message={error ? t(messageKeyFor(error)) : undefined} />

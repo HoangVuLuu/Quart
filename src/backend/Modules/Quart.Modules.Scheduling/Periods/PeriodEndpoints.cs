@@ -25,12 +25,14 @@ internal static class PeriodEndpoints
     public const string Overlaps = "period.overlaps";
     public const string TemplateEmpty = "period.template_empty";
     public const string UnfinishedExists = "period.unfinished_exists";
+    public const string AlreadyStarted = "period.already_started";
 
     public static void MapPeriods(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/workplaces/{workplaceId:guid}/periods");
         group.MapGet("/current", GetCurrentAsync).AllowAnyMember().WithName("GetCurrentPeriods");
         group.MapPost("/", CreateAsync).RequirePermission(Permission.ManageSchedule).WithName("CreatePeriod");
+        group.MapDelete("/{periodId:guid}", CancelPeriod.RunAsync).RequirePermission(Permission.ManageSchedule).WithName("CancelPeriod");
     }
 
     /// <summary>
@@ -172,6 +174,57 @@ internal static class PeriodEndpoints
                 .ToList(),
             cancellationToken);
         return TypedResults.Ok(Support.Summarize(period));
+    }
+}
+
+/// <summary>
+/// Cancels a period for good (FR-104, 2026-11-18): one that is not published yet, or a published one that has
+/// not started. Everything in it is deleted (shifts, availability, notes, drafts, versions), so its dates are
+/// free for a new period. Give-aways, claims and trades on its shifts close by themselves the next time the
+/// Trade tab loads, as for any shift that no longer exists. Told: who sent availability or holds a shift in
+/// it, except the admin who cancelled.
+/// </summary>
+internal static class CancelPeriod
+{
+    public static async Task<Results<NoContent, ProblemHttpResult>> RunAsync(
+        Guid workplaceId, Guid periodId, HttpContext http, SchedulingDb db, IWorkplaceDirectory directory, INotifier notifier, IClock clock, CancellationToken cancellationToken)
+    {
+        var period = await db.Periods.AsNoTracking().FirstOrDefaultAsync(x => x.Id == periodId && x.WorkplaceId == workplaceId, cancellationToken);
+        if (period is null)
+        {
+            return Problems.NotFound();
+        }
+        if (period.Version > 0 && Support.Today(clock, period.TimeZone) >= period.StartDate)
+        {
+            return Problems.Conflict(PeriodEndpoints.AlreadyStarted);
+        }
+
+        var sent = await db.Availabilities.Where(x => x.PeriodId == periodId && x.Status == Availability.Sent).Select(x => x.MembershipId).ToListAsync(cancellationToken);
+        var holders = await db.Assignments.Where(x => x.PeriodId == periodId && !x.IsDraft).Select(x => x.MembershipId).ToListAsync(cancellationToken);
+        var told = sent.Concat(holders).ToHashSet();
+        told.Remove(http.Member().MembershipId);
+
+        await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
+        {
+            await db.ScheduleVersions.Where(x => x.PeriodId == periodId).ExecuteDeleteAsync(cancellationToken);
+            await db.GenerationRuns.Where(x => x.PeriodId == periodId).ExecuteDeleteAsync(cancellationToken);
+            // The rest goes with the period: shifts and their assignments, availability and its notes, conflicts.
+            await db.Periods.Where(x => x.Id == periodId).ExecuteDeleteAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        var members = await directory.GetMembersAsync(workplaceId, cancellationToken);
+        var parameters = new Dictionary<string, string>
+        {
+            ["periodStart"] = Support.IsoDate(period.StartDate),
+            ["weeks"] = period.Weeks.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        };
+        await notifier.NotifyAsync(
+            members.Where(x => told.Contains(x.MembershipId))
+                .Select(x => new NotificationRequest(workplaceId, x.MembershipId, x.UserId, NotificationTypes.PeriodCancelled, parameters))
+                .ToList(),
+            cancellationToken);
+        return TypedResults.NoContent();
     }
 }
 

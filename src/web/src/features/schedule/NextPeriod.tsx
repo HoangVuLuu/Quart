@@ -13,6 +13,7 @@ import { TextField } from '../../ui/TextField';
 import { FormError } from '../identity/FormError';
 import { mondayOnOrAfter, useCreatePeriod, useTeamAvailability, type NextPeriod } from '../scheduling/data';
 import { useWorkplace } from '../workplaces/workplace';
+import { CancelPeriodButton } from './CancelPeriod';
 
 /**
  * The manager's box at the top of Schedule (4.1, 2026-11-18), always there and styled like the period box
@@ -58,6 +59,7 @@ export function NextPeriodBox({ next, after }: { next: NextPeriod | null; after?
         <Link to="/availability/team" className={buttonClassName('white')}>
           {t('schedule.ready.team')}
         </Link>
+        <CancelPeriodButton period={next.period} className={buttonClassName('white')} />
       </div>
     </HeroCard>
   );

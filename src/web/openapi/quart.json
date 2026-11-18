@@ -1127,6 +1127,49 @@
         }
       }
     },
+    "/api/workplaces/{workplaceId}/periods/{periodId}": {
+      "delete": {
+        "tags": [
+          "CancelPeriod"
+        ],
+        "operationId": "CancelPeriod",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/workplaces/{workplaceId}/periods/{periodId}/availability/me": {
       "get": {
         "tags": [
@@ -5314,6 +5357,9 @@
     },
     {
       "name": "PeriodEndpoints"
+    },
+    {
+      "name": "CancelPeriod"
     },
     {
       "name": "AvailabilityEndpoints"

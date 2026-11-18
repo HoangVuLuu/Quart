@@ -439,6 +439,14 @@ FR-103  An employee may add optional notes about their availability for the
         (section 13). They are rendered as text, never as HTML. Admins are
         notified when a note is added or when availability is sent or
         updated (FR-215); the notification never contains the note text.
+FR-104  An admin can cancel a period for good: one that is not published yet,
+        or a published one that has not started. Everything in it is deleted
+        (shifts, availability and notes, drafts, published versions), its dates
+        are free for a new period, and give-aways, claims and trades on its
+        shifts are cancelled. "Cancel period" is in the next-period box and on
+        Building Schedule, and on Editing Schedule until the period starts,
+        always behind an "Are you sure?". The people who sent availability or
+        hold a shift in it are told (FR-215), except the admin who cancelled.
 
 6.5 SCHEDULE GENERATION
 FR-120  The admin clicks Generate and receives a complete draft schedule.
@@ -572,6 +580,7 @@ FR-215  Notification events: availability requested; availability reminder;
         a trade awaiting approval (to admins); an offered shift is still
         unclaimed (to admins); a member left or was removed (to admins);
         a new announcement (to all members, bundled per FR-213);
+        a period was cancelled (FR-104);
         availability sent or updated, and an availability note added
         (both to admins, bundled per FR-213, never with the note text);
         (backlog) a new payslip is available (to that employee only).
@@ -1903,6 +1912,9 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             FR-102); back arrows return to the previous page; the first
             period now uses the period length from the generator rules (bug).
             The Trade count includes empty slots, by Hoang's choice.
+            Also added: an admin can cancel a period (FR-104), including a
+            published one before it starts; its data is deleted, and who
+            sent availability or holds a shift in it is told.
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

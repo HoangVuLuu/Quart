@@ -280,3 +280,23 @@ export function leaveBuilding(workplaceId: string, periodId: string) {
     keepalive: true,
   });
 }
+
+/** Cancels a period for good: everything in it is deleted and the people in it are told (2026-11-18). */
+export function useCancelPeriod() {
+  const { id } = useWorkplace();
+  return useMutation({
+    mutationFn: (periodId: string) =>
+      unwrap(
+        api.DELETE('/api/workplaces/{workplaceId}/periods/{periodId}', {
+          params: { path: { workplaceId: id, periodId } },
+        }),
+      ),
+  });
+}
+
+/** A published period can be cancelled only before its first day, in the browser's own calendar. */
+export function hasStarted(period: PeriodSummary): boolean {
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return period.startDate <= today;
+}

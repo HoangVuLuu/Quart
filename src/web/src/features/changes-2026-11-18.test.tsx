@@ -149,4 +149,25 @@ describe('changes of 2026-11-18', () => {
       ).weeks,
     ).toBe(1);
   });
+
+  it('lets a manager cancel the next period after an "Are you sure?", then offers to open a new one', async () => {
+    const calls = signedIn('owner', {
+      [`GET ${base}/periods/current`]: { live: null, next: { ...next, sentCount: 1 }, upcoming: [] },
+      [`DELETE ${base}/periods/${periodId}`]: status(204),
+      [`GET ${base}/generator`]: { periodWeeks: 1 },
+    });
+    renderApp('/schedule');
+
+    await userEvent.click(await screen.findByRole('button', { name: en.cancelPeriod.button }));
+    const dialog = await screen.findByRole('dialog', { name: en.cancelPeriod.title });
+    expect(calls.some((call) => call.method === 'DELETE')).toBe(false);
+    await userEvent.click(within(dialog).getByRole('button', { name: en.cancelPeriod.confirm }));
+
+    await waitFor(() =>
+      expect(
+        calls.some((call) => call.method === 'DELETE' && call.path === `${base}/periods/${periodId}`),
+      ).toBe(true),
+    );
+    expect(await screen.findByText(en.cancelPeriod.done)).toBeInTheDocument();
+  });
 });
