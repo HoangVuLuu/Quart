@@ -124,7 +124,7 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
       // Back to where it was opened from: Home (1.2).
       await expect(staff.getByRole('heading', { name: /^Hi / })).toBeVisible();
     }
-    await sophie.page.getByRole('link', { name: 'View' }).click();
+    await sophie.page.getByRole('link', { name: 'Change availability' }).click();
     await expect(sophie.page.getByText('Exams that week', { exact: true })).toBeVisible();
   });
 

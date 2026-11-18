@@ -42,6 +42,7 @@
     "availabilityLocked": "Verrouillées : l’horaire est en préparation.",
     "view": "Voir",
     "fillIn": "Remplir",
+    "change": "Modifier mes dispos",
     "nothing": "Rien de prévu pour l’instant. Tes quarts s’afficheront ici dès qu’un horaire sera publié.",
     "waiting": "En attente de toi",
     "period": {
@@ -194,7 +195,6 @@
     "which": "Quel horaire",
     "published": "Publié",
     "next": "Prochaine période",
-    "fillAvailability": "Remplir mes dispos",
     "edit": "Modifier l’horaire actuel",
     "emptyTitle": "Pas encore d’horaire",
     "emptyText": "Tes quarts s’afficheront ici dès qu’un horaire sera publié.",
@@ -716,7 +716,6 @@
   },
   "teamAvailability": {
     "title": "Disponibilités de l’équipe",
-    "mine": "Remplir mes disponibilités",
     "offers": "Offre {{offered}} h/sem. · veut {{wanted}} h/sem.",
     "noAnswer": "Pas encore de réponse",
     "reopened": "Rouvertes",
@@ -818,8 +817,6 @@
     "context": "Rappels, quarts et échanges",
     "waiting_one": "{{count}} en attente de toi",
     "waiting_other": "{{count}} en attente de toi",
-    "reminders": "Rappels",
-    "fillAvailability": "Remplis tes disponibilités",
     "recent": "Récentes",
     "markRead": "Tout marquer comme lu",
     "empty": "Rien pour l’instant.",

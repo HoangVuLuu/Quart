@@ -71,14 +71,6 @@ export function SchedulePage() {
           periodId={shown.id}
           action={
             <>
-              {next?.canEditAvailability && view.me.worksShifts && (
-                <Link
-                  to="/availability"
-                  className={buttonClassName('dark', 'min-h-11 bg-opening px-4 text-sm text-on-primary')}
-                >
-                  {t('schedule.fillAvailability')}
-                </Link>
-              )}
               {manages && (
                 <Link
                   to={`/schedule/edit?period=${shown.id}`}
@@ -94,12 +86,6 @@ export function SchedulePage() {
         <EmptyState title={t('schedule.emptyTitle')} mood="sleepy">
           {next && view.me.worksShifts ? t('schedule.emptyCollecting') : t('schedule.emptyText')}
         </EmptyState>
-      )}
-
-      {!live && next && view.me.worksShifts && next.canEditAvailability && (
-        <Link to="/availability" className={buttonClassName('dark', 'self-center')}>
-          {t('schedule.fillAvailability')}
-        </Link>
       )}
     </section>
   );

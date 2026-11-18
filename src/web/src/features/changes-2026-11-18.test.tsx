@@ -170,4 +170,23 @@ describe('changes of 2026-11-18', () => {
     );
     expect(await screen.findByText(en.cancelPeriod.done)).toBeInTheDocument();
   });
+
+  it('fills availability from Home only, and says "Change availability" once sent', async () => {
+    signedIn('employee', {
+      [`GET ${base}/periods/current`]: {
+        live: null,
+        next: { ...next, myAvailability: 'sent' },
+        upcoming: [],
+      },
+    });
+    const router = renderApp('/');
+    expect(await screen.findByRole('link', { name: en.home.change })).toHaveAttribute(
+      'href',
+      '/availability',
+    );
+
+    await router.navigate('/schedule');
+    await screen.findByRole('heading', { name: en.schedule.title });
+    expect(screen.queryByRole('link', { name: /availability/i })).not.toBeInTheDocument();
+  });
 });

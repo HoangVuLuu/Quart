@@ -1,10 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import { Link, Navigate } from 'react-router';
+import { Navigate } from 'react-router';
 import { SubPage } from '../../app/SubPage';
 import { messageKeyFor } from '../../i18n/errors';
 import { formatDateRange, formatNumber } from '../../i18n/format';
 import { Button } from '../../ui/Button';
-import { buttonClassName } from '../../ui/button-styles';
 import { Card } from '../../ui/Card';
 import { Skeleton } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
@@ -18,7 +17,7 @@ import { useWorkplace } from '../workplaces/workplace';
 // Opened from the Home card and from Schedule (known conflict 2).
 export function TeamAvailabilityPage() {
   const { t, i18n } = useTranslation();
-  const { can, view } = useWorkplace();
+  const { can } = useWorkplace();
   const periods = useCurrentPeriods();
   const next = periods.data?.next;
   const team = useTeamAvailability(can('ManageSchedule') ? next?.period.id : undefined);
@@ -41,11 +40,6 @@ export function TeamAvailabilityPage() {
       context={`${formatDateRange(data.period.startDate, data.period.endDate, i18n.language)} · ${t('home.period.sent', { sent: data.sentCount, total: data.total })}`}
     >
       <div className="flex flex-col gap-4">
-        {view.me.worksShifts && (
-          <Link to="/availability" className={buttonClassName('dark', 'w-full')}>
-            {t('teamAvailability.mine')}
-          </Link>
-        )}
         <div
           role="progressbar"
           aria-label={t('home.period.sent', { sent: data.sentCount, total: data.total })}

@@ -404,6 +404,9 @@ FR-097  Helper: import from Google Calendar. Uses the free/busy lookup, which
         themselves. Import is one-time per press, never a continuous sync.
 FR-098  Submitting sends the availability to the admin. An employee may edit and
         resend as many times as they like until the schedule is generated.
+        Availability is opened from Home only: its button says "Fill in"
+        until sent, then "Change availability" (or "View" once locked). Send
+        and the back arrow both return to Home.
 FR-099  Anyone who has not submitted has the status "not sent". They are never
         treated as available. The admin can still place them on a shift by hand
         (FR-121).
@@ -1898,7 +1901,8 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
 
 2026-11-18  Change list from testing (Hoang, claude/quart-changes-2026-11-18.md):
             hours wanted per period in the availability form (BR-032,
-            FR-037); Send returns to the page availability was opened from;
+            FR-037); availability is filled in from Home only, and Send and
+            the back arrow return there (FR-098);
             the Trade tab gets "My shifts to trade", an unopened-item count,
             and the give-away and trade-request notifications (FR-215);
             tapping your own shift on Schedule shows who works it; workers

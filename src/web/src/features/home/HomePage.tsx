@@ -168,9 +168,11 @@ export function HomePage() {
             to="/availability"
             className={buttonClassName(nextPeriod.myAvailability === 'sent' ? 'white' : 'dark')}
           >
-            {nextPeriod.myAvailability === 'sent' || !nextPeriod.canEditAvailability
+            {!nextPeriod.canEditAvailability
               ? t('home.view')
-              : t('home.fillIn')}
+              : nextPeriod.myAvailability === 'sent'
+                ? t('home.change')
+                : t('home.fillIn')}
           </Link>
         </Card>
       )}

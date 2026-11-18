@@ -1,29 +1,22 @@
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
 import { formatRelativeTime } from '../../i18n/format';
 import { Button } from '../../ui/Button';
-import { buttonClassName } from '../../ui/button-styles';
 import { Card } from '../../ui/Card';
 import { cx } from '../../ui/cx';
 import { PageHeader } from '../../ui/PageHeader';
 import { MarketplaceSections } from '../marketplace/MarketplaceSections';
-import { useCurrentPeriods } from '../scheduling/data';
-import { useWorkplace } from '../workplaces/workplace';
 import { useDecisionCount, useMarkAllRead, useMarkRead, useNotifications } from './data';
 import { notificationText } from './notification-text';
 
-// Mockups 1f (staff) and 1n (admins): what waits on you first (reminders, and for managers what they
-// must decide), then everything that happened. Give-aways and trade requests live in the Trade tab
+// Mockups 1f (staff) and 1n (admins): what managers must decide first, then everything that happened.
+// Availability is filled in from Home only (2026-11-18). Give-aways and trade requests live in the Trade tab
 // (2.5). The News section arrives with M8.
 export function AlertsPage() {
   const { t, i18n } = useTranslation();
-  const { view } = useWorkplace();
   const waiting = useDecisionCount();
   const notifications = useNotifications();
   const markRead = useMarkAllRead();
   const markOne = useMarkRead();
-  const next = useCurrentPeriods().data?.next;
-  const remind = next && view.me.worksShifts && next.canEditAvailability && next.myAvailability !== 'sent';
   if (notifications.error) throw notifications.error;
   const items = notifications.data?.items ?? [];
   const now = new Date();
@@ -34,18 +27,6 @@ export function AlertsPage() {
         title={t('alerts.title')}
         subtitle={waiting > 0 ? t('alerts.waiting', { count: waiting }) : t('alerts.context')}
       />
-
-      {remind && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-xl">{t('alerts.reminders')}</h2>
-          <Card className="flex items-center gap-3 p-4">
-            <p className="min-w-0 flex-1 font-bold">{t('alerts.fillAvailability')}</p>
-            <Link to="/availability" className={buttonClassName('dark', 'min-h-11 px-4 text-sm')}>
-              {t('home.fillIn')}
-            </Link>
-          </Card>
-        </section>
-      )}
 
       <MarketplaceSections scope="decisions" />
 

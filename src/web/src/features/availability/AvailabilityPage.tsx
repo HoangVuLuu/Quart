@@ -34,11 +34,11 @@ export function AvailabilityPage() {
   const next = periods.data?.next;
   const mine = useMyAvailability(next?.period.id);
 
-  if (periods.data && !next) return <Navigate to="/schedule" replace />;
+  if (periods.data && !next) return <Navigate to="/" replace />;
   if (periods.error ?? mine.error) throw periods.error ?? mine.error;
   if (!mine.data) {
     return (
-      <SubPage backTo="/schedule" title={t('availability.title')}>
+      <SubPage backTo="/" title={t('availability.title')}>
         <Skeleton className="h-64" />
       </SubPage>
     );
@@ -69,8 +69,8 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
       : String(mine.desiredWeeklyHours),
   );
   const [wantedMissing, setWantedMissing] = useState(false);
-  // 1.2: back to the page availability was opened from, Home or Schedule.
-  const goBack = useGoBack('/schedule');
+  // Availability is opened from Home only, so Send and the back arrow both return there (2026-11-18).
+  const goBack = useGoBack('/');
   const locked = !mine.canEdit;
   const sent = mine.status === 'sent';
   const hours = mine.shifts
@@ -134,7 +134,7 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
 
   return (
     <SubPage
-      backTo="/schedule"
+      backTo="/"
       title={t('availability.title')}
       context={formatDateRange(mine.period.startDate, mine.period.endDate, language)}
     >

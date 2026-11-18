@@ -42,6 +42,7 @@
     "availabilityLocked": "Locked: the schedule is being built.",
     "view": "View",
     "fillIn": "Fill in",
+    "change": "Change availability",
     "nothing": "Nothing scheduled yet. Your shifts will show here once a schedule is published.",
     "waiting": "Waiting on you",
     "period": {
@@ -194,7 +195,6 @@
     "which": "Which schedule",
     "published": "Published",
     "next": "Next period",
-    "fillAvailability": "Fill availability",
     "edit": "Edit current schedule",
     "emptyTitle": "No schedule yet",
     "emptyText": "Your shifts will show here once a schedule is published.",
@@ -716,7 +716,6 @@
   },
   "teamAvailability": {
     "title": "Team availability",
-    "mine": "Fill in my availability",
     "offers": "Offers {{offered}} h/wk · wants {{wanted}} h/wk",
     "noAnswer": "No answer yet",
     "reopened": "Reopened",
@@ -818,8 +817,6 @@
     "context": "Reminders, shifts and trades",
     "waiting_one": "{{count}} waiting on you",
     "waiting_other": "{{count}} waiting on you",
-    "reminders": "Reminders",
-    "fillAvailability": "Fill in your availability",
     "recent": "Recent",
     "markRead": "Mark all read",
     "empty": "Nothing yet.",
