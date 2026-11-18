@@ -103,11 +103,12 @@ function People({ periodId, locked, people }: { periodId: string; locked: boolea
                     {sent
                       ? t('teamAvailability.offers', {
                           offered: formatNumber(person.hoursOffered, i18n.language),
-                          wanted: formatNumber(person.desiredWeeklyHours, i18n.language),
+                          wanted:
+                            person.desiredWeeklyHours == null
+                              ? '–'
+                              : formatNumber(person.desiredWeeklyHours, i18n.language),
                         })
-                      : t('teamAvailability.noAnswer', {
-                          wanted: formatNumber(person.desiredWeeklyHours, i18n.language),
-                        })}
+                      : t('teamAvailability.noAnswer')}
                   </p>
                   {person.notes.map((note) => (
                     <p

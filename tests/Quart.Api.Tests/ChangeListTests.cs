@@ -247,7 +247,7 @@ public sealed class ChangeListTests(PostgresFixture postgres)
         await team.Owner.SendAsync(Post, $"{team.Period}/draft/leave");
 
         var again = await team.Owner.GetAsync($"{team.Period}/draft");
-        Assert.True(again["shifts"]!.AsArray().Single(x => Team.Id(x!) == Team.Id(shift))!["people"]!.AsArray().Any(p => p!["membershipId"]!.GetValue<string>() == paul.MembershipId.ToString()));
+        Assert.Contains(again["shifts"]!.AsArray().Single(x => Team.Id(x!) == Team.Id(shift))!["people"]!.AsArray(), p => p!["membershipId"]!.GetValue<string>() == paul.MembershipId.ToString());
         Assert.False(again["hasUnpublishedChanges"]!.GetValue<bool>());
         Assert.True(again["period"]!["locked"]!.GetValue<bool>());
     }

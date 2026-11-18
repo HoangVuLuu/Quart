@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { messageKeyFor } from '../../i18n/errors';
-import { formatNumber } from '../../i18n/format';
 import { languages, type Language } from '../../i18n';
 import { api, unwrap, type Schemas } from '../../lib/api/client';
 import { chooseTheme, currentTheme } from '../../lib/theme';
@@ -12,8 +11,6 @@ import { Card } from '../../ui/Card';
 import { Dialog } from '../../ui/Dialog';
 import { PageHeader } from '../../ui/PageHeader';
 import { Select } from '../../ui/Select';
-import { Sheet } from '../../ui/Sheet';
-import { Stepper } from '../../ui/Stepper';
 import { Switch } from '../../ui/Switch';
 import { TextField } from '../../ui/TextField';
 import { useToast } from '../../ui/toast-context';
@@ -47,24 +44,7 @@ export function ProfilePage() {
   const [accountSheet, setAccountSheet] = useState<'email' | 'password' | null>(null);
   const [name, setName] = useState(me?.displayName ?? '');
   const [leaving, setLeaving] = useState(false);
-  const [editingHours, setEditingHours] = useState(false);
-  const [hours, setHours] = useState(view.me.desiredWeeklyHours ?? 0);
   const path = { workplaceId: id };
-
-  const updateHours = useMutation({
-    mutationFn: () =>
-      unwrap(
-        api.PATCH('/api/workplaces/{workplaceId}/me', {
-          params: { path },
-          body: { desiredWeeklyHours: hours },
-        }),
-      ),
-    onSuccess: async () => {
-      await refresh();
-      setEditingHours(false);
-      toast(t('profile.saved'));
-    },
-  });
 
   const updateMember = useMutation({
     mutationFn: (worksShifts: boolean) =>
@@ -74,7 +54,6 @@ export function ProfilePage() {
           body: {
             level: null,
             worksShifts,
-            desiredWeeklyHours: null,
             maxWeeklyHours: null,
             clearMaxWeeklyHours: null,
           },
@@ -146,53 +125,14 @@ export function ProfilePage() {
       </div>
       <FormError message={error ? t(messageKeyFor(error)) : undefined} />
 
-      {view.me.worksShifts && (
-        <div className="grid grid-cols-2 gap-3">
-          <Card>
-            <h2 className="text-sm font-bold text-muted">{t('profile.level')}</h2>
-            <p className="mt-1 text-2xl font-bold">{view.me.level}</p>
-            <p className="text-xs text-muted">{t('profile.levelHint')}</p>
-          </Card>
-          <Card>
-            <h2 className="text-sm font-bold text-muted">{t('profile.wants')}</h2>
-            <p className="mt-1 text-2xl font-bold">
-              {formatNumber(view.me.desiredWeeklyHours, i18n.language)} <span className="text-sm">h</span>
-            </p>
-            <button
-              type="button"
-              className="-my-2 min-h-11 text-sm font-bold text-link"
-              onClick={() => {
-                setHours(view.me.desiredWeeklyHours ?? 0);
-                updateHours.reset();
-                setEditingHours(true);
-              }}
-            >
-              {t('profile.wantsEdit')}
-            </button>
-          </Card>
-        </div>
+      {/* Levels are for managers only (3.1); the hours a person wants come with their availability (1.1). */}
+      {view.me.worksShifts && view.me.level != null && (
+        <Card>
+          <h2 className="text-sm font-bold text-muted">{t('profile.level')}</h2>
+          <p className="mt-1 text-2xl font-bold">{view.me.level}</p>
+          <p className="text-xs text-muted">{t('profile.levelHint')}</p>
+        </Card>
       )}
-
-      <Sheet
-        open={editingHours}
-        onOpenChange={setEditingHours}
-        title={t('profile.hoursSheet.title')}
-        description={t('profile.hoursSheet.text')}
-      >
-        <div className="flex flex-col gap-4">
-          <Stepper
-            label={t('profile.hoursSheet.label')}
-            value={hours}
-            min={0}
-            max={view.me.maxWeeklyHours ?? 60}
-            onChange={setHours}
-          />
-          <FormError message={updateHours.error ? t(messageKeyFor(updateHours.error)) : undefined} />
-          <Button onClick={() => updateHours.mutate()} disabled={updateHours.isPending}>
-            {t('profile.hoursSheet.save')}
-          </Button>
-        </div>
-      </Sheet>
 
       {can('ManageLevels') && (
         <Card className="p-3">

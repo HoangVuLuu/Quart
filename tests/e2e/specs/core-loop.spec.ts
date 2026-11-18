@@ -75,7 +75,7 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
 
   await test.step('Edit Generator, saved a second time: the closing shift and a level on the opening', async () => {
     // The second save once failed on rows the first had written (EF Core treated new children as updates).
-    await page.getByRole('link', { name: 'Edit Generator' }).first().click();
+    await page.getByRole('link', { name: 'Edit generator rules' }).first().click();
     await page.getByRole('button', { name: 'Shifts' }).click();
     await addShift(page, '16:00', '23:00');
     await page.getByRole('button', { name: /^10:00–16:00/ }).click();
@@ -94,9 +94,10 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
 
   await test.step('the owner opens a one-week period', async () => {
     await page.getByLabel('Starts on').fill(nextMonday());
-    await page.getByRole('group', { name: 'Weeks' }).getByRole('button', { name: 'Decrease' }).click();
+    // The length starts from the generator rules (one week), not from 2 (7, 2026-11-18).
+    await expect(page.getByRole('group', { name: 'Weeks' })).toContainText('1');
     await page.getByRole('button', { name: 'Open period' }).click();
-    await expect(page.getByRole('heading', { name: 'Ready to build?' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Next period is open' })).toBeVisible();
   });
 
   await test.step('both staff send their availability', async () => {
@@ -116,18 +117,24 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
       await expect(staff.getByRole('status')).toContainText('7 shifts');
       // A note typed before the first Send goes with it (it was once lost when the form rebuilt itself).
       if (person === sophie) await staff.getByLabel('Note for your manager').fill('Exams that week');
+      // The hours wanted come with the availability, once per period (1.1, 2026-11-18).
+      await staff.getByLabel('Hours you want per week').fill('30');
       await staff.getByRole('button', { name: 'Send', exact: true }).click();
       await expect(toast(staff, 'Availability sent')).toBeVisible();
+      // Back to where it was opened from: Home (1.2).
+      await expect(staff.getByRole('heading', { name: /^Hi / })).toBeVisible();
     }
+    await sophie.page.getByRole('link', { name: 'View' }).click();
     await expect(sophie.page.getByText('Exams that week', { exact: true })).toBeVisible();
   });
 
   await test.step('the owner generates, takes Sophie off the last closing, and publishes', async () => {
     // No live connection (AD-031): the owner sees new answers when the page loads again.
     await page.reload();
-    await expect(page.getByText('Everyone has sent their availability')).toBeVisible();
-    await page.getByRole('button', { name: 'Generate schedule' }).click();
-    await expect(page.getByText('Draft · only you can see it')).toBeVisible();
+    await expect(page.getByText('2 of 2 sent')).toBeVisible();
+    await page.getByRole('link', { name: 'Build', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Building Schedule' })).toBeVisible();
+    await page.getByRole('button', { name: 'Generate', exact: true }).click();
 
     const days = page.getByRole('main').getByRole('region');
     await expect(days).toHaveCount(7);
@@ -150,6 +157,8 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
       .getByRole('button', { name: 'Publish anyway' })
       .click();
     await expect(toast(page, 'Schedule published')).toBeVisible();
+    // After publishing, back to the Schedule page (4.3).
+    await expect(page.getByRole('heading', { name: 'Schedule', exact: true })).toBeVisible();
   });
 
   await test.step('Sophie sees her six closings in My shifts', async () => {
@@ -162,9 +171,12 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
 
   await test.step('Sophie gives her first closing away and Kevin claims it', async () => {
     const staff = sophie.page;
+    // From the Trade tab now (2.1, 2.2); the Schedule tab only shows who works the shift (2.3).
+    await staff.getByRole('link', { name: /^Trade/ }).first().click();
+    await staff.getByRole('link', { name: 'Give away or trade one of my shifts' }).click();
     await staff
       .getByRole('main')
-      .getByRole('button', { name: /Closing/ })
+      .getByRole('button', { name: /16:00–23:00/ })
       .first()
       .click();
     await staff.getByRole('button', { name: 'Give away' }).click();
@@ -181,7 +193,7 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
     await offer.getByRole('button', { name: 'Claim' }).click();
     await expect(toast(kevin.page, 'The shift is yours')).toBeVisible();
 
-    await staff.reload();
+    await staff.goto('/schedule');
     await expect(staff.getByRole('main').getByRole('button', { name: /Closing/ })).toHaveCount(5);
   });
 
@@ -190,7 +202,8 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
     const sophieChanges = await sophie.page.getByText(/^Your schedule changed/).count();
 
     await page.getByRole('link', { name: 'Schedule' }).click();
-    await page.getByRole('button', { name: 'Edit', exact: true }).click();
+    await page.getByRole('link', { name: 'Edit current schedule' }).click();
+    await expect(page.getByRole('heading', { name: 'Editing Schedule' })).toBeVisible();
     await page
       .getByRole('main')
       .getByRole('region')

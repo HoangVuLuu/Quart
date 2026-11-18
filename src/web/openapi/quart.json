@@ -2296,6 +2296,17 @@
           "MarketplaceEndpoints"
         ],
         "operationId": "MarkTradeItemSeen",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {

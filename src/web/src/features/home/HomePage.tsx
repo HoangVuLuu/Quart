@@ -57,7 +57,8 @@ export function HomePage() {
   const hours = mine
     .filter((shift) => shift.date >= monday && shift.date <= sunday)
     .reduce((sum, shift) => sum + shift.hours, 0);
-  const wanted = view.me.desiredWeeklyHours;
+  // The number the person gave with this period's availability (BR-032); none means no target to show.
+  const wanted = periods?.myLiveWeeklyHours ?? null;
   const open =
     (board?.openShifts.length ?? 0) +
     (board?.offers.filter((offer) => !offer.mine && !offer.onShift).length ?? 0);
@@ -115,21 +116,25 @@ export function HomePage() {
             <h2 className="text-sm font-bold text-muted">{t('home.hours')}</h2>
             <p className="mt-1">
               <span className="text-2xl font-bold">{formatNumber(hours, language)}</span>
-              <span className="text-sm font-bold text-muted"> / {formatNumber(wanted, language)} h</span>
+              {wanted != null && (
+                <span className="text-sm font-bold text-muted"> / {formatNumber(wanted, language)} h</span>
+              )}
             </p>
-            <div
-              role="progressbar"
-              aria-label={t('home.hours')}
-              aria-valuemin={0}
-              aria-valuemax={wanted}
-              aria-valuenow={Math.min(hours, wanted)}
-              className="mt-2 h-2 overflow-hidden rounded-pill bg-surface-3"
-            >
+            {wanted != null && (
               <div
-                className="h-full rounded-pill bg-primary"
-                style={{ width: `${wanted > 0 ? Math.min(100, (hours / wanted) * 100) : 0}%` }}
-              />
-            </div>
+                role="progressbar"
+                aria-label={t('home.hours')}
+                aria-valuemin={0}
+                aria-valuemax={wanted}
+                aria-valuenow={Math.min(hours, wanted)}
+                className="mt-2 h-2 overflow-hidden rounded-pill bg-surface-3"
+              >
+                <div
+                  className="h-full rounded-pill bg-primary"
+                  style={{ width: `${wanted > 0 ? Math.min(100, (hours / wanted) * 100) : 0}%` }}
+                />
+              </div>
+            )}
           </Card>
           {open + trades > 0 && (
             <Card>

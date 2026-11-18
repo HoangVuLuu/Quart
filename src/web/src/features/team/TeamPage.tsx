@@ -66,9 +66,12 @@ export function TeamPage() {
                   {member.isMe && <span className="text-sm font-bold text-muted"> · {t('team.you')}</span>}
                 </p>
                 <p className="text-sm text-muted">
-                  {member.role === 'employee'
-                    ? t('team.barista', { level: member.level })
-                    : `${t(`roles.${member.role as 'owner' | 'admin'}`)} · ${t('scheduling.level', { level: member.level })}`}
+                  {/* Levels only for managers (3.1, 2026-11-18). */}
+                  {member.level == null
+                    ? t(`roles.${member.role as 'owner' | 'admin' | 'employee'}`)
+                    : member.role === 'employee'
+                      ? t('team.barista', { level: member.level })
+                      : `${t(`roles.${member.role as 'owner' | 'admin'}`)} · ${t('scheduling.level', { level: member.level })}`}
                 </p>
               </div>
               {can('ManageLevels') && (
@@ -89,13 +92,17 @@ export function TeamPage() {
   );
 }
 
-/** Mockup 1z, plus what the generator needs to know about each person: hours wanted and whether they work shifts (M2-12). */
+/**
+ * Mockup 1z, plus what the generator needs to know about each person: whether they work shifts, and the
+ * most hours they may get in a week (M2-12). The hours they want come with their availability (1.1).
+ */
 function EditMember({ member, onClose }: { member: Member; onClose: () => void }) {
   const { t } = useTranslation();
   const { id, can } = useWorkplace();
   const refresh = useRefreshWorkplace();
-  const [level, setLevel] = useState(member.level);
-  const [hours, setHours] = useState(member.desiredWeeklyHours ?? 0);
+  const [level, setLevel] = useState(member.level ?? 1);
+  const [limited, setLimited] = useState(member.maxWeeklyHours != null);
+  const [max, setMax] = useState(member.maxWeeklyHours ?? 40);
   const [worksShifts, setWorksShifts] = useState(member.worksShifts ?? true);
   const [removing, setRemoving] = useState(false);
   const path = { workplaceId: id, membershipId: member.membershipId };
@@ -106,10 +113,9 @@ function EditMember({ member, onClose }: { member: Member; onClose: () => void }
           params: { path },
           body: {
             level,
-            desiredWeeklyHours: hours,
             worksShifts,
-            maxWeeklyHours: null,
-            clearMaxWeeklyHours: null,
+            maxWeeklyHours: limited ? max : null,
+            clearMaxWeeklyHours: !limited,
           },
         }),
       ),
@@ -161,14 +167,15 @@ function EditMember({ member, onClose }: { member: Member; onClose: () => void }
           onCheckedChange={setWorksShifts}
         />
         {worksShifts && (
-          <Stepper
-            label={t('team.sheet.hours')}
-            description={t('team.sheet.hoursText')}
-            value={hours}
-            min={0}
-            max={60}
-            onChange={setHours}
+          <Switch
+            label={t('team.sheet.limit')}
+            description={t('team.sheet.limitText')}
+            checked={limited}
+            onCheckedChange={setLimited}
           />
+        )}
+        {worksShifts && limited && (
+          <Stepper label={t('team.sheet.max')} value={max} min={0} max={80} onChange={setMax} />
         )}
       </div>
       <FormError message={error ? t(messageKeyFor(error)) : undefined} />

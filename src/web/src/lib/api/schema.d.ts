@@ -3300,7 +3300,9 @@ export interface operations {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
+      path: {
+        workplaceId: string;
+      };
       cookie?: never;
     };
     requestBody: {

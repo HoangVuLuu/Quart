@@ -8,13 +8,13 @@ import { PageHeader } from '../../ui/PageHeader';
 import { Skeleton } from '../../ui/Skeleton';
 import { useCurrentPeriods } from '../scheduling/data';
 import { useWorkplace } from '../workplaces/workplace';
-import { DraftEditor } from './DraftEditor';
-import { OpenPeriodCard, ReadyToBuild } from './NextPeriod';
+import { NextPeriodBox } from './NextPeriod';
 import { PublishedSchedule } from './PublishedSchedule';
 import { Pill } from './Pill';
 
-// The Schedule tab. Staff see the published period (mockups 1c, 1d). Admins also see the next period:
-// "Ready to build?" while availability comes in (1k, 1k2), then the draft (1l). Staff never see a draft (AD-012).
+// The Schedule tab. Everyone sees the published period (mockups 1c, 1d). Managers also get the next-period
+// box at the top (4.1, 2026-11-18), which leads to Building Schedule; a published period is changed on
+// Editing Schedule (4.4). The draft itself never shows here, and staff never see one (AD-012).
 export function SchedulePage() {
   const { t, i18n } = useTranslation();
   const { can, view } = useWorkplace();
@@ -22,13 +22,10 @@ export function SchedulePage() {
   const manages = can('ManageSchedule');
   const live = periods.data?.live ?? null;
   const next = periods.data?.next ?? null;
-  // Published ahead of time: staff read them, and admins edit them, before the current one ends.
+  // Published ahead of time: staff read them, and managers edit them, before the current one ends.
   const published = [...(live ? [live] : []), ...(periods.data?.upcoming ?? [])];
-  // Admins land on the period that needs them: the next one while it is being prepared.
   const [chosen, setChosen] = useState<string | null>(null);
-  const [editing, setEditing] = useState<string | null>(null);
-  const showingNext = manages && next !== null && (chosen === null || chosen === next.period.id);
-  const shown = showingNext ? null : (published.find((period) => period.id === chosen) ?? live);
+  const shown = published.find((period) => period.id === chosen) ?? live;
 
   if (periods.isPending) {
     return (
@@ -40,93 +37,70 @@ export function SchedulePage() {
   }
   if (periods.error) throw periods.error;
 
-  const period = showingNext && next ? next.period : shown;
-  const range = period ? formatDateRange(period.startDate, period.endDate, i18n.language) : undefined;
-  const editingShown = manages && shown !== null && editing === shown.id;
-  const draft = manages && ((showingNext && next?.period.status === 'building') || editingShown);
-  const state = !period
-    ? undefined
-    : draft
-      ? t('schedule.state.draft')
-      : period.status === 'collecting'
-        ? t('schedule.state.collecting')
-        : period.status === 'building'
-          ? t('schedule.state.draft')
-          : t('schedule.state.published');
+  const range = shown ? formatDateRange(shown.startDate, shown.endDate, i18n.language) : undefined;
 
   return (
     <section className="flex flex-col gap-4 px-5">
-      <PageHeader title={t('schedule.title')} subtitle={range ? `${range} · ${state}` : undefined} />
+      <PageHeader
+        title={t('schedule.title')}
+        subtitle={range ? `${range} · ${t('schedule.state.published')}` : undefined}
+      />
 
-      {published.length + (manages && next ? 1 : 0) > 1 && (
+      {manages && (
+        <>
+          <NextPeriodBox next={next} after={live?.endDate} />
+          <Link to="/generator" className={buttonClassName('white', 'self-start')}>
+            {t('schedule.editGenerator')}
+          </Link>
+        </>
+      )}
+
+      {published.length > 1 && (
         <div role="group" aria-label={t('schedule.which')} className="flex flex-wrap gap-2">
           {published.map((option) => (
-            <Pill
-              key={option.id}
-              selected={!showingNext && shown?.id === option.id}
-              onClick={() => setChosen(option.id)}
-            >
-              {published.length === 1
-                ? t('schedule.published')
-                : formatDateRange(option.startDate, option.endDate, i18n.language)}
+            <Pill key={option.id} selected={shown?.id === option.id} onClick={() => setChosen(option.id)}>
+              {formatDateRange(option.startDate, option.endDate, i18n.language)}
             </Pill>
           ))}
-          {manages && next && (
-            <Pill selected={showingNext} onClick={() => setChosen(next.period.id)}>
-              {t('schedule.next')}
-            </Pill>
-          )}
         </div>
       )}
 
-      {showingNext && next ? (
-        next.period.status === 'collecting' ? (
-          <ReadyToBuild periodId={next.period.id} />
-        ) : (
-          <DraftEditor periodId={next.period.id} />
-        )
-      ) : shown ? (
-        editingShown ? (
-          <DraftEditor key={shown.id} periodId={shown.id} onDone={() => setEditing(null)} />
-        ) : (
-          <PublishedSchedule
-            key={shown.id}
-            periodId={shown.id}
-            action={
-              <>
-                {next?.canEditAvailability && view.me.worksShifts && (
-                  <Link
-                    to="/availability"
-                    className={buttonClassName('dark', 'min-h-11 bg-opening px-4 text-sm text-on-primary')}
-                  >
-                    {t('schedule.fillAvailability')}
-                  </Link>
-                )}
-                {manages && (
-                  <button
-                    type="button"
-                    onClick={() => setEditing(shown.id)}
-                    className={buttonClassName('white', 'min-h-11 px-4 text-sm')}
-                  >
-                    {t('schedule.edit')}
-                  </button>
-                )}
-              </>
-            }
-          />
-        )
+      {shown ? (
+        <PublishedSchedule
+          key={shown.id}
+          periodId={shown.id}
+          action={
+            <>
+              {next?.canEditAvailability && view.me.worksShifts && (
+                <Link
+                  to="/availability"
+                  className={buttonClassName('dark', 'min-h-11 bg-opening px-4 text-sm text-on-primary')}
+                >
+                  {t('schedule.fillAvailability')}
+                </Link>
+              )}
+              {manages && (
+                <Link
+                  to={`/schedule/edit?period=${shown.id}`}
+                  className={buttonClassName('white', 'min-h-11 px-4 text-sm')}
+                >
+                  {t('schedule.edit')}
+                </Link>
+              )}
+            </>
+          }
+        />
       ) : (
         <EmptyState title={t('schedule.emptyTitle')} mood="sleepy">
           {next && view.me.worksShifts ? t('schedule.emptyCollecting') : t('schedule.emptyText')}
         </EmptyState>
       )}
 
-      {!live && next && !manages && view.me.worksShifts && next.canEditAvailability && (
+      {!live && next && view.me.worksShifts && next.canEditAvailability && (
         <Link to="/availability" className={buttonClassName('dark', 'self-center')}>
           {t('schedule.fillAvailability')}
         </Link>
       )}
-      {manages && !next && <OpenPeriodCard after={live?.endDate} />}
     </section>
   );
 }

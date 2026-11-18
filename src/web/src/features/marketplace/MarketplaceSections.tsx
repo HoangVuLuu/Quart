@@ -24,11 +24,28 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+/** A small accent dot on a Trade tab item the person has not opened yet (2.4). */
+function NewDot() {
+  const { t } = useTranslation();
+  return (
+    <span className="size-2.5 shrink-0 rounded-full bg-accent">
+      <span className="sr-only">{t('trade.new')}</span>
+    </span>
+  );
+}
+
 /**
- * Open shifts, offers and trades, as mockups 1f (staff) and 1n (admins) show them inside Alerts. The
- * Trade tab shows the same sections: the mockups have no separate Trade screen (known conflict 1).
+ * The cards of mockups 1f (staff) and 1n (admins). Since 2026-11-18 (2.5) they are split: the Trade tab
+ * holds open shifts, give-aways and the person's own trades ("trade"); Alerts holds what a manager must
+ * decide ("decisions"). Opening a Trade item, by tapping its card, takes it off the tab's count (2.4).
  */
-export function MarketplaceSections({ emptyText }: { emptyText?: string }) {
+export function MarketplaceSections({
+  emptyText,
+  scope,
+}: {
+  emptyText?: string;
+  scope: 'trade' | 'decisions';
+}) {
   const { t } = useTranslation();
   const toast = useToast();
   const board = useMarketplace();
@@ -36,7 +53,17 @@ export function MarketplaceSections({ emptyText }: { emptyText?: string }) {
   const shiftText = useShiftText();
   if (board.error) throw board.error;
   if (!board.data) return null;
-  const data = board.data;
+  const all = board.data;
+  const trading = scope === 'trade';
+  const data = {
+    openShifts: trading ? all.openShifts : [],
+    offers: trading ? all.offers : [],
+    claims: trading ? [] : all.claims,
+    trades: all.trades.filter((trade) => (trade.role === 'approver') !== trading),
+  };
+  const open = (key: string, seen: boolean) => {
+    if (!seen) actions.seen.mutate(key);
+  };
   const error =
     actions.claim.error ?? actions.decideClaim.error ?? actions.trade.error ?? actions.cancelOffer.error;
   const busy = actions.claim.isPending || actions.decideClaim.isPending || actions.trade.isPending;
@@ -70,6 +97,12 @@ export function MarketplaceSections({ emptyText }: { emptyText?: string }) {
                     ? t('marketplace.claimFrom', { name: item.name, from: item.fromName })
                     : t('marketplace.claimOpen', { name: item.name })}
                 </p>
+                {/* 3.3: a warning the approver may override, never a refusal. */}
+                {item.wouldMissLevel && (
+                  <StatusChip tone="warning" className="mt-1">
+                    {t('marketplace.wouldMissLevel')}
+                  </StatusChip>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Button
@@ -96,7 +129,12 @@ export function MarketplaceSections({ emptyText }: { emptyText?: string }) {
       {data.openShifts.length + data.offers.length > 0 && (
         <Section title={t('marketplace.open')}>
           {data.openShifts.map((item) => (
-            <Card key={item.shift.id} className="flex items-center gap-3 p-4">
+            <Card
+              key={item.shift.id}
+              className="flex items-center gap-3 p-4"
+              onClick={() => open(`slot:${item.shift.id}`, item.seen)}
+            >
+              {!item.seen && <NewDot />}
               <div className="min-w-0 flex-1">
                 <p className="font-bold">{shiftText(item.shift)}</p>
                 <p className="text-sm text-muted">{t('marketplace.openSlots', { count: item.openSlots })}</p>
@@ -115,7 +153,12 @@ export function MarketplaceSections({ emptyText }: { emptyText?: string }) {
             </Card>
           ))}
           {data.offers.map((item) => (
-            <Card key={item.id} className="flex items-center gap-3 p-4">
+            <Card
+              key={item.id}
+              className="flex items-center gap-3 p-4"
+              onClick={() => open(`offer:${item.id}`, item.seen || item.mine || item.onShift)}
+            >
+              {!item.seen && !item.mine && !item.onShift && <NewDot />}
               <div className="min-w-0 flex-1">
                 <p className="font-bold">{shiftText(item.shift)}</p>
                 <p className="text-sm text-muted">
@@ -164,6 +207,7 @@ export function MarketplaceSections({ emptyText }: { emptyText?: string }) {
               key={trade.id}
               trade={trade}
               busy={busy}
+              onOpen={() => open(`trade:${trade.id}`, trade.seen || trade.role !== 'coworker')}
               onAct={(action) => actions.trade.mutate({ tradeId: trade.id, action })}
             />
           ))}
@@ -176,10 +220,12 @@ export function MarketplaceSections({ emptyText }: { emptyText?: string }) {
 function TradeCard({
   trade,
   busy,
+  onOpen,
   onAct,
 }: {
   trade: TradeView;
   busy: boolean;
+  onOpen: () => void;
   onAct: (action: 'accept' | 'decline' | 'cancel' | 'approve' | 'reject') => void;
 }) {
   const { t } = useTranslation();
@@ -191,8 +237,9 @@ function TradeCard({
   const waiting = trade.status === 'awaiting_approval';
 
   return (
-    <Card className="flex flex-col gap-3 p-4">
-      <p className="font-bold">
+    <Card className="flex flex-col gap-3 p-4" onClick={onOpen}>
+      <p className="flex items-center gap-2 font-bold">
+        {!trade.seen && trade.role === 'coworker' && trade.status === 'requested' && <NewDot />}
         {trade.role === 'requester'
           ? t('marketplace.trade.youAsked', { name: trade.coworkerName })
           : trade.role === 'coworker'

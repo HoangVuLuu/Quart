@@ -31,7 +31,8 @@ type PublishedScheduleProps = {
   action?: ReactNode;
 };
 
-// Mockups 1c (my shifts) and 1d (whole team), with the shift sheet (1h) and the trade sheet (1i).
+// Mockups 1c (my shifts) and 1d (whole team). Tapping one of my shifts shows who I work with (2.3,
+// 2026-11-18); giving away and trading start from the Trade tab instead (1h, 1i).
 export function PublishedSchedule({ periodId, action }: PublishedScheduleProps) {
   const { t } = useTranslation();
   const schedule = usePublishedSchedule(periodId);
@@ -63,9 +64,7 @@ export function PublishedSchedule({ periodId, action }: PublishedScheduleProps) 
           <WholeTeam schedule={schedule.data} />
         )}
       </div>
-      {selected && (
-        <ShiftSheet schedule={schedule.data} shift={selected} onClose={() => setOpenShift(null)} />
-      )}
+      {selected && <ShiftPeopleSheet shift={selected} onClose={() => setOpenShift(null)} />}
     </>
   );
 }
@@ -216,8 +215,49 @@ function WholeTeam({ schedule }: { schedule: ScheduleView }) {
   );
 }
 
-/** Mockup 1h: one of my shifts, with Give away and Trade. Giving away never removes me until someone takes it (FR-181). */
-function ShiftSheet({
+/**
+ * One of my shifts on the Schedule tab: who else works it, and its empty spots (2.3, 2026-11-18). The same
+ * pop-up as the trade sheet, without its buttons.
+ */
+function ShiftPeopleSheet({ shift, onClose }: { shift: ScheduleShift; onClose: () => void }) {
+  const { t, i18n } = useTranslation();
+  const shiftName = useShiftName();
+  const others = shift.people.filter((person) => !person.isMe);
+  const open = Math.max(0, shift.headcount - shift.people.length);
+  return (
+    <Sheet
+      open
+      onOpenChange={(isOpen) => !isOpen && onClose()}
+      title={shiftName(shift.part)}
+      description={`${formatDayHeading(shift.date, i18n.language)} · ${shift.start}–${shift.end} · ${formatNumber(shift.hours, i18n.language)} h`}
+    >
+      <h3 className="text-sm font-bold text-muted">{t('schedule.sheet.with')}</h3>
+      <ul className="mt-2 flex flex-col gap-2">
+        {others.map((person) => (
+          <li key={person.membershipId} className="rounded-field bg-surface-3 px-4 py-3 font-bold">
+            {person.name ?? t('team.former')}
+          </li>
+        ))}
+        {others.length === 0 && open === 0 && (
+          <li className="rounded-field bg-surface-3 px-4 py-3 text-sm text-muted">
+            {t('schedule.sheet.alone')}
+          </li>
+        )}
+      </ul>
+      {open > 0 && (
+        <StatusChip tone="warning" className="mt-3">
+          {t('schedule.sheet.openSpots', { count: open })}
+        </StatusChip>
+      )}
+    </Sheet>
+  );
+}
+
+/**
+ * Mockup 1h: one of my shifts, with Give away and Trade, opened from "My shifts to trade" (2.2). Giving
+ * away never removes me until someone takes it (FR-181).
+ */
+export function ShiftTradeSheet({
   schedule,
   shift,
   onClose,

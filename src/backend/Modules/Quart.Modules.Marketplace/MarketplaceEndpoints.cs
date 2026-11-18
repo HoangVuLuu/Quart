@@ -155,8 +155,10 @@ internal static class MarketplaceEndpoints
 
     /// <summary>Opening a Trade tab item takes it off the tab's count (2.4). Only the caller's own record changes.</summary>
     private static async Task<Results<NoContent, ProblemHttpResult>> MarkSeenAsync(
-        SeenRequest request, HttpContext http, MarketplaceDb db, IClock clock, CancellationToken cancellationToken)
+        Guid workplaceId, SeenRequest request, HttpContext http, MarketplaceDb db, IClock clock, CancellationToken cancellationToken)
     {
+        // The guard has already resolved the workplace; the caller's membership belongs to it.
+        _ = workplaceId;
         var member = http.Member();
         var key = request.Key ?? string.Empty;
         var parts = key.Split(':');
