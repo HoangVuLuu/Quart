@@ -17,6 +17,7 @@ const period: Schemas['PeriodSummary'] = {
   version: 0,
   locked: false,
   draftSaved: false,
+  dueAt: '2099-10-02T22:00:00Z',
 };
 const next = { period, myAvailability: 'not_sent', canEditAvailability: true, sentCount: null };
 const mine: Schemas['MyAvailability'] = {
@@ -83,8 +84,8 @@ describe('changes of 2026-11-18', () => {
     const button = await screen.findByRole('link', { name: en.trade.fromSchedule });
     expect(button).toHaveAttribute('href', '/trade/mine');
     expect(await screen.findByRole('link', { name: `${en.nav.trade} 1 waiting` })).toBeInTheDocument();
-    const card = (await screen.findByText(en.trade.new)).closest('div')!;
-    await userEvent.click(card);
+    // The eye marks it seen without opening it (2026-11-20).
+    await userEvent.click(await screen.findByRole('button', { name: /Mark as read/ }));
 
     expect(calls.find((call) => call.path.endsWith('/marketplace/seen'))?.body).toEqual({
       key: 'slot:mon-open',
@@ -139,7 +140,12 @@ describe('changes of 2026-11-18', () => {
     await userEvent.click(screen.getByRole('button', { name: en.schedule.open.submit }));
 
     const body = calls.find((call) => call.method === 'POST' && call.path === `${base}/periods`)?.body;
-    expect(body).toEqual({ startDate: expect.any(String) as string });
+    // The length is not sent; the deadline is (FR-090, FR-091).
+    expect(body).toEqual({
+      startDate: expect.any(String) as string,
+      dueDate: expect.any(String) as string,
+      dueTime: '00:00',
+    });
   });
 
   it('lets a manager cancel the next period after an "Are you sure?", then offers to open a new one', async () => {

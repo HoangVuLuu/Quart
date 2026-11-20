@@ -5,7 +5,7 @@ import { Navigate } from 'react-router';
 import { useGoBack } from '../../app/useGoBack';
 import { SubPage } from '../../app/SubPage';
 import { messageKeyFor } from '../../i18n/errors';
-import { formatDateRange, formatDayShort, formatDateTime, formatNumber } from '../../i18n/format';
+import { formatDateRange, formatDateTime, formatDayShort, formatDue, formatNumber } from '../../i18n/format';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { cx } from '../../ui/cx';
@@ -140,9 +140,14 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
     >
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
-          <p className="min-w-0 flex-1 text-sm text-muted">
-            {locked ? t('availability.locked') : t('availability.hint')}
-          </p>
+          <div className="min-w-0 flex-1 text-sm text-muted">
+            {!locked && mine.period.dueAt && (
+              <p className="font-bold text-ink">
+                {t('availability.due', { when: formatDue(mine.period.dueAt, language) })}
+              </p>
+            )}
+            <p>{locked ? t('availability.locked') : t('availability.hint')}</p>
+          </div>
           <StatusChip tone={sent ? 'success' : 'danger'}>
             {sent ? t('availability.sent') : t('availability.notSent')}
           </StatusChip>

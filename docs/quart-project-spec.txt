@@ -380,9 +380,21 @@ FR-090  The admin sets a period length of 1, 2, 3 or 4 weeks per period.
         General tab (mockup 1k3), and only there: opening a period asks for
         its start date only and shows the length from the rules (2026-11-18).
         A change applies to the next period opened, never to one already open.
-FR-091  The admin sets how many days before the period starts the availability
-        request goes out, and a submission deadline. Automatic reminders are
-        sent to anyone who has not submitted.
+FR-091  The availability request goes out as soon as the admin opens a
+        period, to everyone who works shifts, with a submission deadline.
+        Automatic reminders are sent to anyone who has not submitted.
+        The deadline is required when a period is opened, prefilled to 48
+        hours before it starts (the Saturday at 00:00). While the period is
+        not published, the admin can change it from the pen beside it in the
+        next-period box on Schedule; the reminders follow the new deadline.
+        Reminders go out 48 and 24 hours before the deadline to people who
+        have not sent; at the deadline the admins are told how many have
+        sent. A step whose moment has already passed when the deadline is
+        set or changed is not sent late. Nothing locks at the deadline
+        (FR-100). While the admin is on Building Schedule (availability
+        locked), the reminders and the deadline note wait and go out once
+        they leave; once published, none go out. A period opened after it
+        has started may take any future deadline before it ends.
 FR-092  Starting a period copies the template into real, dated shifts. From that
         point the period has its own shifts, which the admin may edit for that
         period only (a holiday closure, extended December hours).
@@ -1913,6 +1925,12 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
 2026-11-17  Time-off requests and payslips wait until after the pilot.
             (BL-01, BL-02)
 
+2026-11-17  Availability cycle settled with Hoang (M4-05): "request N days
+            before" is a workplace setting in Edit Generator, not chosen per
+            period; staff can fill in before the request goes out; the
+            deadline is required, prefilled to 18:00 three days before the
+            start; reminders 48 and 24 hours before it.  (FR-091)
+
 2026-11-18  Change list from testing (Hoang, claude/quart-changes-2026-11-18.md):
             hours wanted per period in the availability form (BR-032,
             FR-037); availability is filled in from Home only, and Send and
@@ -1948,6 +1966,26 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             the Trade tab; a swipe right from the edge goes back on every page
             with a back arrow, in the app installed on an iPhone (browsers and
             Android already do it).
+
+2026-11-19  Availability cycle (M4-05) merged with the 2026-11-18 changes: the
+            deadline is set when opening a period, with the length still from
+            the generator rules; the next-period box shows it; automatic steps
+            wait while the admin is on Building Schedule instead of being
+            dropped.  (FR-091)
+
+2026-11-20  The deadline offered when opening a period is 48 hours before it
+            starts, the Saturday at 00:00 (was 18:00 three days before).
+            (FR-091) Also: on the Trade tab an open shift or give-away opens
+            a pop-up with who works it and a Claim (or Request) button behind
+            an "Are you sure?", and an eye marks it seen (FR-185); in Team
+            availability the whole row opens a person's answer; the "is
+            open", reminder and reopened availability alerts open the form,
+            and back returns to Alerts (FR-215).
+
+2026-11-20  "Request N days before" removed (Hoang): the request goes out
+            when the period is opened, as before. The deadline can be changed
+            while the period is not published, and the reminders follow it.
+            (FR-091)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

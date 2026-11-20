@@ -107,13 +107,19 @@ export function AlertsPage() {
 }
 
 /**
- * Where an alert leads, when it leads anywhere (2026-11-18): someone's answer for "sent their availability"
+ * Where an alert leads, when it leads anywhere (2026-11-18/20): the form for "availability is open" and its
+ * reminders; someone's answer for "sent their availability"
  * and "added a note", and the shift on the Schedule tab for "the shift is yours" and "the trade is done".
  * Alerts from before these carried no ids, so they stay where they are.
  */
 function destinationOf(item: NotificationItem): string | null {
   const { periodId, membershipId, shiftId } = item.parameters;
   switch (item.type) {
+    // 2026-11-20: asked or reminded to fill in availability opens the form; back returns here.
+    case 'availability.requested':
+    case 'availability.reminder':
+    case 'availability.reopened':
+      return '/availability';
     case 'availability.sent':
     case 'availability.note_added':
       return periodId && membershipId ? `/availability/people/${periodId}/${membershipId}` : null;

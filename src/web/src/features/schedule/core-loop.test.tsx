@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import i18n from '../../i18n';
+import { formatDue } from '../../i18n/format';
 import en from '../../i18n/locales/en.json';
 import fr from '../../i18n/locales/fr.json';
 import type { Schemas } from '../../lib/api/client';
@@ -20,6 +21,7 @@ const period: Schemas['PeriodSummary'] = {
   version: 0,
   locked: false,
   draftSaved: false,
+  dueAt: '2099-10-02T22:00:00Z',
 };
 const next = { period, myAvailability: 'not_sent', canEditAvailability: true, sentCount: null };
 
@@ -116,6 +118,40 @@ describe('availability', () => {
     const sent = calls.find((call) => call.path.endsWith('/availability/me/send'));
     // BR-032: last period's number is offered and sent with the shifts.
     expect(sent?.body).toEqual({ shiftIds: ['mon-close', 'tue-open'], desiredWeeklyHours: 18 });
+  });
+
+  it('tells staff when availability is due, on Home and on the availability page (FR-091, mockup 1a)', async () => {
+    signedIn('employee', {
+      [`GET ${base}/periods/current`]: { live: null, next, upcoming: [] },
+      [`GET ${base}/periods/${periodId}/availability/me`]: myAvailability,
+    });
+    const router = renderApp('/');
+    const due = `Due ${formatDue(period.dueAt ?? '', 'en')}`;
+
+    expect(await screen.findByText(due)).toBeInTheDocument();
+    await router.navigate('/availability');
+    await screen.findByRole('heading', { name: en.availability.title });
+    expect(await screen.findByText(due)).toBeInTheDocument();
+  });
+
+  it('opens a period with a deadline 48 hours before it starts: the Saturday at 00:00', async () => {
+    const calls = signedIn('owner', {
+      [`GET ${base}/periods/current`]: { live: null, next: null, upcoming: [] },
+      [`POST ${base}/periods`]: period,
+    });
+    renderApp('/schedule');
+
+    const start = await screen.findByLabelText(en.schedule.open.start);
+    await userEvent.clear(start);
+    await userEvent.type(start, '2099-10-05');
+    await userEvent.click(screen.getByRole('button', { name: en.schedule.open.submit }));
+
+    const opened = calls.find((call) => call.method === 'POST' && call.path === `${base}/periods`);
+    expect(opened?.body).toEqual({
+      startDate: '2099-10-05',
+      dueDate: '2099-10-03',
+      dueTime: '00:00',
+    });
   });
 
   it('locks the shifts once building has started, but still takes a note', async () => {
@@ -511,13 +547,26 @@ describe('the marketplace', () => {
         ],
       },
       [`POST ${base}/marketplace/claims`]: { applied: true },
+      [`GET ${base}/periods/${periodId}/schedule`]: schedule,
     });
     renderApp('/trade');
 
     expect(await screen.findByText('Offered by Kevin T.')).toBeInTheDocument();
+    // 2026-11-20: no Claim on the card; tapping it opens the shift with who works it.
+    expect(screen.queryByRole('button', { name: en.marketplace.claim })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^Open .*16:00–23:00/ }));
+    const sheet = within(await screen.findByRole('dialog', { name: /Closing/ }));
+    expect(sheet.getByText(en.marketplace.sheet.with)).toBeInTheDocument();
+    // Kevin gives it away, so Sophie would work it with nobody else yet.
+    expect(sheet.getByText(en.marketplace.sheet.alone)).toBeInTheDocument();
     // FR-186: a warning, not a block.
-    expect(screen.getByText(en.marketplace.wouldMissLevel)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: en.marketplace.claim }));
+    expect(sheet.getByText(en.marketplace.wouldMissLevel)).toBeInTheDocument();
+    await userEvent.click(sheet.getByRole('button', { name: en.marketplace.claim }));
+
+    // "Are you sure?" first: No changes nothing, Yes claims.
+    const ask = within(await screen.findByRole('dialog', { name: en.marketplace.sheet.askClaim }));
+    expect(calls.some((call) => call.path.endsWith('/marketplace/claims'))).toBe(false);
+    await userEvent.click(ask.getByRole('button', { name: en.marketplace.sheet.yes }));
 
     expect(calls.find((call) => call.path.endsWith('/marketplace/claims'))?.body).toEqual({
       shiftId: 'mon-close',
@@ -577,6 +626,8 @@ describe('notifications', () => {
         added: '1',
         removed: '0',
         reason: 'stale',
+        sent: '12',
+        total: '15',
       };
 
       for (const type of notificationTypes) {
@@ -788,5 +839,131 @@ describe('changes of 2026-11-19', () => {
     );
     expect(headings.indexOf(en.marketplace.trades)).toBeLessThan(headings.indexOf(en.marketplace.open));
     expect(headings.indexOf(en.marketplace.trades)).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('changes of 2026-11-20', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  it('says Request in the claim pop-up when a manager must approve, and No changes nothing', async () => {
+    const shift = { id: 'mon-open', periodId, date: '2099-10-05', start: '10:00', end: '16:00' };
+    const calls = signedIn('employee', {
+      [`GET ${base}/marketplace`]: {
+        ...emptyBoard,
+        claimsNeedApproval: true,
+        openShifts: [{ shift, openSlots: 1, requested: false, seen: true }],
+      },
+      [`GET ${base}/periods/${periodId}/schedule`]: schedule,
+    });
+    renderApp('/trade');
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Open .*10:00–16:00/ }));
+    const sheet = within(await screen.findByRole('dialog', { name: /Opening/ }));
+    expect(sheet.getByText('Kevin T.')).toBeInTheDocument();
+    await userEvent.click(sheet.getByRole('button', { name: en.marketplace.sheet.request }));
+    const ask = within(await screen.findByRole('dialog', { name: en.marketplace.sheet.askRequest }));
+    await userEvent.click(ask.getByRole('button', { name: en.marketplace.sheet.no }));
+
+    expect(calls.some((call) => call.path.endsWith('/marketplace/claims'))).toBe(false);
+  });
+
+  it('opens someone’s answer from anywhere on their row in Team availability, not only the name', async () => {
+    const team: Schemas['TeamAvailability'] = {
+      period,
+      sentCount: 0,
+      total: 1,
+      people: [
+        {
+          membershipId: kevin,
+          name: 'Kevin T.',
+          level: 3,
+          status: 'not_sent',
+          reopened: false,
+          hoursOffered: 0,
+          desiredWeeklyHours: null,
+          notes: [],
+        },
+      ],
+    };
+    signedIn('owner', {
+      [`GET ${base}/periods/current`]: { live: null, next: { ...next, sentCount: 0 }, upcoming: [] },
+      [`GET ${base}/periods/${periodId}/availability`]: team,
+    });
+    renderApp('/availability/team');
+
+    const link = await screen.findByRole('link', { name: 'Kevin T.' });
+    expect(link).toHaveAttribute('href', `/availability/people/${periodId}/${kevin}`);
+    // The link is stretched over the row; Remind stays its own button above it.
+    expect(link.className).toContain('after:inset-0');
+    expect(link.className).not.toContain('underline');
+    expect(screen.getByRole('button', { name: 'Remind Kevin T.' })).toBeInTheDocument();
+  });
+
+  it('opens the availability form from "Availability is open", and back returns to Alerts', async () => {
+    const calls = signedIn('employee', {
+      [`GET ${base}/notifications`]: {
+        unread: 1,
+        items: [
+          {
+            id: 'n1',
+            type: 'availability.requested',
+            parameters: { periodStart: '2099-10-05', weeks: '1' },
+            createdAt: '2099-10-01T12:00:00Z',
+            read: false,
+          },
+        ],
+      },
+      [`POST ${base}/notifications/n1/read`]: status(204),
+      [`GET ${base}/periods/current`]: { live: null, next, upcoming: [] },
+      [`GET ${base}/periods/${periodId}/availability/me`]: myAvailability,
+    });
+    const router = renderApp('/alerts');
+
+    await userEvent.click(await screen.findByRole('link', { name: /Availability is open/ }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/availability'));
+    expect(calls.some((call) => call.method === 'POST' && call.path.endsWith('/notifications/n1/read'))).toBe(
+      true,
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: en.shell.back }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/alerts'));
+  });
+});
+
+describe('changing the deadline', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  it('moves the deadline from the pen beside it in the next-period box', async () => {
+    const dueAt = new Date(2099, 9, 3, 0, 0).toISOString();
+    const calls = signedIn('owner', {
+      [`GET ${base}/periods/current`]: {
+        live: null,
+        next: { ...next, period: { ...period, dueAt }, sentCount: 0 },
+        upcoming: [],
+      },
+      [`PATCH ${base}/periods/${periodId}/deadline`]: { ...period, dueAt },
+    });
+    renderApp('/schedule');
+
+    await userEvent.click(await screen.findByRole('button', { name: en.deadline.change }));
+    const sheet = within(await screen.findByRole('dialog', { name: en.deadline.title }));
+    // It starts from the current deadline.
+    expect(sheet.getByLabelText(en.schedule.open.dueDate)).toHaveValue('2099-10-03');
+    expect(sheet.getByLabelText(en.schedule.open.dueTime)).toHaveValue('00:00');
+    await userEvent.clear(sheet.getByLabelText(en.schedule.open.dueDate));
+    await userEvent.type(sheet.getByLabelText(en.schedule.open.dueDate), '2099-10-04');
+    await userEvent.click(sheet.getByRole('button', { name: en.deadline.save }));
+
+    await waitFor(() =>
+      expect(calls.find((call) => call.method === 'PATCH')?.body).toEqual({
+        dueDate: '2099-10-04',
+        dueTime: '00:00',
+      }),
+    );
+    expect(await screen.findByText(en.deadline.changed)).toBeInTheDocument();
   });
 });

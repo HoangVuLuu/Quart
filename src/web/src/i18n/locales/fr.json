@@ -58,7 +58,8 @@
       "build": "Créer l’horaire",
       "continue": "Ouvrir le brouillon",
       "who": "Qui a envoyé"
-    }
+    },
+    "availabilityDueBy": "À envoyer d’ici {{when}}"
   },
   "notFound": {
     "title": "Page introuvable",
@@ -122,11 +123,15 @@
       "trade_invalid": "Ces deux quarts ne peuvent pas être échangés."
     },
     "period": {
+      "due_after_start": "La date limite doit être avant le début de la période.",
+      "due_in_past": "Cette date limite est déjà passée.",
+      "due_required": "Choisis quand les disponibilités sont dues.",
       "overlaps": "Ces dates chevauchent une autre période.",
       "start_not_monday": "Une période commence un lundi.",
       "template_empty": "Ajoute d’abord tes quarts dans la page Modifier le générateur.",
       "unfinished_exists": "Publie la période en cours avant d’en ouvrir une autre.",
-      "already_started": "Cette période est déjà commencée, elle ne peut plus être annulée."
+      "already_started": "Cette période est déjà commencée, elle ne peut plus être annulée.",
+      "due_published": "Cet horaire est publié : sa date limite ne compte plus."
     },
     "schedule": {
       "already_on_shift": "Cette personne est déjà sur le quart.",
@@ -230,16 +235,20 @@
       "allSentLabel": "Envoyées",
       "notSent": "Pas encore envoyées",
       "allSent": "Tout le monde a envoyé ses disponibilités",
-      "team": "Voir les disponibilités de l’équipe"
+      "team": "Voir les disponibilités de l’équipe",
+      "due": "Date limite : {{when}}."
     },
     "open": {
       "title": "Ouvrir la prochaine période",
-      "text": "Tous ceux qui font des quarts reçoivent une demande de disponibilités.",
+      "text": "Tous ceux qui font des quarts reçoivent une demande de disponibilités dès que tu l’ouvres.",
       "start": "Début",
       "startHint": "Un lundi.",
       "submit": "Ouvrir la période",
       "length_one": "Dure {{count}} semaine, selon les règles du générateur.",
-      "length_other": "Dure {{count}} semaines, selon les règles du générateur."
+      "length_other": "Dure {{count}} semaines, selon les règles du générateur.",
+      "dueDate": "Disponibilités dues le",
+      "dueDateHint": "Des rappels partent 48 et 24 heures avant.",
+      "dueTime": "À"
     },
     "box": {
       "open": "La prochaine période est ouverte",
@@ -266,6 +275,7 @@
     "sendNote": "Envoyer la note",
     "send": "Envoyer",
     "sendAgain": "Envoyer à nouveau",
+    "due": "À envoyer d’ici {{when}}",
     "wanted": "Heures voulues par semaine",
     "wantedHint": "Pour chaque semaine de cette période."
   },
@@ -726,7 +736,8 @@
     "reopen": "Rouvrir",
     "reopenNamed": "Rouvrir les disponibilités de {{name}}",
     "reopenedToast": "Rouvertes pour {{name}}",
-    "remindAll": "Rappeler tous ceux qui manquent"
+    "remindAll": "Rappeler tous ceux qui manquent",
+    "due": "Date limite : {{when}}"
   },
   "team": {
     "title": "Toute l’équipe",
@@ -789,6 +800,16 @@
       "accept": "Accepter",
       "cancel": "Annuler la demande",
       "approve": "Approuver"
+    },
+    "sheet": {
+      "with": "Tu travaillerais avec",
+      "alone": "Personne d’autre pour l’instant",
+      "request": "Demander ce quart",
+      "askRequest": "Demander ce quart à ton gestionnaire?",
+      "askClaim": "Prendre ce quart?",
+      "yes": "Oui",
+      "no": "Non",
+      "open": "Ouvrir {{shift}}"
     }
   },
   "trade": {
@@ -832,7 +853,8 @@
         "reminder": "Rappel : envoie tes disponibilités pour la période du {{periodStart}}",
         "reopened": "Tes disponibilités ont été rouvertes pour la période du {{periodStart}}",
         "sent": "{{name}} a envoyé ses disponibilités",
-        "note_added": "{{name}} a ajouté une note à ses disponibilités"
+        "note_added": "{{name}} a ajouté une note à ses disponibilités",
+        "due": "Les disponibilités pour la période du {{periodStart}} sont dues : {{sent}} sur {{total}} envoyées"
       },
       "schedule": {
         "published": "L’horaire du {{periodStart}} est publié",
@@ -1031,5 +1053,12 @@
     "goneTitle": "Rien à afficher",
     "goneText": "Cette période a été annulée, ou cette personne ne fait plus partie de l’équipe.",
     "wanted": "Heures voulues par semaine"
+  },
+  "deadline": {
+    "change": "Changer la date limite",
+    "title": "Date limite des disponibilités",
+    "text": "Les rappels suivent : 48 et 24 heures avant.",
+    "save": "Enregistrer",
+    "changed": "Date limite changée"
   }
 }

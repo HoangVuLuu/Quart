@@ -42,6 +42,8 @@ internal sealed class SchedulingDb(DbContextOptions<SchedulingDb> options) : DbC
         {
             period.HasKey(x => x.Id);
             period.Property(x => x.Rules).HasColumnType("jsonb");
+            // Empty for existing rows, and for any row the previous version inserts during a deploy.
+            period.Property(x => x.StepsDone).HasDefaultValueSql("'{}'::text[]");
             period.Property(x => x.SavedDraft).HasColumnType("jsonb");
             period.HasIndex(x => new { x.WorkplaceId, x.StartDate });
         });
@@ -155,6 +157,12 @@ internal sealed class Period
     public int? Seed { get; set; }
 
     public Instant CreatedAt { get; set; }
+
+    /// <summary>When availability is due (FR-091). Null only for periods opened before deadlines existed.</summary>
+    public Instant? AvailabilityDueAt { get; set; }
+
+    /// <summary>The automatic steps already done ("48h", "24h", "due"), so a job run twice does nothing the second time.</summary>
+    public List<string> StepsDone { get; set; } = [];
 
     public LocalDate EndDate => StartDate.PlusDays((Weeks * 7) - 1);
 }

@@ -121,8 +121,11 @@ for (const [fullName, email, level, desiredWeeklyHours] of staff) {
 }
 
 console.log('Opening a two-week period; everyone but Liam sends their availability…');
-// The length comes from the generator rules saved above (FR-090).
-const period = await owner.post(`${workplace}/periods`, { startDate: nextMonday() });
+// FR-091: availability is due 48 hours before the period starts, the Saturday at 00:00. The length comes
+// from the generator rules saved above (FR-090).
+const startDate = nextMonday();
+const dueDate = new Date(Date.parse(`${startDate}T00:00:00Z`) - 2 * 86_400_000).toISOString().slice(0, 10);
+const period = await owner.post(`${workplace}/periods`, { startDate, dueDate, dueTime: '00:00' });
 const availability = `${workplace}/periods/${period.id}/availability/me`;
 for (const { browser, email, desiredWeeklyHours } of [...people, { browser: owner, email: 'philippe@demo.quart', desiredWeeklyHours: 26 }]) {
   if (email === 'liam@demo.quart') continue;

@@ -54,13 +54,17 @@ public sealed class Team
     public async Task OpenPeriodAsync(int weeks = 1, LocalDate? monday = null)
     {
         var start = monday ?? new LocalDate(2026, 11, 9);
+        // FR-091: due at 18:00 three days before the start, or tomorrow for a period that has already started.
+        var today = App.Clock.GetCurrentInstant().InZone(DateTimeZoneProviders.Tzdb["America/Toronto"]).Date;
+        var due = start.PlusDays(-3) > today ? start.PlusDays(-3) : today.PlusDays(1);
+        // The length lives in the generator rules only (FR-090).
         var rules = await Owner.GetAsync($"{Base}/generator");
         if (rules["periodWeeks"]!.GetValue<int>() != weeks)
         {
             rules["periodWeeks"] = weeks;
             await Owner.SendAsync(HttpMethod.Put, $"{Base}/generator", rules);
         }
-        var period = await Owner.PostAsync($"{Base}/periods", new { startDate = start.ToString("yyyy-MM-dd", null) });
+        var period = await Owner.PostAsync($"{Base}/periods", new { startDate = start.ToString("yyyy-MM-dd", null), dueDate = due.ToString("yyyy-MM-dd", null), dueTime = "18:00" });
         PeriodId = Guid.Parse(period["id"]!.GetValue<string>());
     }
 

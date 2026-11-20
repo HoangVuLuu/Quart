@@ -3,15 +3,24 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { messageKeyFor } from '../../i18n/errors';
-import { formatDateRange } from '../../i18n/format';
+import { formatDateRange, formatDue } from '../../i18n/format';
 import { api, unwrap } from '../../lib/api/client';
 import { Button } from '../../ui/Button';
 import { buttonClassName } from '../../ui/button-styles';
 import { HeroCard } from '../../ui/HeroCard';
 import { Icon, iconButtonClassName } from '../../ui/Icon';
+import { Sheet } from '../../ui/Sheet';
 import { TextField } from '../../ui/TextField';
+import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
-import { mondayOnOrAfter, useCreatePeriod, useTeamAvailability, type NextPeriod } from '../scheduling/data';
+import {
+  mondayOnOrAfter,
+  suggestedDueDate,
+  useChangeDeadline,
+  useCreatePeriod,
+  useTeamAvailability,
+  type NextPeriod,
+} from '../scheduling/data';
 import { useWorkplace } from '../workplaces/workplace';
 import { CancelPeriodButton } from './CancelPeriod';
 
@@ -54,6 +63,8 @@ export function NextPeriodBox({ next, after }: { next: NextPeriod | null; after?
           </div>
         </>
       )}
+      {/* When availability is due, with a pen to move it while the period is not published (FR-091). */}
+      {next.period.dueAt && <Deadline periodId={next.period.id} dueAt={next.period.dueAt} />}
       <div className="mt-4 flex flex-wrap gap-2">
         <Link to="/schedule/build" className={buttonClassName('dark')}>
           {next.period.draftSaved ? t('schedule.box.continue') : t('schedule.box.build')}
@@ -68,8 +79,9 @@ export function NextPeriodBox({ next, after }: { next: NextPeriod | null; after?
 }
 
 /**
- * Opens the next period on a Monday. Its length is the one set in Edit generator rules, shown here but only
- * changed there (FR-090, 2026-11-18). Everyone who works shifts is asked.
+ * Opens the next period on a Monday, with when availability is due (FR-091). Its length is the one set in
+ * Edit generator rules, shown here but only changed there (FR-090). Everyone who works shifts is asked, now
+ * or on the day set in Edit generator rules.
  */
 function OpenPeriodBox({ after }: { after?: string }) {
   const { t } = useTranslation();
@@ -87,6 +99,10 @@ function OpenPeriodBox({ after }: { after?: string }) {
     ? new Date(Date.parse(`${after}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10)
     : today;
   const [startDate, setStartDate] = useState(mondayOnOrAfter(earliest > today ? earliest : today));
+  // FR-091: the deadline follows the start date until the manager picks one of their own.
+  const [chosenDue, setChosenDue] = useState<string | null>(null);
+  const dueDate = chosenDue ?? suggestedDueDate(startDate, today);
+  const [dueTime, setDueTime] = useState('00:00');
 
   return (
     <HeroCard eyebrow={t('home.period.none')} title={t('schedule.open.title')} headingLevel={2} wide>
@@ -101,9 +117,27 @@ function OpenPeriodBox({ after }: { after?: string }) {
           onChange={(event) => setStartDate(event.target.value)}
         />
         {rules && <p className="text-sm">{t('schedule.open.length', { count: rules.periodWeeks })}</p>}
+        <div className="grid grid-cols-[3fr_2fr] gap-3">
+          <TextField
+            label={t('schedule.open.dueDate')}
+            hint={t('schedule.open.dueDateHint')}
+            type="date"
+            required
+            value={dueDate}
+            onChange={(event) => setChosenDue(event.target.value)}
+          />
+          <TextField
+            label={t('schedule.open.dueTime')}
+            type="time"
+            step={900}
+            required
+            value={dueTime}
+            onChange={(event) => setDueTime(event.target.value)}
+          />
+        </div>
         <FormError message={create.error ? t(messageKeyFor(create.error)) : undefined} />
         <div className="flex items-end gap-2">
-          <Button loading={create.isPending} onClick={() => create.mutate({ startDate })}>
+          <Button loading={create.isPending} onClick={() => create.mutate({ startDate, dueDate, dueTime })}>
             {t('schedule.open.submit')}
           </Button>
           <GeneratorRulesLink />
@@ -126,5 +160,76 @@ function GeneratorRulesLink() {
     >
       <Icon name="pen" />
     </Link>
+  );
+}
+
+/** "Due Saturday, Dec 5, 12:00 a.m." with a pen that opens the date and time to change it (2026-11-20). */
+function Deadline({ periodId, dueAt }: { periodId: string; dueAt: string }) {
+  const { t, i18n } = useTranslation();
+  const toast = useToast();
+  const change = useChangeDeadline(periodId);
+  const [editing, setEditing] = useState(false);
+  const due = new Date(dueAt);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  const [dueDate, setDueDate] = useState(
+    `${due.getFullYear()}-${pad(due.getMonth() + 1)}-${pad(due.getDate())}`,
+  );
+  const [dueTime, setDueTime] = useState(`${pad(due.getHours())}:${pad(due.getMinutes())}`);
+
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <p className="min-w-0 flex-1">{t('schedule.ready.due', { when: formatDue(dueAt, i18n.language) })}</p>
+      <button
+        type="button"
+        aria-label={t('deadline.change')}
+        className={`${iconButtonClassName} size-9 text-ink`}
+        onClick={() => setEditing(true)}
+      >
+        <Icon name="pen" className="size-4" />
+      </button>
+      <Sheet
+        open={editing}
+        onOpenChange={setEditing}
+        title={t('deadline.title')}
+        description={t('deadline.text')}
+      >
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-[3fr_2fr] gap-3">
+            <TextField
+              label={t('schedule.open.dueDate')}
+              type="date"
+              required
+              value={dueDate}
+              onChange={(event) => setDueDate(event.target.value)}
+            />
+            <TextField
+              label={t('schedule.open.dueTime')}
+              type="time"
+              step={900}
+              required
+              value={dueTime}
+              onChange={(event) => setDueTime(event.target.value)}
+            />
+          </div>
+          <FormError message={change.error ? t(messageKeyFor(change.error)) : undefined} />
+          <Button
+            loading={change.isPending}
+            onClick={() =>
+              change.mutate(
+                { dueDate, dueTime },
+                {
+                  onSuccess: () => {
+                    setEditing(false);
+                    toast(t('deadline.changed'));
+                  },
+                },
+              )
+            }
+          >
+            {t('deadline.save')}
+          </Button>
+        </div>
+      </Sheet>
+    </div>
   );
 }

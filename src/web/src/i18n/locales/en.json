@@ -58,7 +58,8 @@
       "build": "Build the schedule",
       "continue": "Open the draft",
       "who": "Who has sent"
-    }
+    },
+    "availabilityDueBy": "Due {{when}}"
   },
   "notFound": {
     "title": "Page not found",
@@ -122,11 +123,15 @@
       "trade_invalid": "These two shifts cannot be traded."
     },
     "period": {
+      "due_after_start": "The deadline must be before the period starts.",
+      "due_in_past": "This deadline has already passed.",
+      "due_required": "Choose when availability is due.",
       "overlaps": "These dates overlap another period.",
       "start_not_monday": "A period starts on a Monday.",
       "template_empty": "Add your shifts in the Edit Generator page first.",
       "unfinished_exists": "Publish the period you are working on before opening another.",
-      "already_started": "This period has already started, so it can't be cancelled."
+      "already_started": "This period has already started, so it can't be cancelled.",
+      "due_published": "This schedule is published: its deadline no longer matters."
     },
     "schedule": {
       "already_on_shift": "This person is already on the shift.",
@@ -230,16 +235,20 @@
       "allSentLabel": "Sent",
       "notSent": "Not sent yet",
       "allSent": "Everyone has sent their availability",
-      "team": "See everyone’s availability"
+      "team": "See everyone’s availability",
+      "due": "Deadline: {{when}}."
     },
     "open": {
       "title": "Open the next period",
-      "text": "Everyone who works shifts is asked for their availability.",
+      "text": "Everyone who works shifts is asked for their availability as soon as you open it.",
       "start": "Starts on",
       "startHint": "A Monday.",
       "submit": "Open period",
       "length_one": "Lasts {{count}} week, as set in the generator rules.",
-      "length_other": "Lasts {{count}} weeks, as set in the generator rules."
+      "length_other": "Lasts {{count}} weeks, as set in the generator rules.",
+      "dueDate": "Availability due",
+      "dueDateHint": "Reminders go out 48 and 24 hours before.",
+      "dueTime": "At"
     },
     "box": {
       "open": "Next period is open",
@@ -266,6 +275,7 @@
     "sendNote": "Send note",
     "send": "Send",
     "sendAgain": "Send again",
+    "due": "Due {{when}}",
     "wanted": "Hours you want per week",
     "wantedHint": "For every week of this period."
   },
@@ -726,7 +736,8 @@
     "reopen": "Reopen",
     "reopenNamed": "Reopen availability for {{name}}",
     "reopenedToast": "Reopened for {{name}}",
-    "remindAll": "Remind everyone who is missing"
+    "remindAll": "Remind everyone who is missing",
+    "due": "Deadline: {{when}}"
   },
   "team": {
     "title": "Whole team",
@@ -789,6 +800,16 @@
       "accept": "Accept",
       "cancel": "Cancel request",
       "approve": "Approve"
+    },
+    "sheet": {
+      "with": "Working with you",
+      "alone": "Nobody else yet",
+      "request": "Request this shift",
+      "askRequest": "Ask your manager for this shift?",
+      "askClaim": "Take this shift?",
+      "yes": "Yes",
+      "no": "No",
+      "open": "Open {{shift}}"
     }
   },
   "trade": {
@@ -832,7 +853,8 @@
         "reminder": "Reminder: send your availability for the period starting {{periodStart}}",
         "reopened": "Your availability was reopened for the period starting {{periodStart}}",
         "sent": "{{name}} sent their availability",
-        "note_added": "{{name}} added a note to their availability"
+        "note_added": "{{name}} added a note to their availability",
+        "due": "Availability for the period starting {{periodStart}} is due: {{sent}} of {{total}} sent"
       },
       "schedule": {
         "published": "The schedule starting {{periodStart}} is published",
@@ -1031,5 +1053,12 @@
     "goneTitle": "Nothing to show",
     "goneText": "This period was cancelled, or this person is no longer on the team.",
     "wanted": "Hours wanted per week"
+  },
+  "deadline": {
+    "change": "Change the deadline",
+    "title": "Availability deadline",
+    "text": "Reminders move with it: 48 and 24 hours before.",
+    "save": "Save",
+    "changed": "Deadline changed"
   }
 }

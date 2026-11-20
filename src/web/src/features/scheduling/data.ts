@@ -254,6 +254,26 @@ export function byDay<T extends { date: string }>(shifts: T[]): { date: string; 
 }
 
 /** The Monday on or after a date, as "yyyy-mm-dd": periods start on a Monday (FR-090). */
+/** A calendar date moved by whole days, as "yyyy-mm-dd". */
+export function addDays(date: string, days: number): string {
+  const day = new Date(`${date}T00:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + days);
+  return day.toISOString().slice(0, 10);
+}
+
+/**
+ * The deadline offered when a period is opened (FR-091): 48 hours before it starts, so the Saturday at
+ * 00:00 (2026-11-20); the day before when that is too soon, or tomorrow for a period that has already
+ * started. The manager can change it.
+ */
+export function suggestedDueDate(startDate: string, today: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return '';
+  const two = addDays(startDate, -2);
+  if (two > today) return two;
+  const one = addDays(startDate, -1);
+  return one > today ? one : addDays(today, 1);
+}
+
 export function mondayOnOrAfter(date: string): string {
   const day = new Date(`${date}T00:00:00Z`);
   day.setUTCDate(day.getUTCDate() + ((8 - day.getUTCDay()) % 7));
@@ -314,5 +334,21 @@ export function usePersonAvailability(periodId: string, membershipId: string) {
         }),
       ),
     retry: false,
+  });
+}
+
+/** Moves the deadline of a period not published yet; the reminders follow (FR-091, 2026-11-20). */
+export function useChangeDeadline(periodId: string) {
+  const { id } = useWorkplace();
+  const refresh = useRefreshWorkplace();
+  return useMutation({
+    mutationFn: (body: Schemas['ChangeDeadlineRequest']) =>
+      unwrap(
+        api.PATCH('/api/workplaces/{workplaceId}/periods/{periodId}/deadline', {
+          params: { path: { workplaceId: id, periodId } },
+          body,
+        }),
+      ),
+    onSuccess: refresh,
   });
 }
