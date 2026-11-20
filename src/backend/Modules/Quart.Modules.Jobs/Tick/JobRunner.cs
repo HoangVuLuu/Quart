@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NodaTime;
+using Quart.SharedKernel;
 using Quart.SharedKernel.Jobs;
 
 namespace Quart.Modules.Jobs.Tick;
@@ -11,7 +12,8 @@ namespace Quart.Modules.Jobs.Tick;
 /// records the result. A failing job is retried later (<see cref="RetryPolicy"/>) and never stops the
 /// others. Several ticks may run at once; <see cref="JobStore.ClaimNextAsync"/> keeps them apart.
 /// </summary>
-internal sealed class JobRunner(IServiceScopeFactory scopes, JobStore store, IClock clock, ILoggerFactory loggerFactory)
+internal sealed class JobRunner(
+    IServiceScopeFactory scopes, JobStore store, IClock clock, ILoggerFactory loggerFactory, IEnumerable<NightlyJob> nightly)
 {
     /// <summary>
     /// How long a claimed job is protected from other ticks. Longer than the job's replica timeout
@@ -31,6 +33,10 @@ internal sealed class JobRunner(IServiceScopeFactory scopes, JobStore store, ICl
     {
         var elapsed = Stopwatch.StartNew();
         await HeartbeatHandler.EnsureScheduledAsync(store, clock, cancellationToken);
+        foreach (var job in nightly)
+        {
+            await store.EnsureNightlyAsync(job.Type, Retention.NextNight(clock.GetCurrentInstant()), cancellationToken);
+        }
 
         var handled = new List<Guid>();
         int succeeded = 0, retried = 0, failed = 0;

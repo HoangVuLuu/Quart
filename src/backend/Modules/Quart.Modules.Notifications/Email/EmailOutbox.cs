@@ -87,6 +87,11 @@ internal sealed class EmailOutbox(
         // The parameters can hold a one-time link. Once the email has left, nothing here needs them, and a
         // copy of this table must not be a list of working reset links.
         message.Parameters = "{}";
+        // The goodbye email to a deleted account is the last place its address lived (FR-009).
+        if (message.Template == EmailTemplates.AccountDeleted)
+        {
+            message.Recipient = string.Empty;
+        }
         await db.SaveChangesAsync(cancellationToken);
     }
 }
@@ -160,6 +165,11 @@ internal static class EmailRenderer
         {
             ["en"] = ("Confirm your new email for Quart", "Hi {name},\n\nOpen this link to use this address for your Quart account. It works once and expires in 24 hours.\n\n{link}\n\nIf you did not ask for this, you can ignore this email: nothing changes."),
             ["fr"] = ("Confirme ton nouveau courriel pour Quart", "Bonjour {name},\n\nOuvre ce lien pour utiliser cette adresse avec ton compte Quart. Il fonctionne une seule fois et expire dans 24 heures.\n\n{link}\n\nSi tu n'as rien demandé, tu peux ignorer ce courriel : rien ne change."),
+        }),
+        [EmailTemplates.AccountDeleted] = ("/sign-up", new()
+        {
+            ["en"] = ("Your Quart account was deleted", "Hi {name},\n\nYour Quart account was deleted, as you asked. Your profile, your availability and your notes are gone, and you are no longer a member of any workplace. Shifts you already worked stay on each workplace's schedule history as \"Former employee\".\n\nThis is the last email you will get from Quart. If you did not do this, tell your manager right away."),
+            ["fr"] = ("Ton compte Quart a été supprimé", "Bonjour {name},\n\nTon compte Quart a été supprimé, comme tu l'as demandé. Ton profil, tes disponibilités et tes notes sont effacés, et tu ne fais plus partie d'aucun lieu de travail. Les quarts déjà faits restent dans l'historique des horaires de chaque lieu de travail, sous « Ancien employé ».\n\nC'est le dernier courriel que tu recevras de Quart. Si ce n'était pas toi, avertis ton gérant tout de suite."),
         }),
         [EmailTemplates.EmailChanged] = ("/sign-in", new()
         {

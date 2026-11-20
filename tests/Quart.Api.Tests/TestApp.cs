@@ -99,11 +99,11 @@ public sealed partial class TestApp : IAsyncDisposable
     /// A workplace as Presotea starts: the platform admin creates it, <paramref name="owner"/> accepts the
     /// invitation, and the two shifts a day are saved (2 people each, at least one level 3).
     /// </summary>
-    public async Task<Guid> WorkplaceAsync(TestUser owner, bool withTemplate = true)
+    public async Task<Guid> WorkplaceAsync(TestUser owner, bool withTemplate = true, string name = "Presotea Montmorency")
     {
         var admin = await PersonAsync("Platform Admin");
         Assert.True(await Factory.Services.GrantPlatformAdminAsync(admin.Email, Cancellation));
-        var created = await admin.PostAsync("/api/workplaces", new { name = "Presotea Montmorency", address = "Laval" });
+        var created = await admin.PostAsync("/api/workplaces", new { name, address = "Laval" });
         var workplaceId = Guid.Parse(created["workplaceId"]!.GetValue<string>());
         await owner.PostAsync("/api/workplaces/owner-invitations/accept", new { token = created["invitationToken"]!.GetValue<string>() });
         if (withTemplate)

@@ -49,3 +49,12 @@ public sealed record JobOutcome
     /// <summary>Recurring work: the same job runs again at <paramref name="at"/>, with its attempts reset.</summary>
     public static JobOutcome RunAgain(Instant at) => new(at);
 }
+
+/// <summary>
+/// Names a job type that runs every night, such as a module's cleanup (M6-05). Register it next to its handler:
+/// <c>services.AddSingleton(new NightlyJob("scheduling.retention"))</c>. Every tick makes sure one job of each
+/// such type exists (dedupe key: the type), first due at the next <see cref="Retention.NextNight"/>; its handler
+/// then returns <see cref="JobOutcome.RunAgain"/> with its next time. If it ever fails for good, the next tick
+/// creates it again.
+/// </summary>
+public sealed record NightlyJob(string Type);

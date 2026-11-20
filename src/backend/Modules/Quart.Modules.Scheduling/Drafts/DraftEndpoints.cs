@@ -504,8 +504,10 @@ internal static class DraftEndpoints
             PartOf(parts[DraftBuilder.Id(shift.Id)]),
             shift.Requirements.OrderBy(x => x.Level).Select(x => new DraftRequirement(x.Level, x.MinCount)).ToList(),
             draft.Where(x => x.ShiftId == shift.Id).Select(x => new DraftAssignment(x.MembershipId, x.IsLocked)).ToList(),
+            // Someone working at another workplace then shows as simply not available (FR-094).
             data.Availabilities
-                .Where(x => x.Status == Persistence.Availability.Sent && x.Blocks.Any(b => b.ShiftId == shift.Id))
+                .Where(x => x.Status == Persistence.Availability.Sent && x.Blocks.Any(b => b.ShiftId == shift.Id)
+                    && !DraftBuilder.IsBusyElsewhere(data, x.MembershipId, shift))
                 .Select(x => x.MembershipId).ToList())).ToList();
 
         var people = data.Members.Select(person => new DraftPerson(

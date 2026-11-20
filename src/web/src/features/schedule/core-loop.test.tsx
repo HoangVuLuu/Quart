@@ -40,6 +40,7 @@ function availabilityShift(
     end,
     hours: start === '10:00' ? 6 : 7,
     selected,
+    busyElsewhere: false,
   };
 }
 

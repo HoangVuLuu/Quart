@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using NodaTime;
 using Npgsql;
 using Quart.Modules.Marketplace.Persistence;
+using Quart.SharedKernel.Jobs;
 
 namespace Quart.Modules.Marketplace;
 
@@ -20,6 +21,8 @@ public static class MarketplaceModule
     {
         services.AddDbContext<MarketplaceDb>((provider, options) => Configure(options, provider.GetRequiredService<NpgsqlDataSource>()));
         services.TryAddSingleton<IClock>(SystemClock.Instance);
+        services.AddScoped<IJobHandler, MarketplaceRetention>();
+        services.AddSingleton(new NightlyJob(MarketplaceRetention.JobType));
         return services;
     }
 

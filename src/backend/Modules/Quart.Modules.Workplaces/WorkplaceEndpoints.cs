@@ -322,16 +322,27 @@ internal static class WorkplaceEndpoints
             return Problems.Conflict(OwnerCannotLeave);
         }
 
+        await EndAsync(membership, db, directory, users, notifier, handlers, clock, cancellationToken);
+        return TypedResults.NoContent();
+    }
+
+    /// <summary>
+    /// Ends one membership: access stops, the other modules release what the person held (FR-038), and the
+    /// managers are told. Leaving, being removed and deleting one's account (FR-009) all go through here.
+    /// </summary>
+    internal static async Task EndAsync(
+        Membership membership, WorkplacesDb db, IWorkplaceDirectory directory, IUserDirectory users, INotifier notifier,
+        IEnumerable<IMemberLeftHandler> handlers, IClock clock, CancellationToken cancellationToken)
+    {
         membership.LeftAt = clock.GetCurrentInstant();
         await db.SaveChangesAsync(cancellationToken);
         foreach (var handler in handlers)
         {
-            await handler.HandleAsync(workplaceId, membershipId, cancellationToken);
+            await handler.HandleAsync(membership.WorkplaceId, membership.Id, cancellationToken);
         }
 
         var name = (await users.GetAsync([membership.UserId], cancellationToken)).GetValueOrDefault(membership.UserId)?.DisplayName ?? string.Empty;
-        await NotifyManagersAsync(directory, notifier, workplaceId, NotificationTypes.MemberLeft, name, cancellationToken);
-        return TypedResults.NoContent();
+        await NotifyManagersAsync(directory, notifier, membership.WorkplaceId, NotificationTypes.MemberLeft, name, cancellationToken);
     }
 
     private static async Task NotifyManagersAsync(

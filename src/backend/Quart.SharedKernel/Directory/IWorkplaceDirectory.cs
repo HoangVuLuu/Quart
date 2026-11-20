@@ -14,7 +14,16 @@ public interface IWorkplaceDirectory
 
     /// <returns>Null when the workplace does not exist.</returns>
     Task<WorkplaceTemplate?> GetTemplateAsync(Guid workplaceId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Every membership the account has or once had, in any workplace: for deleting an account (FR-009), whose
+    /// data hangs off membership IDs in the other modules.
+    /// </summary>
+    Task<IReadOnlyList<AccountMembership>> GetMembershipsOfAsync(Guid userId, CancellationToken cancellationToken);
 }
+
+/// <param name="Active">False once the person left or was removed.</param>
+public sealed record AccountMembership(Guid WorkplaceId, Guid MembershipId, string Role, bool Active);
 
 public sealed record WorkplaceMember(
     Guid MembershipId,
@@ -70,4 +79,15 @@ public sealed record TemplateConflict(Guid BlockId, Guid MembershipA, Guid Membe
 public interface IMemberLeftHandler
 {
     Task HandleAsync(Guid workplaceId, Guid membershipId, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Told, in the same request, when someone deletes their account (FR-009, M2-16). It runs before the account
+/// itself is erased, so <see cref="IUserDirectory"/> still knows the person. Each module removes what it keeps
+/// about them and leaves bare IDs on history, which then read as "Former employee". Handlers must cope with
+/// being told twice: a deletion that failed halfway is simply tried again.
+/// </summary>
+public interface IAccountDeletedHandler
+{
+    Task HandleAsync(Guid userId, CancellationToken cancellationToken);
 }

@@ -68,6 +68,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/me/delete': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DeleteAccount'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/me/email/confirm': {
     parameters: {
       query?: never;
@@ -1101,6 +1117,7 @@ export interface components {
       /** Format: double */
       hours: number;
       selected: boolean;
+      busyElsewhere: boolean;
     };
     BlockSetup: {
       /** Format: uuid */
@@ -1186,6 +1203,9 @@ export interface components {
       upcoming: components['schemas']['PeriodSummary'][];
       /** Format: double */
       myLiveWeeklyHours: null | number;
+    };
+    DeleteAccountRequest: {
+      email: null | string;
     };
     DraftAssignment: {
       /** Format: uuid */
@@ -1833,6 +1853,37 @@ export interface operations {
     responses: {
       /** @description Accepted */
       202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  DeleteAccount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DeleteAccountRequest'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
         headers: {
           [name: string]: unknown;
         };

@@ -35,6 +35,7 @@ const mine: Schemas['MyAvailability'] = {
       end: '16:00',
       hours: 6,
       selected: false,
+      busyElsewhere: false,
     },
   ],
   notes: [],

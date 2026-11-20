@@ -18,7 +18,7 @@ import { Icon } from '../../ui/Icon';
 import { FormError } from '../identity/FormError';
 import { initialsOf, useMe, useSignOut, useUpdateMe } from '../identity/session';
 import { useRefreshWorkplace } from '../scheduling/data';
-import { ChangeEmailSheet, ChangePasswordSheet } from './AccountSheets';
+import { ChangeEmailSheet, ChangePasswordSheet, DeleteAccountSheet } from './AccountSheets';
 import { rememberWorkplace, useWorkplace } from '../workplaces/workplace';
 
 function GroupLabel({ children }: { children: string }) {
@@ -42,7 +42,7 @@ export function ProfilePage() {
   const signOutEverywhere = useSignOut(true);
   const refresh = useRefreshWorkplace();
   const [dark, setDark] = useState(currentTheme() === 'dark');
-  const [accountSheet, setAccountSheet] = useState<'email' | 'password' | null>(null);
+  const [accountSheet, setAccountSheet] = useState<'email' | 'password' | 'delete' | null>(null);
   const [name, setName] = useState(me?.displayName ?? '');
   const [leaving, setLeaving] = useState(false);
   const path = { workplaceId: id };
@@ -303,6 +303,19 @@ export function ProfilePage() {
           {t('profile.leave')}
         </Button>
       )}
+      <Button variant="danger" onClick={() => setAccountSheet('delete')}>
+        {t('profile.deleteAccount.row')}
+      </Button>
+      <DeleteAccountSheet
+        open={accountSheet === 'delete'}
+        email={me.email}
+        onClose={() => setAccountSheet(null)}
+        onDeleted={() => {
+          rememberWorkplace(null);
+          toast(t('profile.deleteAccount.done'));
+          void navigate('/sign-in');
+        }}
+      />
       <Dialog
         open={leaving}
         onOpenChange={setLeaving}
