@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
@@ -18,6 +19,7 @@ import {
   type ScheduleShift,
 } from '../scheduling/data';
 import { flavourOf, useShiftName } from '../scheduling/ShiftName';
+import { ShiftPeopleSheet } from '../schedule/PublishedSchedule';
 import { useWorkplace } from '../workplaces/workplace';
 
 /** Monday of the week a date falls in, as "yyyy-mm-dd": hours are counted per week (BR-032). */
@@ -57,13 +59,15 @@ export function HomePage() {
   const hours = mine
     .filter((shift) => shift.date >= monday && shift.date <= sunday)
     .reduce((sum, shift) => sum + shift.hours, 0);
-  const wanted = view.me.desiredWeeklyHours;
+  // The number the person gave with this period's availability (BR-032); none means no target to show.
+  const wanted = periods?.myLiveWeeklyHours ?? null;
   const open =
     (board?.openShifts.length ?? 0) +
     (board?.offers.filter((offer) => !offer.mine && !offer.onShift).length ?? 0);
   const trades =
     board?.trades.filter((trade) => trade.role === 'coworker' && trade.status === 'requested').length ?? 0;
   const nextPeriod = periods?.next;
+  const [showing, setShowing] = useState(false);
 
   return (
     <section className="flex flex-col gap-4 px-5">
@@ -89,11 +93,13 @@ export function HomePage() {
             {shiftName(next.part)} · {next.start}–{next.end}
           </p>
           <Coworkers shift={next} />
-          <Link to="/schedule" className={buttonClassName('dark', 'mt-4')}>
+          {/* The same pop-up as tapping the shift on Schedule (2026-11-18). */}
+          <button type="button" className={buttonClassName('dark', 'mt-4')} onClick={() => setShowing(true)}>
             {t('home.viewShift')}
-          </Link>
+          </button>
         </HeroCard>
       )}
+      {next && showing && <ShiftPeopleSheet shift={next} onClose={() => setShowing(false)} />}
 
       {manages && <WaitingCard />}
 
@@ -115,21 +121,25 @@ export function HomePage() {
             <h2 className="text-sm font-bold text-muted">{t('home.hours')}</h2>
             <p className="mt-1">
               <span className="text-2xl font-bold">{formatNumber(hours, language)}</span>
-              <span className="text-sm font-bold text-muted"> / {formatNumber(wanted, language)} h</span>
+              {wanted != null && (
+                <span className="text-sm font-bold text-muted"> / {formatNumber(wanted, language)} h</span>
+              )}
             </p>
-            <div
-              role="progressbar"
-              aria-label={t('home.hours')}
-              aria-valuemin={0}
-              aria-valuemax={wanted}
-              aria-valuenow={Math.min(hours, wanted)}
-              className="mt-2 h-2 overflow-hidden rounded-pill bg-surface-3"
-            >
+            {wanted != null && (
               <div
-                className="h-full rounded-pill bg-primary"
-                style={{ width: `${wanted > 0 ? Math.min(100, (hours / wanted) * 100) : 0}%` }}
-              />
-            </div>
+                role="progressbar"
+                aria-label={t('home.hours')}
+                aria-valuemin={0}
+                aria-valuemax={wanted}
+                aria-valuenow={Math.min(hours, wanted)}
+                className="mt-2 h-2 overflow-hidden rounded-pill bg-surface-3"
+              >
+                <div
+                  className="h-full rounded-pill bg-primary"
+                  style={{ width: `${wanted > 0 ? Math.min(100, (hours / wanted) * 100) : 0}%` }}
+                />
+              </div>
+            )}
           </Card>
           {open + trades > 0 && (
             <Card>
@@ -144,29 +154,32 @@ export function HomePage() {
       )}
 
       {nextPeriod && view.me.worksShifts && (
-        <Card className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-[17px]">
-              {t('home.availability', {
-                range: formatDateRange(nextPeriod.period.startDate, nextPeriod.period.endDate, language),
-              })}
-            </h2>
-            <p className="text-sm text-muted">
+        <Card className="flex flex-col gap-1">
+          {/* The title stays on one line (2026-11-18); the text and the button share the row below. */}
+          <h2 className="text-[17px] whitespace-nowrap">
+            {t('home.availability', {
+              range: formatDateRange(nextPeriod.period.startDate, nextPeriod.period.endDate, language),
+            })}
+          </h2>
+          <div className="flex items-center gap-3">
+            <p className="min-w-0 flex-1 text-sm text-muted">
               {nextPeriod.myAvailability === 'sent'
                 ? t('home.availabilitySent')
                 : nextPeriod.canEditAvailability
                   ? t('home.availabilityDue')
                   : t('home.availabilityLocked')}
             </p>
+            <Link
+              to="/availability"
+              className={buttonClassName(nextPeriod.myAvailability === 'sent' ? 'white' : 'dark')}
+            >
+              {!nextPeriod.canEditAvailability
+                ? t('home.view')
+                : nextPeriod.myAvailability === 'sent'
+                  ? t('home.change')
+                  : t('home.fillIn')}
+            </Link>
           </div>
-          <Link
-            to="/availability"
-            className={buttonClassName(nextPeriod.myAvailability === 'sent' ? 'white' : 'dark')}
-          >
-            {nextPeriod.myAvailability === 'sent' || !nextPeriod.canEditAvailability
-              ? t('home.view')
-              : t('home.fillIn')}
-          </Link>
         </Card>
       )}
 

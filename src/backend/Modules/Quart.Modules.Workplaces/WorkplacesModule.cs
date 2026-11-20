@@ -93,7 +93,7 @@ internal sealed class WorkplaceReader(WorkplacesDb db, IUserDirectory users) : I
             .Where(x => names.ContainsKey(x.UserId))
             .Select(x => new WorkplaceMember(
                 x.Id, x.UserId, names[x.UserId].DisplayName, names[x.UserId].Language, x.Role, x.Level, x.WorksShifts,
-                x.DesiredWeeklyHours, x.MaxWeeklyHours, PermissionsOf(x, grants)))
+                x.MaxWeeklyHours, PermissionsOf(x, grants)))
             .ToList();
     }
 

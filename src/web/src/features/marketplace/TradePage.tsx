@@ -5,17 +5,17 @@ import { PageHeader } from '../../ui/PageHeader';
 import { MarketplaceSections } from './MarketplaceSections';
 
 // The Trade tab. The mockups show the tab but no screen for it (known conflict 1), so this reuses the
-// open-shift and trade sections of Alerts (1f, 1n) rather than inventing a layout. Giving a shift away
-// or asking for a trade starts from one of your shifts on the Schedule tab (1h, 1i).
+// open-shift and trade cards of Alerts (1f, 1n). Giving a shift away or asking for a trade starts from
+// "My shifts to trade", reached by the button above the list (2.1, 2026-11-18).
 export function TradePage() {
   const { t } = useTranslation();
   return (
     <section className="flex flex-col gap-4 px-5">
       <PageHeader title={t('trade.title')} subtitle={t('trade.context')} />
-      <MarketplaceSections emptyText={t('trade.empty')} />
-      <Link to="/schedule" className={buttonClassName('white', 'self-start')}>
+      <Link to="/trade/mine" className={buttonClassName('dark', 'self-start')}>
         {t('trade.fromSchedule')}
       </Link>
+      <MarketplaceSections scope="trade" emptyText={t('trade.empty')} />
     </section>
   );
 }

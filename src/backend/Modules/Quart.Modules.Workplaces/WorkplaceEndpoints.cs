@@ -51,7 +51,6 @@ internal static class WorkplaceEndpoints
         one.MapGet("/members", ListMembersAsync).AllowAnyMember().WithName("ListMembers");
         one.MapPatch("/members/{membershipId:guid}", UpdateMemberAsync).RequirePermission(Permission.ManageLevels).WithName("UpdateMember");
         one.MapDelete("/members/{membershipId:guid}", RemoveMemberAsync).RequirePermission(Permission.ManageMembers).WithName("RemoveMember");
-        one.MapPatch("/me", UpdateMyselfAsync).AllowAnyMember().WithName("UpdateMyMembership");
         one.MapPost("/leave", LeaveAsync).AllowAnyMember().WithName("LeaveWorkplace");
     }
 
@@ -196,7 +195,8 @@ internal static class WorkplaceEndpoints
             settings.ClaimsNeedApproval,
             settings.TradesNeedApproval,
             new MyMembership(
-                membership.Id, membership.Role, membership.Level, membership.WorksShifts, membership.DesiredWeeklyHours, membership.MaxWeeklyHours,
+                // 3.1 (2026-11-18): levels are for the people who manage them, not even the person's own.
+                membership.Id, membership.Role, member.Can(Permission.ManageLevels) ? membership.Level : null, membership.WorksShifts, membership.MaxWeeklyHours,
                 member.Permissions.Select(x => x.ToString()).Order(StringComparer.Ordinal).ToList())));
     }
 
@@ -243,10 +243,9 @@ internal static class WorkplaceEndpoints
                     names[x.UserId].DisplayName,
                     names[x.UserId].Email,
                     x.Role,
-                    x.Level,
+                    manages ? x.Level : null,
                     x.Id == member.MembershipId,
                     detailed ? x.WorksShifts : null,
-                    detailed ? x.DesiredWeeklyHours : null,
                     detailed ? x.MaxWeeklyHours : null);
             })
             .OrderBy(x => x.Role == Roles.Employee).ThenBy(x => x.DisplayName, StringComparer.CurrentCultureIgnoreCase)
@@ -255,9 +254,10 @@ internal static class WorkplaceEndpoints
     }
 
     /// <summary>
-    /// Levels, "works shifts" and the maximum are set only by people who manage levels (5.4). They can set wanted
-    /// hours too; so can the person (UpdateMyselfAsync). "Works shifts" cannot be turned off while the person still
-    /// holds a shift that has not started, since they would vanish from the draft tools but stay on the shift (D1).
+    /// Levels, "works shifts" and the maximum are set only by people who manage levels (5.4). The hours a person
+    /// wants come with their availability, one number per period, and nobody else changes them (BR-032).
+    /// "Works shifts" cannot be turned off while the person still holds a shift that has not started, since
+    /// they would vanish from the draft tools but stay on the shift (D1).
     /// </summary>
     private static async Task<Results<NoContent, ProblemHttpResult>> UpdateMemberAsync(
         Guid workplaceId, Guid membershipId, UpdateMemberRequest request, WorkplacesDb db, IScheduleLedger ledger, CancellationToken cancellationToken)
@@ -280,14 +280,6 @@ internal static class WorkplaceEndpoints
             }
             membership.Level = level;
         }
-        if (request.DesiredWeeklyHours is { } desired)
-        {
-            if (desired is < 0 or > 80)
-            {
-                return Problems.Validation(new FieldError(HoursInvalid, "desiredWeeklyHours"));
-            }
-            membership.DesiredWeeklyHours = desired;
-        }
         if (request.MaxWeeklyHours is { } max)
         {
             if (max is < 0 or > 80)
@@ -309,25 +301,6 @@ internal static class WorkplaceEndpoints
         Guid workplaceId, Guid membershipId, WorkplacesDb db, IWorkplaceDirectory directory, IUserDirectory users, INotifier notifier,
         IEnumerable<IMemberLeftHandler> handlers, IClock clock, CancellationToken cancellationToken) =>
         EndMembershipAsync(workplaceId, membershipId, db, directory, users, notifier, handlers, clock, cancellationToken);
-
-    /// <summary>
-    /// The hours a person wants each week are theirs to say (FR-037). Level, "works shifts" and the
-    /// maximum stay with admins, and the wish can never go above that maximum.
-    /// </summary>
-    private static async Task<Results<NoContent, ProblemHttpResult>> UpdateMyselfAsync(
-        Guid workplaceId, UpdateMyMembershipRequest request, HttpContext http, WorkplacesDb db, CancellationToken cancellationToken)
-    {
-        var membershipId = http.Member().MembershipId;
-        var membership = await db.Memberships.SingleAsync(x => x.Id == membershipId && x.WorkplaceId == workplaceId, cancellationToken);
-        var desired = request.DesiredWeeklyHours;
-        if (desired is < 0 or > 80 || desired > membership.MaxWeeklyHours)
-        {
-            return Problems.Validation(new FieldError(HoursInvalid, "desiredWeeklyHours"));
-        }
-        membership.DesiredWeeklyHours = desired;
-        await db.SaveChangesAsync(cancellationToken);
-        return TypedResults.NoContent();
-    }
 
     private static Task<Results<NoContent, ProblemHttpResult>> LeaveAsync(
         Guid workplaceId, HttpContext http, WorkplacesDb db, IWorkplaceDirectory directory, IUserDirectory users, INotifier notifier,
@@ -402,27 +375,25 @@ public sealed record WorkplaceView(
     bool TradesNeedApproval,
     MyMembership Me);
 
+/// <param name="Level">Null unless the caller manages levels: workers never see levels, not even their own.</param>
 public sealed record MyMembership(
     Guid MembershipId,
     string Role,
-    int Level,
+    int? Level,
     bool WorksShifts,
-    decimal DesiredWeeklyHours,
     decimal? MaxWeeklyHours,
     IReadOnlyList<string> Permissions);
 
+/// <param name="Level">Null unless the caller manages levels (3.1, 2026-11-18).</param>
 /// <param name="WorksShifts">Null when the caller may not see it (FR-040).</param>
 public sealed record MemberView(
     Guid MembershipId,
     string DisplayName,
     string Email,
     string Role,
-    int Level,
+    int? Level,
     bool IsMe,
     bool? WorksShifts,
-    decimal? DesiredWeeklyHours,
     decimal? MaxWeeklyHours);
 
-public sealed record UpdateMyMembershipRequest(decimal DesiredWeeklyHours);
-
-public sealed record UpdateMemberRequest(int? Level, bool? WorksShifts, decimal? DesiredWeeklyHours, decimal? MaxWeeklyHours, bool? ClearMaxWeeklyHours);
+public sealed record UpdateMemberRequest(int? Level, bool? WorksShifts, decimal? MaxWeeklyHours, bool? ClearMaxWeeklyHours);

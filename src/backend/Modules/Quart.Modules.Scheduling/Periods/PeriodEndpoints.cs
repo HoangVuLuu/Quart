@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
+using Quart.Modules.Scheduling.Drafts;
 using Quart.Modules.Scheduling.Persistence;
 using Quart.SharedKernel;
 using Quart.SharedKernel.Access;
@@ -20,16 +21,17 @@ using Period = Persistence.Period;
 internal static class PeriodEndpoints
 {
     public const string StartNotMonday = "period.start_not_monday";
-    public const string WeeksInvalid = "period.weeks_invalid";
     public const string Overlaps = "period.overlaps";
     public const string TemplateEmpty = "period.template_empty";
     public const string UnfinishedExists = "period.unfinished_exists";
+    public const string AlreadyStarted = "period.already_started";
 
     public static void MapPeriods(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/workplaces/{workplaceId:guid}/periods");
         group.MapGet("/current", GetCurrentAsync).AllowAnyMember().WithName("GetCurrentPeriods");
         group.MapPost("/", CreateAsync).RequirePermission(Permission.ManageSchedule).WithName("CreatePeriod");
+        group.MapDelete("/{periodId:guid}", CancelPeriod.RunAsync).RequirePermission(Permission.ManageSchedule).WithName("CancelPeriod");
     }
 
     /// <summary>
@@ -48,6 +50,16 @@ internal static class PeriodEndpoints
         var published = periods.Where(x => x.Version > 0 && x.EndDate >= Support.Today(clock, x.TimeZone)).ToList();
         var live = published.FirstOrDefault();
         var next = periods.FirstOrDefault(x => x.Status != Period.Published);
+        // 4.3: a Building Schedule page that went quiet counts as left, unsaved, before anyone reads the lock.
+        if (next is { SessionSeenAt: not null })
+        {
+            var tracked = await db.Periods.SingleAsync(x => x.Id == next.Id, cancellationToken);
+            if (await BuildSession.SettleAsync(db, tracked, clock.GetCurrentInstant(), cancellationToken))
+            {
+                await db.SaveChangesAsync(cancellationToken);
+                next = tracked;
+            }
+        }
 
         // The home cards and the tab bar need the open period's progress without a second request.
         NextPeriod? nextView = null;
@@ -66,7 +78,14 @@ internal static class PeriodEndpoints
                 member.WorksShifts && (next.LockedAt is null || mine?.ReopenedAt is not null),
                 sent);
         }
-        return TypedResults.Ok(new CurrentPeriods(live is null ? null : Support.Summarize(live), nextView, published.Skip(1).Select(Support.Summarize).ToList()));
+        // Home's "hours this week" target: the number the caller gave with the live period's availability (BR-032).
+        var liveHours = live is null
+            ? null
+            : await db.Availabilities.AsNoTracking()
+                .Where(x => x.PeriodId == live.Id && x.MembershipId == member.MembershipId && x.Status == Availability.Sent)
+                .Select(x => x.DesiredWeeklyHours)
+                .FirstOrDefaultAsync(cancellationToken);
+        return TypedResults.Ok(new CurrentPeriods(live is null ? null : Support.Summarize(live), nextView, published.Skip(1).Select(Support.Summarize).ToList(), liveHours));
     }
 
     /// <summary>
@@ -86,17 +105,15 @@ internal static class PeriodEndpoints
         {
             return Problems.Validation(new FieldError(StartNotMonday, "startDate"));
         }
-        if (request.Weeks is < 1 or > 4)
-        {
-            return Problems.Validation(new FieldError(WeeksInvalid, "weeks"));
-        }
         var template = await directory.GetTemplateAsync(workplaceId, cancellationToken);
         if (template is null || template.Blocks.Count == 0)
         {
             return Problems.Conflict(TemplateEmpty);
         }
 
-        var end = start.PlusDays((request.Weeks * 7) - 1);
+        // The length is set only in Edit generator rules (FR-090, 2026-11-18).
+        var weeks = template.Rules.PeriodWeeks;
+        var end = start.PlusDays((weeks * 7) - 1);
         var existing = await db.Periods.AsNoTracking().Where(x => x.WorkplaceId == workplaceId).ToListAsync(cancellationToken);
         if (existing.Any(x => x.Status != Period.Published))
         {
@@ -112,7 +129,7 @@ internal static class PeriodEndpoints
             Id = Guid.NewGuid(),
             WorkplaceId = workplaceId,
             StartDate = start,
-            Weeks = request.Weeks,
+            Weeks = weeks,
             Status = Period.Collecting,
             TimeZone = template.TimeZone.Id,
             Rules = RulesJson(template),
@@ -147,7 +164,7 @@ internal static class PeriodEndpoints
         await db.SaveChangesAsync(cancellationToken);
 
         var members = await directory.GetMembersAsync(workplaceId, cancellationToken);
-        var parameters = new Dictionary<string, string> { ["periodStart"] = Support.IsoDate(start), ["weeks"] = request.Weeks.ToString(System.Globalization.CultureInfo.InvariantCulture) };
+        var parameters = new Dictionary<string, string> { ["periodStart"] = Support.IsoDate(start), ["weeks"] = weeks.ToString(System.Globalization.CultureInfo.InvariantCulture) };
         await notifier.NotifyAsync(
             members.Where(x => x.WorksShifts)
                 .Select(x => new NotificationRequest(workplaceId, x.MembershipId, x.UserId, NotificationTypes.AvailabilityRequested, parameters))
@@ -157,21 +174,73 @@ internal static class PeriodEndpoints
     }
 }
 
+/// <summary>
+/// Cancels a period for good (FR-104, 2026-11-18): one that is not published yet, or a published one that has
+/// not started. Everything in it is deleted (shifts, availability, notes, drafts, versions), so its dates are
+/// free for a new period. Give-aways, claims and trades on its shifts close by themselves the next time the
+/// Trade tab loads, as for any shift that no longer exists. Told: who sent availability or holds a shift in
+/// it, except the admin who cancelled.
+/// </summary>
+internal static class CancelPeriod
+{
+    public static async Task<Results<NoContent, ProblemHttpResult>> RunAsync(
+        Guid workplaceId, Guid periodId, HttpContext http, SchedulingDb db, IWorkplaceDirectory directory, INotifier notifier, IClock clock, CancellationToken cancellationToken)
+    {
+        var period = await db.Periods.AsNoTracking().FirstOrDefaultAsync(x => x.Id == periodId && x.WorkplaceId == workplaceId, cancellationToken);
+        if (period is null)
+        {
+            return Problems.NotFound();
+        }
+        if (period.Version > 0 && Support.Today(clock, period.TimeZone) >= period.StartDate)
+        {
+            return Problems.Conflict(PeriodEndpoints.AlreadyStarted);
+        }
+
+        var sent = await db.Availabilities.Where(x => x.PeriodId == periodId && x.Status == Availability.Sent).Select(x => x.MembershipId).ToListAsync(cancellationToken);
+        var holders = await db.Assignments.Where(x => x.PeriodId == periodId && !x.IsDraft).Select(x => x.MembershipId).ToListAsync(cancellationToken);
+        var told = sent.Concat(holders).ToHashSet();
+        told.Remove(http.Member().MembershipId);
+
+        await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
+        {
+            await db.ScheduleVersions.Where(x => x.PeriodId == periodId).ExecuteDeleteAsync(cancellationToken);
+            await db.GenerationRuns.Where(x => x.PeriodId == periodId).ExecuteDeleteAsync(cancellationToken);
+            // The rest goes with the period: shifts and their assignments, availability and its notes, conflicts.
+            await db.Periods.Where(x => x.Id == periodId).ExecuteDeleteAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        var members = await directory.GetMembersAsync(workplaceId, cancellationToken);
+        var parameters = new Dictionary<string, string>
+        {
+            ["periodStart"] = Support.IsoDate(period.StartDate),
+            ["weeks"] = period.Weeks.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        };
+        await notifier.NotifyAsync(
+            members.Where(x => told.Contains(x.MembershipId))
+                .Select(x => new NotificationRequest(workplaceId, x.MembershipId, x.UserId, NotificationTypes.PeriodCancelled, parameters))
+                .ToList(),
+            cancellationToken);
+        return TypedResults.NoContent();
+    }
+}
+
 /// <summary>The rules a period was created with, kept on the period (FR-068).</summary>
 internal sealed record PeriodRules(int? MaxConsecutiveShifts, bool OpeningFairness, bool ClosingFairness, Dictionary<string, string> PublishChecks);
 
-/// <param name="StartDate">A Monday.</param>
-/// <param name="Weeks">1 to 4 (FR-090).</param>
-public sealed record CreatePeriodRequest(DateOnly StartDate, int Weeks);
+/// <param name="StartDate">A Monday. The length comes from the generator rules (FR-090).</param>
+public sealed record CreatePeriodRequest(DateOnly StartDate);
 
 /// <param name="Status">"collecting", "building" or "published".</param>
 /// <param name="Version">0 until first published.</param>
-public sealed record PeriodSummary(Guid Id, DateOnly StartDate, DateOnly EndDate, int Weeks, string Status, int Version, bool Locked);
+/// <param name="DraftSaved">An unpublished draft was saved: the Schedule page offers "Continue building" (4.3).</param>
+public sealed record PeriodSummary(Guid Id, DateOnly StartDate, DateOnly EndDate, int Weeks, string Status, int Version, bool Locked, bool DraftSaved);
 
 /// <param name="Live">The published period that is running or coming up; null when there is none.</param>
 /// <param name="Next">The period still collecting availability or being built; null when there is none.</param>
 /// <param name="Upcoming">Periods already published that start after <paramref name="Live"/>, soonest first.</param>
-public sealed record CurrentPeriods(PeriodSummary? Live, NextPeriod? Next, IReadOnlyList<PeriodSummary> Upcoming);
+/// <param name="MyLiveWeeklyHours">Hours per week the caller asked for in the live period; null if none (BR-032).</param>
+public sealed record CurrentPeriods(PeriodSummary? Live, NextPeriod? Next, IReadOnlyList<PeriodSummary> Upcoming, decimal? MyLiveWeeklyHours);
 
 /// <param name="MyAvailability">"not_sent" or "sent".</param>
 /// <param name="CanEditAvailability">False once building has started, unless an admin reopened it for the caller.</param>

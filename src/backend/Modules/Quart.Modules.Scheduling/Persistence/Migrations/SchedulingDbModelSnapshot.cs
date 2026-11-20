@@ -88,6 +88,10 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<decimal?>("DesiredWeeklyHours")
+                        .HasColumnType("numeric")
+                        .HasColumnName("desired_weekly_hours");
+
                     b.Property<Guid>("MembershipId")
                         .HasColumnType("uuid")
                         .HasColumnName("membership_id");
@@ -214,6 +218,10 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<Instant?>("DraftSavedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("draft_saved_at");
+
                     b.Property<Instant?>("LockedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("locked_at");
@@ -227,9 +235,17 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("rules");
 
+                    b.Property<string>("SavedDraft")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("saved_draft");
+
                     b.Property<int?>("Seed")
                         .HasColumnType("integer")
                         .HasColumnName("seed");
+
+                    b.Property<Instant?>("SessionSeenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("session_seen_at");
 
                     b.Property<LocalDate>("StartDate")
                         .HasColumnType("date")

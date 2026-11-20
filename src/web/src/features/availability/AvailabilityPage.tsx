@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSwipe } from '../../lib/gestures';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router';
+import { useGoBack } from '../../app/useGoBack';
 import { SubPage } from '../../app/SubPage';
 import { messageKeyFor } from '../../i18n/errors';
 import { formatDateRange, formatDayShort, formatDateTime, formatNumber } from '../../i18n/format';
@@ -10,7 +11,7 @@ import { Card } from '../../ui/Card';
 import { cx } from '../../ui/cx';
 import { Skeleton } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
-import { TextArea } from '../../ui/TextField';
+import { TextArea, TextField } from '../../ui/TextField';
 import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
 import { Pill } from '../schedule/Pill';
@@ -33,11 +34,11 @@ export function AvailabilityPage() {
   const next = periods.data?.next;
   const mine = useMyAvailability(next?.period.id);
 
-  if (periods.data && !next) return <Navigate to="/schedule" replace />;
+  if (periods.data && !next) return <Navigate to="/" replace />;
   if (periods.error ?? mine.error) throw periods.error ?? mine.error;
   if (!mine.data) {
     return (
-      <SubPage backTo="/schedule" title={t('availability.title')}>
+      <SubPage backTo="/" title={t('availability.title')}>
         <Skeleton className="h-64" />
       </SubPage>
     );
@@ -61,6 +62,15 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
     onPrevious: () => setWeek((current) => Math.max(0, current - 1)),
   });
   const [note, setNote] = useState('');
+  // BR-032: one number per period, needed to send; offered from last period, empty the first time.
+  const [wanted, setWanted] = useState(
+    mine.desiredWeeklyHours === null || mine.desiredWeeklyHours === undefined
+      ? ''
+      : String(mine.desiredWeeklyHours),
+  );
+  const [wantedMissing, setWantedMissing] = useState(false);
+  // Availability is opened from Home only, so Send and the back arrow both return there (2026-11-18).
+  const goBack = useGoBack('/');
   const locked = !mine.canEdit;
   const sent = mine.status === 'sent';
   const hours = mine.shifts
@@ -98,11 +108,17 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
   }
 
   function send() {
+    const desiredWeeklyHours = Number(wanted.replace(',', '.'));
+    if (wanted.trim() === '' || !Number.isFinite(desiredWeeklyHours) || desiredWeeklyHours < 0) {
+      setWantedMissing(true);
+      return;
+    }
+    setWantedMissing(false);
     const text = note.trim();
     // Not mutate's onSuccess: once the server says "sent", this form is rebuilt (see its key), and React
     // Query skips the callback of a form that is gone. The toast was lost, and so was a note typed
     // before the first Send (found by tests/e2e). Errors show from the mutations themselves.
-    actions.send.mutateAsync([...selected]).then(
+    actions.send.mutateAsync({ shiftIds: [...selected], desiredWeeklyHours }).then(
       () => {
         toast(t('availability.sentToast'));
         if (text !== '')
@@ -110,6 +126,7 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
             () => setNote(''),
             () => undefined,
           );
+        goBack();
       },
       () => undefined,
     );
@@ -117,7 +134,7 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
 
   return (
     <SubPage
-      backTo="/schedule"
+      backTo="/"
       title={t('availability.title')}
       context={formatDateRange(mine.period.startDate, mine.period.endDate, language)}
     >
@@ -190,6 +207,21 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
         <p role="status" className="text-sm font-bold">
           {t('availability.counter', { count: selected.size, hours: formatNumber(hours, language) })}
         </p>
+
+        <TextField
+          label={t('availability.wanted')}
+          hint={t('availability.wantedHint')}
+          type="number"
+          inputMode="decimal"
+          min={0}
+          max={168}
+          step="0.5"
+          required
+          disabled={locked}
+          value={wanted}
+          onChange={(event) => setWanted(event.target.value)}
+          error={wantedMissing ? t('errors.availability.hours_required') : undefined}
+        />
 
         {!locked && (
           <div className="flex flex-wrap gap-2">

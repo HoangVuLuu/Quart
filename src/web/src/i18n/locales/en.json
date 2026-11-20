@@ -42,6 +42,7 @@
     "availabilityLocked": "Locked: the schedule is being built.",
     "view": "View",
     "fillIn": "Fill in",
+    "change": "Change availability",
     "nothing": "Nothing scheduled yet. Your shifts will show here once a schedule is published.",
     "waiting": "Waiting on you",
     "period": {
@@ -96,6 +97,8 @@
       "password_too_short": "Use at least 8 characters."
     },
     "availability": {
+      "hours_invalid": "Enter a number of hours from 0 to 168.",
+      "hours_required": "Enter the hours you want per week.",
       "locked": "Availability is locked: the schedule is being built.",
       "not_shift_worker": "You are not set up to work shifts here.",
       "note_empty": "Write something first.",
@@ -106,6 +109,7 @@
     "marketplace": {
       "already_offered": "You are already giving this shift away.",
       "already_requested": "You already asked for this.",
+      "item_invalid": "This item no longer exists.",
       "missing_level": "Refused: a shift would be left without its required level.",
       "no_longer_pending": "This request is no longer waiting.",
       "not_shift_worker": "You are not set up to work shifts here.",
@@ -122,10 +126,11 @@
       "start_not_monday": "A period starts on a Monday.",
       "template_empty": "Add your shifts in the Edit Generator page first.",
       "unfinished_exists": "Publish the period you are working on before opening another.",
-      "weeks_invalid": "A period lasts 1 to 4 weeks."
+      "already_started": "This period has already started, so it can't be cancelled."
     },
     "schedule": {
       "already_on_shift": "This person is already on the shift.",
+      "cannot_clear_published": "A published schedule cannot be cleared.",
       "double_booking": "Someone already holds a shift at the same time elsewhere. Check the issues list.",
       "not_building": "Start building the schedule first.",
       "not_on_shift": "This person is not on the shift.",
@@ -134,7 +139,8 @@
       "publish_blocked": "Some issues block publishing. Open the issues list.",
       "publish_needs_confirmation": "Some issues need your confirmation before publishing.",
       "unknown_member": "This person no longer works shifts here.",
-      "unknown_shift": "This shift no longer exists."
+      "unknown_shift": "This shift no longer exists.",
+      "visit_ended": "You left the page for a while, so the unsaved changes were dropped."
     },
     "settings": {
       "max_consecutive_invalid": "Choose 1 to 4 shifts in a row, or no limit.",
@@ -188,12 +194,11 @@
     "which": "Which schedule",
     "published": "Published",
     "next": "Next period",
-    "fillAvailability": "Fill availability",
-    "edit": "Edit",
+    "edit": "Edit current schedule",
     "emptyTitle": "No schedule yet",
     "emptyText": "Your shifts will show here once a schedule is published.",
     "emptyCollecting": "Your manager is collecting availability for the next schedule.",
-    "editGenerator": "Edit Generator",
+    "editGenerator": "Edit generator rules",
     "mine": "My shifts",
     "team": "Whole team",
     "noShiftsTitle": "No shifts for you",
@@ -210,7 +215,11 @@
       "keep": "Keep it",
       "giveAway": "Give away",
       "trade": "Trade",
-      "offeredToast": "Offered to the team. Still yours until taken."
+      "offeredToast": "Offered to the team. Still yours until taken.",
+      "with": "Working with you",
+      "alone": "Nobody else on this shift.",
+      "openSpots_one": "{{count}} open spot",
+      "openSpots_other": "{{count}} open spots"
     },
     "ready": {
       "title": "Ready to build?",
@@ -228,8 +237,14 @@
       "text": "Everyone who works shifts is asked for their availability.",
       "start": "Starts on",
       "startHint": "A Monday.",
-      "weeks": "Weeks",
-      "submit": "Open period"
+      "submit": "Open period",
+      "length_one": "Lasts {{count}} week, as set in the generator rules.",
+      "length_other": "Lasts {{count}} weeks, as set in the generator rules."
+    },
+    "box": {
+      "open": "Next period is open",
+      "build": "Build",
+      "continue": "Continue building"
     }
   },
   "availability": {
@@ -250,7 +265,9 @@
     "noteSent": "Note sent",
     "sendNote": "Send note",
     "send": "Send",
-    "sendAgain": "Send again"
+    "sendAgain": "Send again",
+    "wanted": "Hours you want per week",
+    "wantedHint": "For every week of this period."
   },
   "ui": {
     "close": "Close",
@@ -699,9 +716,8 @@
   },
   "teamAvailability": {
     "title": "Team availability",
-    "mine": "Fill in my availability",
     "offers": "Offers {{offered}} h/wk · wants {{wanted}} h/wk",
-    "noAnswer": "No answer yet · wants {{wanted}} h/wk",
+    "noAnswer": "No answer yet",
     "reopened": "Reopened",
     "remind": "Remind",
     "remindNamed": "Remind {{name}}",
@@ -728,10 +744,11 @@
       "level": "Level",
       "worksShifts": "Works shifts",
       "worksShiftsText": "Sends availability and can be scheduled.",
-      "hours": "Hours wanted per week",
-      "hoursText": "The generator aims for this.",
       "save": "Save level",
-      "remove": "Remove from the workplace"
+      "remove": "Remove from the workplace",
+      "limit": "Limit hours per week",
+      "limitText": "If they ask for more, the generator gives them at most this many.",
+      "max": "Most hours per week"
     },
     "remove": {
       "title": "Remove {{name}}?",
@@ -786,6 +803,13 @@
       "ask": "Ask",
       "askNamed": "Ask {{name}}",
       "asked": "Request sent to {{name}}"
+    },
+    "new": "New",
+    "mine": {
+      "title": "My shifts to trade",
+      "empty": "You have no upcoming shifts to trade",
+      "offered": "Offered",
+      "pending": "Trade pending"
     }
   },
   "alerts": {
@@ -793,8 +817,6 @@
     "context": "Reminders, shifts and trades",
     "waiting_one": "{{count}} waiting on you",
     "waiting_other": "{{count}} waiting on you",
-    "reminders": "Reminders",
-    "fillAvailability": "Fill in your availability",
     "recent": "Recent",
     "markRead": "Mark all read",
     "empty": "Nothing yet.",
@@ -818,7 +840,8 @@
       },
       "shift": {
         "offered": "{{name}} is giving away {{date}}, {{start}}–{{end}}",
-        "claimed": "{{name}} took the shift on {{date}}, {{start}}–{{end}}"
+        "claimed": "{{name}} took the shift on {{date}}, {{start}}–{{end}}",
+        "missing_level": "A trade or claim left {{date}}, {{start}}–{{end}} without its required level"
       },
       "claim": {
         "requested": "{{name}} asks for the shift on {{date}}, {{start}}–{{end}}",
@@ -833,8 +856,12 @@
         "applied": "The trade for {{date}}, {{start}}–{{end}} is done",
         "rejected": "The trade for {{date}}, {{start}}–{{end}} was not applied",
         "expired": "The trade for {{date}}, {{start}}–{{end}} expired"
+      },
+      "period": {
+        "cancelled": "The period starting {{periodStart}} was cancelled"
       }
-    }
+    },
+    "markOneRead": "Mark as read: {{text}}"
   },
   "generator": {
     "title": "Edit Generator",
@@ -905,7 +932,6 @@
     "title": "Profile",
     "level": "Barista level",
     "levelHint": "Set by your manager",
-    "wants": "Wants per week",
     "worksShifts": "I work shifts too",
     "worksShiftsText": "Be scheduled and send availability",
     "workplace": "Workplace",
@@ -940,13 +966,6 @@
     "leave": "Leave this workplace",
     "leaveTitle": "Leave {{workplace}}?",
     "leaveText": "You lose access at once and your future shifts become open shifts.",
-    "wantsEdit": "Edit →",
-    "hoursSheet": {
-      "title": "Hours you want per week",
-      "text": "Your manager sees this when building the schedule. It is a wish, not a promise.",
-      "label": "Hours per week",
-      "save": "Save"
-    },
     "changePassword": {
       "row": "Change password",
       "title": "Change password",
@@ -977,5 +996,40 @@
       "add": "Choose “Add to Home Screen”.",
       "open": "Open Quart from its new icon."
     }
+  },
+  "building": {
+    "title": "Building Schedule",
+    "editTitle": "Editing Schedule",
+    "ended": "You left the page for a while, so the unsaved changes were dropped.",
+    "save": "Save draft",
+    "saved": "Draft saved",
+    "clear": "Clear",
+    "clearTitle": "Are you sure?",
+    "clearText": "This wipes the schedule being built.",
+    "clearConfirm": "Clear the schedule",
+    "cancel": "Cancel",
+    "leaveTitle": "Leave without saving?",
+    "leaveText": "Your changes since the last save will be lost.",
+    "leave": "Leave"
+  },
+  "cancelPeriod": {
+    "button": "Cancel period",
+    "title": "Cancel this period?",
+    "text": "The period {{range}} and everything in it will be deleted for good: availability, notes and the draft. Everyone who sent availability will be told. You can then open a new period.",
+    "textPublished": "The period {{range}} and everything in it will be deleted for good: the published schedule, availability and notes. Give-aways and trades on its shifts are cancelled. Everyone who sent availability or works a shift will be told.",
+    "confirm": "Cancel the period",
+    "keep": "Keep it",
+    "done": "Period cancelled"
+  },
+  "personAvailability": {
+    "hint": "What they sent. Only they can change it.",
+    "can": "available",
+    "cannot": "not available",
+    "counter_one": "{{count}} shift · {{hours}} h per week",
+    "counter_other": "{{count}} shifts · {{hours}} h per week",
+    "notes": "Notes",
+    "goneTitle": "Nothing to show",
+    "goneText": "This period was cancelled, or this person is no longer on the team.",
+    "wanted": "Hours wanted per week"
   }
 }

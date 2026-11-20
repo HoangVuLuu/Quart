@@ -68,7 +68,8 @@ internal static class PublishedScheduleEndpoints
                         x.MembershipId,
                         // Someone who has left keeps their past shifts, without their name (FR-009).
                         names.GetValueOrDefault(x.MembershipId)?.DisplayName,
-                        names.GetValueOrDefault(x.MembershipId)?.Level,
+                        // 3.1: levels only for people who manage them.
+                        member.Can(Permission.ManageLevels) ? names.GetValueOrDefault(x.MembershipId)?.Level : null,
                         x.MembershipId == member.MembershipId))
                     .OrderBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase)
                     .ToList())).ToList()));

@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import i18n from '../../i18n';
@@ -19,6 +19,7 @@ const period: Schemas['PeriodSummary'] = {
   status: 'collecting',
   version: 0,
   locked: false,
+  draftSaved: false,
 };
 const next = { period, myAvailability: 'not_sent', canEditAvailability: true, sentCount: null };
 
@@ -44,6 +45,7 @@ const myAvailability: Schemas['MyAvailability'] = {
   period,
   status: 'not_sent',
   canEdit: true,
+  desiredWeeklyHours: 18,
   hasPrevious: false,
   shifts: [
     availabilityShift('mon-open', '2099-10-05', '10:00', '16:00'),
@@ -112,7 +114,8 @@ describe('availability', () => {
     await userEvent.click(screen.getByRole('button', { name: en.availability.send }));
 
     const sent = calls.find((call) => call.path.endsWith('/availability/me/send'));
-    expect(sent?.body).toEqual({ shiftIds: ['mon-close', 'tue-open'] });
+    // BR-032: last period's number is offered and sent with the shifts.
+    expect(sent?.body).toEqual({ shiftIds: ['mon-close', 'tue-open'], desiredWeeklyHours: 18 });
   });
 
   it('locks the shifts once building has started, but still takes a note', async () => {
@@ -151,23 +154,6 @@ describe('availability', () => {
 describe('the schedule tab', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en');
-  });
-
-  it('lets staff change the hours they want from Profile (FR-037, mockup 1g)', async () => {
-    const calls = signedIn('employee', { [`PATCH ${base}/me`]: status(204) });
-    renderApp('/profile');
-    const user = userEvent.setup();
-
-    await user.click(await screen.findByRole('button', { name: 'Edit →' }));
-    const sheet = within(await screen.findByRole('dialog', { name: 'Hours you want per week' }));
-    await user.click(sheet.getByRole('button', { name: /Increase|More|\+/ }));
-    await user.click(sheet.getByRole('button', { name: 'Save' }));
-
-    await screen.findByText('Saved');
-    const sent = calls.find((call) => call.method === 'PATCH' && call.path === `${base}/me`);
-    expect(sent?.body).toEqual({
-      desiredWeeklyHours: (workplace('employee').me.desiredWeeklyHours ?? 0) + 1,
-    });
   });
 
   it('says why "I work shifts too" cannot be turned off while the owner still has shifts (D1)', async () => {
@@ -216,15 +202,26 @@ describe('the schedule tab', () => {
     expect(screen.getByText('1 open place')).toBeInTheDocument();
   });
 
-  it('gives a shift away from its sheet', async () => {
+  it('shows who works my shift on Schedule, and gives it away from My shifts to trade (2.2, 2.3)', async () => {
+    const shiftRef = { id: 'mon-close', periodId, date: '2099-10-05', start: '16:00', end: '23:00' };
     const calls = signedIn('employee', {
-      [`GET ${base}/periods/current`]: { live: published, next: null },
+      [`GET ${base}/periods/current`]: { live: published, next: null, upcoming: [] },
       [`GET ${base}/periods/${periodId}/schedule`]: schedule,
+      [`GET ${base}/marketplace`]: {
+        ...emptyBoard,
+        mine: [{ shift: shiftRef, offered: false, tradePending: false }],
+      },
       [`POST ${base}/marketplace/give-aways`]: status(204),
     });
-    renderApp('/schedule');
+    const router = renderApp('/schedule');
 
     await userEvent.click(await screen.findByRole('button', { name: /Closing/ }));
+    const people = within(await screen.findByRole('dialog', { name: /Closing/ }));
+    expect(people.getByText(en.schedule.sheet.with)).toBeInTheDocument();
+    expect(people.queryByRole('button', { name: en.schedule.sheet.giveAway })).toBeNull();
+
+    await router.navigate('/trade/mine');
+    await userEvent.click(await screen.findByRole('button', { name: /16:00–23:00/ }));
     await userEvent.click(await screen.findByRole('button', { name: en.schedule.sheet.giveAway }));
 
     expect(calls.find((call) => call.path.endsWith('/marketplace/give-aways'))?.body).toEqual({
@@ -260,19 +257,57 @@ describe('the schedule tab', () => {
         },
       ],
     };
-    const calls = signedIn('owner', {
-      [`GET ${base}/periods/current`]: { live: null, next: { ...next, sentCount: 1 } },
+    signedIn('owner', {
+      [`GET ${base}/periods/current`]: { live: null, next: { ...next, sentCount: 1 }, upcoming: [] },
       [`GET ${base}/periods/${periodId}/availability`]: team,
-      [`POST ${base}/periods/${periodId}/draft/generate`]: status(409, { code: 'schedule.double_booking' }),
     });
     renderApp('/schedule');
 
-    expect(await screen.findByRole('heading', { name: en.schedule.ready.title })).toBeInTheDocument();
-    expect(await screen.findByText('Kevin T.')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: en.schedule.ready.generate }));
+    // 4.1: the box at the top says the period is open, how many sent, and leads to Building Schedule.
+    expect(await screen.findByRole('heading', { name: en.schedule.box.open })).toBeInTheDocument();
+    expect(await screen.findByText('1 of 2 sent')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: en.schedule.box.build })).toHaveAttribute(
+      'href',
+      '/schedule/build',
+    );
+    expect(screen.getByRole('link', { name: en.schedule.editGenerator })).toHaveAttribute(
+      'href',
+      '/generator',
+    );
+  });
 
-    expect(calls.find((call) => call.path.endsWith('/draft/generate'))?.body).toEqual({ seed: null });
-    expect(await screen.findByRole('alert')).toHaveTextContent(en.errors.schedule.double_booking);
+  it('enters Building Schedule, saves the draft, and asks before leaving with unsaved changes (4.3)', async () => {
+    const building = { ...period, status: 'building', locked: true };
+    const draft: Schemas['DraftView'] = {
+      period: building,
+      seed: null,
+      score: 0,
+      openSlots: 0,
+      hasUnpublishedChanges: true,
+      hasUnsavedChanges: true,
+      shifts: [],
+      people: [],
+      issues: [],
+    };
+    const calls = signedIn('owner', {
+      [`GET ${base}/periods/current`]: { live: null, next: { ...next, period: building }, upcoming: [] },
+      [`POST ${base}/periods/${periodId}/draft/start`]: draft,
+      [`GET ${base}/periods/${periodId}/draft`]: draft,
+      [`POST ${base}/periods/${periodId}/draft/save`]: { ...draft, hasUnsavedChanges: false },
+      [`POST ${base}/periods/${periodId}/draft/leave`]: status(204),
+    });
+    renderApp('/schedule/build');
+
+    expect(await screen.findByRole('heading', { name: en.building.title })).toBeInTheDocument();
+    // Unsaved changes: Save draft is on.
+    await waitFor(() => expect(screen.getByRole('button', { name: en.building.save })).toBeEnabled());
+    await userEvent.click(await screen.findByRole('button', { name: en.shell.back }));
+    const leaving = within(await screen.findByRole('dialog', { name: en.building.leaveTitle }));
+    await userEvent.click(leaving.getByRole('button', { name: en.building.save }));
+
+    expect(calls.some((call) => call.path.endsWith('/draft/start'))).toBe(true);
+    expect(calls.some((call) => call.path.endsWith('/draft/save'))).toBe(true);
+    expect(await screen.findByRole('heading', { name: en.schedule.title })).toBeInTheDocument();
   });
 
   it('will not publish a draft with a blocking issue: it opens the issues instead', async () => {
@@ -283,6 +318,7 @@ describe('the schedule tab', () => {
       score: 500,
       openSlots: 1,
       hasUnpublishedChanges: true,
+      hasUnsavedChanges: false,
       shifts: [
         {
           id: 'mon-close',
@@ -344,9 +380,10 @@ describe('the schedule tab', () => {
         next: { ...next, period: building, canEditAvailability: false },
       },
       [`GET ${base}/periods/${periodId}/draft`]: draft,
+      [`POST ${base}/periods/${periodId}/draft/start`]: draft,
       [`POST ${base}/periods/${periodId}/draft/assignments`]: { ...draft, issues: [] },
     });
-    renderApp('/schedule');
+    renderApp('/schedule/build');
 
     expect(await screen.findByText('No level 3')).toBeInTheDocument();
     expect(screen.getByText(en.scheduling.grid.kept)).toBeInTheDocument();
@@ -389,6 +426,7 @@ describe('the schedule tab', () => {
       score: 0,
       openSlots: 0,
       hasUnpublishedChanges: true,
+      hasUnsavedChanges: false,
       shifts: [
         {
           id: 'mon-close',
@@ -413,9 +451,10 @@ describe('the schedule tab', () => {
         next: { ...next, period: building, canEditAvailability: false },
       },
       [`GET ${base}/periods/${periodId}/draft`]: draft,
+      [`POST ${base}/periods/${periodId}/draft/start`]: draft,
       [`POST ${base}/periods/${periodId}/draft/assignments`]: draft,
     });
-    renderApp('/schedule');
+    renderApp('/schedule/build');
 
     await userEvent.click(await screen.findByRole('button', { name: /Closing/ }));
     const editor = await screen.findByRole('dialog', { name: /Closing/ });
@@ -561,5 +600,193 @@ describe('notifications', () => {
     );
 
     expect(text).toBe(i18n.t('alerts.unknown'));
+  });
+});
+
+describe('changes of 2026-11-19', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  it('puts the trash and pen icons in the next-period box, and the edit pen on the My shifts row (1, 2, 3)', async () => {
+    signedIn('owner', {
+      [`GET ${base}/periods/current`]: { live: published, next: { ...next, sentCount: 0 }, upcoming: [] },
+      [`GET ${base}/periods/${periodId}/schedule`]: schedule,
+    });
+    renderApp('/schedule');
+
+    const box = (await screen.findByRole('heading', { name: en.schedule.box.open })).parentElement!;
+    expect(within(box).getByRole('button', { name: en.cancelPeriod.button })).toBeInTheDocument();
+    expect(within(box).getByRole('link', { name: en.schedule.editGenerator })).toHaveAttribute(
+      'href',
+      '/generator',
+    );
+    const row = (await screen.findByRole('button', { name: en.schedule.mine })).parentElement!;
+    expect(within(row).getByRole('link', { name: en.schedule.edit })).toHaveAttribute(
+      'href',
+      `/schedule/edit?period=${periodId}`,
+    );
+  });
+
+  it('opens who works the next shift from Home, without leaving Home (5)', async () => {
+    const router = (() => {
+      signedIn('employee', {
+        [`GET ${base}/periods/current`]: { live: published, next: null, upcoming: [] },
+        [`GET ${base}/periods/${periodId}/schedule`]: schedule,
+      });
+      return renderApp('/');
+    })();
+
+    await userEvent.click(await screen.findByRole('button', { name: en.home.viewShift }));
+    const people = within(await screen.findByRole('dialog'));
+    expect(people.getByText(en.schedule.sheet.with)).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/');
+  });
+
+  it('keeps Whole team when switching periods (8)', async () => {
+    const laterId = '66666666-6666-4666-8666-666666666666';
+    const later = { ...published, id: laterId, startDate: '2099-10-19', endDate: '2099-11-01' };
+    signedIn('employee', {
+      [`GET ${base}/periods/current`]: { live: published, next: null, upcoming: [later] },
+      [`GET ${base}/periods/${periodId}/schedule`]: schedule,
+      [`GET ${base}/periods/${laterId}/schedule`]: { period: later, shifts: [] },
+    });
+    renderApp('/schedule');
+
+    await userEvent.click(await screen.findByRole('button', { name: en.schedule.team }));
+    const which = screen.getByRole('group', { name: en.schedule.which });
+    await userEvent.click(within(which).getAllByRole('button')[1]!);
+
+    expect(await screen.findByRole('button', { name: en.schedule.team })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('opens a shift from an alert link, with who works it (10)', async () => {
+    signedIn('employee', {
+      [`GET ${base}/periods/current`]: { live: published, next: null, upcoming: [] },
+      [`GET ${base}/periods/${periodId}/schedule`]: schedule,
+    });
+    renderApp(`/schedule?period=${periodId}&shift=mon-close`);
+
+    const people = within(await screen.findByRole('dialog', { name: /Closing/ }));
+    expect(people.getByText('Kevin T.')).toBeInTheDocument();
+  });
+
+  it('gives each alert an eye that marks it read, and links the ones that lead somewhere (6, 7, 10)', async () => {
+    const calls = signedIn('owner', {
+      [`GET ${base}/notifications`]: {
+        unread: 2,
+        items: [
+          {
+            id: 'n1',
+            type: 'claim.approved',
+            parameters: {
+              date: '2099-10-05',
+              start: '16:00',
+              end: '23:00',
+              name: 'Sophie L.',
+              periodId,
+              shiftId: 'mon-close',
+            },
+            createdAt: '2099-10-01T12:00:00Z',
+            read: false,
+          },
+          {
+            id: 'n2',
+            type: 'availability.sent',
+            parameters: { name: 'Kevin T.', periodStart: '2099-10-05', periodId, membershipId: kevin },
+            createdAt: '2099-10-01T12:00:00Z',
+            read: false,
+          },
+          {
+            id: 'n3',
+            type: 'member.joined',
+            parameters: { name: 'Amélie T.' },
+            createdAt: '2099-10-01T12:00:00Z',
+            read: true,
+          },
+        ],
+      },
+      [`POST ${base}/notifications/n1/read`]: status(204),
+    });
+    renderApp('/alerts');
+
+    expect(await screen.findByRole('link', { name: /is yours/ })).toHaveAttribute(
+      'href',
+      `/schedule?period=${periodId}&shift=mon-close`,
+    );
+    expect(screen.getByRole('link', { name: /sent their availability/ })).toHaveAttribute(
+      'href',
+      `/availability/people/${periodId}/${kevin}`,
+    );
+    expect(screen.queryByRole('link', { name: /joined the team/ })).not.toBeInTheDocument();
+    // A read alert has no eye.
+    expect(screen.getAllByRole('button', { name: /Mark as read/ })).toHaveLength(2);
+
+    await userEvent.click(screen.getAllByRole('button', { name: /Mark as read/ })[0]!);
+    expect(calls.some((call) => call.method === 'POST' && call.path.endsWith('/notifications/n1/read'))).toBe(
+      true,
+    );
+  });
+
+  it('shows a manager one person’s answer, read-only (6)', async () => {
+    signedIn('owner', {
+      [`GET ${base}/periods/${periodId}/availability/${kevin}`]: {
+        period,
+        membershipId: kevin,
+        name: 'Kevin T.',
+        status: 'sent',
+        desiredWeeklyHours: 24,
+        shifts: myAvailability.shifts.map((shift) => ({ ...shift, selected: shift.id === 'mon-close' })),
+        notes: [{ id: 'note-1', body: 'Exams that week', createdAt: '2099-10-01T12:00:00Z' }],
+      },
+    });
+    renderApp(`/availability/people/${periodId}/${kevin}`);
+
+    expect(await screen.findByRole('heading', { name: 'Kevin T.' })).toBeInTheDocument();
+    expect(screen.getByText('24')).toBeInTheDocument();
+    expect(screen.getByText('Exams that week')).toBeInTheDocument();
+    const monday = within(screen.getByRole('list', { name: 'Mon 5' }));
+    expect(monday.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      '– Opening not available10:00–16:00',
+      '✓ Closing available16:00–23:00',
+    ]);
+    // Nothing to change: no shift buttons and no Send.
+    expect(screen.queryByRole('button', { name: /Closing/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: en.availability.send })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: en.shell.back })).toBeInTheDocument();
+  });
+
+  it('lists trades above open shifts on the Trade tab (9)', async () => {
+    const gives = { id: 'mon-close', periodId, date: '2099-10-05', start: '16:00', end: '23:00' };
+    const gets = { id: 'tue-open', periodId, date: '2099-10-06', start: '10:00', end: '16:00' };
+    signedIn('employee', {
+      [`GET ${base}/marketplace`]: {
+        ...emptyBoard,
+        openShifts: [{ shift: gets, openSlots: 1, requested: false, seen: true }],
+        trades: [
+          {
+            id: 'trade-1',
+            status: 'requested',
+            role: 'coworker',
+            requesterName: 'Kevin T.',
+            gives,
+            coworkerName: 'Sophie L.',
+            gets,
+            wouldMissLevel: false,
+            seen: true,
+          },
+        ],
+      },
+    });
+    renderApp('/trade');
+
+    const headings = (await screen.findAllByRole('heading', { level: 2 })).map(
+      (heading) => heading.textContent,
+    );
+    expect(headings.indexOf(en.marketplace.trades)).toBeLessThan(headings.indexOf(en.marketplace.open));
+    expect(headings.indexOf(en.marketplace.trades)).toBeGreaterThanOrEqual(0);
   });
 });

@@ -51,7 +51,8 @@ internal sealed class DraftBuilder(SchedulingDb db, IWorkplaceDirectory director
                 x.EndTime.ToTimeOnly(),
                 x.Headcount,
                 x.Requirements.Select(r => new LevelRequirement(r.Level, r.MinCount)).ToList())).ToList(),
-            data.Members.Select(x => new GeneratorMember(Id(x.MembershipId), x.Level, x.DesiredWeeklyHours, x.MaxWeeklyHours)).ToList(),
+            // Someone with no number for this period (they have not sent) wants 0; their hours issues are dropped in Evaluate.
+            data.Members.Select(x => new GeneratorMember(Id(x.MembershipId), x.Level, DesiredOf(data, x) ?? 0, x.MaxWeeklyHours)).ToList(),
             data.Availabilities
                 .Where(x => memberIds.Contains(x.MembershipId))
                 // FR-099: someone who has not sent is never treated as available, whatever their draft says.
@@ -71,6 +72,20 @@ internal sealed class DraftBuilder(SchedulingDb db, IWorkplaceDirectory director
             seed);
     }
 
+    /// <summary>
+    /// The weekly hours the person asked for in this period's availability, capped at the manager's maximum
+    /// (BR-032). Null when they have not sent it: there is no target to be under or over.
+    /// </summary>
+    public static decimal? DesiredOf(PeriodData data, WorkplaceMember member)
+    {
+        var availability = data.Availabilities.FirstOrDefault(x => x.MembershipId == member.MembershipId);
+        if (availability is not { Status: Persistence.Availability.Sent, DesiredWeeklyHours: { } wanted })
+        {
+            return null;
+        }
+        return member.MaxWeeklyHours is { } max && wanted > max ? max : wanted;
+    }
+
     /// <summary>Grades a set of assignments with the one rulebook (AD-002).</summary>
     public static Evaluation Evaluate(PeriodData data, IReadOnlyCollection<Assignment> assignments)
     {
@@ -81,7 +96,15 @@ internal sealed class DraftBuilder(SchedulingDb db, IWorkplaceDirectory director
             .Where(x => memberIds.Contains(x.MembershipId))
             .Select(x => new Generator.Assignment(Id(x.ShiftId), Id(x.MembershipId)))
             .ToList();
-        return Evaluator.Evaluate(input, graded);
+        var evaluation = Evaluator.Evaluate(input, graded);
+        // Without a number for the period there is nothing to be under or over (BR-032, BR-033).
+        var noTarget = data.Members.Where(x => DesiredOf(data, x) is null).Select(x => Id(x.MembershipId)).ToHashSet();
+        return evaluation with
+        {
+            Issues = evaluation.Issues
+                .Where(x => !(x.Code is IssueCodes.UnderHours or IssueCodes.OverHours && x.MemberIds.All(noTarget.Contains)))
+                .ToList(),
+        };
     }
 
     public static string Id(Guid id) => id.ToString("D");

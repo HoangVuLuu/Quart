@@ -89,9 +89,9 @@ export function workplace(
     me: {
       membershipId: '33333333-3333-4333-8333-333333333333',
       role,
-      level: role === 'owner' ? 3 : 2,
+      // Workers never see a level (3.1).
+      level: role === 'owner' ? 3 : null,
       worksShifts: true,
-      desiredWeeklyHours: 14,
       maxWeeklyHours: null,
       permissions:
         role === 'owner'
@@ -117,6 +117,8 @@ export const emptyBoard: Schemas['MarketplaceBoard'] = {
   offers: [],
   claims: [],
   trades: [],
+  mine: [],
+  unseen: 0,
 };
 
 /**

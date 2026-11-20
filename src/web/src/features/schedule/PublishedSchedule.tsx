@@ -25,18 +25,34 @@ import {
 import { flavourOf, useShiftName } from '../scheduling/ShiftName';
 import { Pill } from './Pill';
 
+export type ScheduleScope = 'mine' | 'team';
+
 type PublishedScheduleProps = {
   periodId: string;
-  /** Buttons beside the My shifts / Whole team switch, such as "Fill availability" (NFR-003). */
+  /** Buttons at the end of the My shifts / Whole team row, such as the edit pen (NFR-003). */
   action?: ReactNode;
+  /** Kept by the page, so switching periods keeps "Whole team" (2026-11-18). */
+  view?: ScheduleScope;
+  onViewChange?: (view: ScheduleScope) => void;
+  /** A shift whose pop-up starts open, when an alert brought the person here (2026-11-18). */
+  initialShift?: string | null;
 };
 
-// Mockups 1c (my shifts) and 1d (whole team), with the shift sheet (1h) and the trade sheet (1i).
-export function PublishedSchedule({ periodId, action }: PublishedScheduleProps) {
+// Mockups 1c (my shifts) and 1d (whole team). Tapping one of my shifts shows who I work with (2.3,
+// 2026-11-18); giving away and trading start from the Trade tab instead (1h, 1i).
+export function PublishedSchedule({
+  periodId,
+  action,
+  view: shownView,
+  onViewChange,
+  initialShift,
+}: PublishedScheduleProps) {
   const { t } = useTranslation();
   const schedule = usePublishedSchedule(periodId);
-  const [view, setView] = useState<'mine' | 'team'>('mine');
-  const [openShift, setOpenShift] = useState<string | null>(null);
+  const [ownView, setOwnView] = useState<ScheduleScope>('mine');
+  const view = shownView ?? ownView;
+  const setView = onViewChange ?? setOwnView;
+  const [openShift, setOpenShift] = useState<string | null>(initialShift ?? null);
   const swipeViews = useSwipe({ onNext: () => setView('team'), onPrevious: () => setView('mine') });
 
   if (schedule.error) throw schedule.error;
@@ -63,9 +79,7 @@ export function PublishedSchedule({ periodId, action }: PublishedScheduleProps) 
           <WholeTeam schedule={schedule.data} />
         )}
       </div>
-      {selected && (
-        <ShiftSheet schedule={schedule.data} shift={selected} onClose={() => setOpenShift(null)} />
-      )}
+      {selected && <ShiftPeopleSheet shift={selected} onClose={() => setOpenShift(null)} />}
     </>
   );
 }
@@ -216,8 +230,49 @@ function WholeTeam({ schedule }: { schedule: ScheduleView }) {
   );
 }
 
-/** Mockup 1h: one of my shifts, with Give away and Trade. Giving away never removes me until someone takes it (FR-181). */
-function ShiftSheet({
+/**
+ * One of my shifts on the Schedule tab: who else works it, and its empty spots (2.3, 2026-11-18). The same
+ * pop-up as the trade sheet, without its buttons.
+ */
+export function ShiftPeopleSheet({ shift, onClose }: { shift: ScheduleShift; onClose: () => void }) {
+  const { t, i18n } = useTranslation();
+  const shiftName = useShiftName();
+  const others = shift.people.filter((person) => !person.isMe);
+  const open = Math.max(0, shift.headcount - shift.people.length);
+  return (
+    <Sheet
+      open
+      onOpenChange={(isOpen) => !isOpen && onClose()}
+      title={shiftName(shift.part)}
+      description={`${formatDayHeading(shift.date, i18n.language)} · ${shift.start}–${shift.end} · ${formatNumber(shift.hours, i18n.language)} h`}
+    >
+      <h3 className="text-sm font-bold text-muted">{t('schedule.sheet.with')}</h3>
+      <ul className="mt-2 flex flex-col gap-2">
+        {others.map((person) => (
+          <li key={person.membershipId} className="rounded-field bg-surface-3 px-4 py-3 font-bold">
+            {person.name ?? t('team.former')}
+          </li>
+        ))}
+        {others.length === 0 && open === 0 && (
+          <li className="rounded-field bg-surface-3 px-4 py-3 text-sm text-muted">
+            {t('schedule.sheet.alone')}
+          </li>
+        )}
+      </ul>
+      {open > 0 && (
+        <StatusChip tone="warning" className="mt-3">
+          {t('schedule.sheet.openSpots', { count: open })}
+        </StatusChip>
+      )}
+    </Sheet>
+  );
+}
+
+/**
+ * Mockup 1h: one of my shifts, with Give away and Trade, opened from "My shifts to trade" (2.2). Giving
+ * away never removes me until someone takes it (FR-181).
+ */
+export function ShiftTradeSheet({
   schedule,
   shift,
   onClose,

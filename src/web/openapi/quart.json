@@ -918,50 +918,6 @@
         }
       }
     },
-    "/api/workplaces/{workplaceId}/me": {
-      "patch": {
-        "tags": [
-          "WorkplaceEndpoints"
-        ],
-        "operationId": "UpdateMyMembership",
-        "parameters": [
-          {
-            "name": "workplaceId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateMyMembershipRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "default": {
-            "description": "Any error, as problem details with a machine-readable code (AD-023).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiProblem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/workplaces/{workplaceId}/leave": {
       "post": {
         "tags": [
@@ -1157,6 +1113,49 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workplaces/{workplaceId}/periods/{periodId}": {
+      "delete": {
+        "tags": [
+          "CancelPeriod"
+        ],
+        "operationId": "CancelPeriod",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           },
           "default": {
             "description": "Any error, as problem details with a machine-readable code (AD-023).",
@@ -1499,6 +1498,65 @@
         }
       }
     },
+    "/api/workplaces/{workplaceId}/periods/{periodId}/availability/{membershipId}": {
+      "get": {
+        "tags": [
+          "AvailabilityEndpoints"
+        ],
+        "operationId": "GetPersonAvailability",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "membershipId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonAvailability"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/workplaces/{workplaceId}/periods/{periodId}/availability/{membershipId}/reopen": {
       "post": {
         "tags": [
@@ -1667,6 +1725,192 @@
           "DraftEndpoints"
         ],
         "operationId": "StartBuilding",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workplaces/{workplaceId}/periods/{periodId}/draft/heartbeat": {
+      "post": {
+        "tags": [
+          "DraftEndpoints"
+        ],
+        "operationId": "KeepBuilding",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workplaces/{workplaceId}/periods/{periodId}/draft/save": {
+      "post": {
+        "tags": [
+          "DraftEndpoints"
+        ],
+        "operationId": "SaveDraft",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workplaces/{workplaceId}/periods/{periodId}/draft/leave": {
+      "post": {
+        "tags": [
+          "DraftEndpoints"
+        ],
+        "operationId": "LeaveBuilding",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workplaces/{workplaceId}/periods/{periodId}/draft/clear": {
+      "post": {
+        "tags": [
+          "DraftEndpoints"
+        ],
+        "operationId": "ClearDraft",
         "parameters": [
           {
             "name": "workplaceId",
@@ -2134,6 +2378,50 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workplaces/{workplaceId}/marketplace/seen": {
+      "post": {
+        "tags": [
+          "MarketplaceEndpoints"
+        ],
+        "operationId": "MarkTradeItemSeen",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
           },
           "default": {
             "description": "Any error, as problem details with a machine-readable code (AD-023).",
@@ -2705,6 +2993,49 @@
           }
         }
       }
+    },
+    "/api/workplaces/{workplaceId}/notifications/{notificationId}/read": {
+      "post": {
+        "tags": [
+          "Quart.Api"
+        ],
+        "operationId": "MarkNotificationRead",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2856,6 +3187,13 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "desiredWeeklyHours": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           }
         }
       },
@@ -3054,7 +3392,8 @@
           "shift",
           "membershipId",
           "name",
-          "fromName"
+          "fromName",
+          "wouldMissLevel"
         ],
         "type": "object",
         "properties": {
@@ -3077,6 +3416,9 @@
               "null",
               "string"
             ]
+          },
+          "wouldMissLevel": {
+            "type": "boolean"
           }
         }
       },
@@ -3134,18 +3476,13 @@
       },
       "CreatePeriodRequest": {
         "required": [
-          "startDate",
-          "weeks"
+          "startDate"
         ],
         "type": "object",
         "properties": {
           "startDate": {
             "type": "string",
             "format": "date"
-          },
-          "weeks": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },
@@ -3181,7 +3518,8 @@
         "required": [
           "live",
           "next",
-          "upcoming"
+          "upcoming",
+          "myLiveWeeklyHours"
         ],
         "type": "object",
         "properties": {
@@ -3210,6 +3548,13 @@
             "items": {
               "$ref": "#/components/schemas/PeriodSummary"
             }
+          },
+          "myLiveWeeklyHours": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           }
         }
       },
@@ -3292,7 +3637,10 @@
             "format": "int32"
           },
           "desiredWeeklyHours": {
-            "type": "number",
+            "type": [
+              "null",
+              "number"
+            ],
             "format": "double"
           },
           "maxWeeklyHours": {
@@ -3408,6 +3756,7 @@
           "score",
           "openSlots",
           "hasUnpublishedChanges",
+          "hasUnsavedChanges",
           "shifts",
           "people",
           "issues"
@@ -3433,6 +3782,9 @@
             "format": "int32"
           },
           "hasUnpublishedChanges": {
+            "type": "boolean"
+          },
+          "hasUnsavedChanges": {
             "type": "boolean"
           },
           "shifts": {
@@ -3889,7 +4241,9 @@
           "openShifts",
           "offers",
           "claims",
-          "trades"
+          "trades",
+          "mine",
+          "unseen"
         ],
         "type": "object",
         "properties": {
@@ -3922,6 +4276,16 @@
             "items": {
               "$ref": "#/components/schemas/TradeView"
             }
+          },
+          "mine": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyShiftView"
+            }
+          },
+          "unseen": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -4037,7 +4401,6 @@
           "level",
           "isMe",
           "worksShifts",
-          "desiredWeeklyHours",
           "maxWeeklyHours"
         ],
         "type": "object",
@@ -4056,7 +4419,10 @@
             "type": "string"
           },
           "level": {
-            "type": "integer",
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           },
           "isMe": {
@@ -4067,13 +4433,6 @@
               "null",
               "boolean"
             ]
-          },
-          "desiredWeeklyHours": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
           },
           "maxWeeklyHours": {
             "type": [
@@ -4126,6 +4485,7 @@
           "status",
           "canEdit",
           "hasPrevious",
+          "desiredWeeklyHours",
           "shifts",
           "notes"
         ],
@@ -4142,6 +4502,13 @@
           },
           "hasPrevious": {
             "type": "boolean"
+          },
+          "desiredWeeklyHours": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           },
           "shifts": {
             "type": "array",
@@ -4163,7 +4530,6 @@
           "role",
           "level",
           "worksShifts",
-          "desiredWeeklyHours",
           "maxWeeklyHours",
           "permissions"
         ],
@@ -4177,15 +4543,14 @@
             "type": "string"
           },
           "level": {
-            "type": "integer",
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           },
           "worksShifts": {
             "type": "boolean"
-          },
-          "desiredWeeklyHours": {
-            "type": "number",
-            "format": "double"
           },
           "maxWeeklyHours": {
             "type": [
@@ -4199,6 +4564,25 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "MyShiftView": {
+        "required": [
+          "shift",
+          "offered",
+          "tradePending"
+        ],
+        "type": "object",
+        "properties": {
+          "shift": {
+            "$ref": "#/components/schemas/ShiftRef"
+          },
+          "offered": {
+            "type": "boolean"
+          },
+          "tradePending": {
+            "type": "boolean"
           }
         }
       },
@@ -4323,7 +4707,8 @@
           "mine",
           "requested",
           "wouldMissLevel",
-          "onShift"
+          "onShift",
+          "seen"
         ],
         "type": "object",
         "properties": {
@@ -4352,6 +4737,9 @@
           },
           "onShift": {
             "type": "boolean"
+          },
+          "seen": {
+            "type": "boolean"
           }
         }
       },
@@ -4359,7 +4747,8 @@
         "required": [
           "shift",
           "openSlots",
-          "requested"
+          "requested",
+          "seen"
         ],
         "type": "object",
         "properties": {
@@ -4372,6 +4761,9 @@
           },
           "requested": {
             "type": "boolean"
+          },
+          "seen": {
+            "type": "boolean"
           }
         }
       },
@@ -4383,7 +4775,8 @@
           "weeks",
           "status",
           "version",
-          "locked"
+          "locked",
+          "draftSaved"
         ],
         "type": "object",
         "properties": {
@@ -4412,6 +4805,55 @@
           },
           "locked": {
             "type": "boolean"
+          },
+          "draftSaved": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PersonAvailability": {
+        "required": [
+          "period",
+          "membershipId",
+          "name",
+          "status",
+          "desiredWeeklyHours",
+          "shifts",
+          "notes"
+        ],
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/PeriodSummary"
+          },
+          "membershipId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "desiredWeeklyHours": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "shifts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityShift"
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityNoteView"
+            }
           }
         }
       },
@@ -4596,6 +5038,20 @@
           }
         }
       },
+      "SeenRequest": {
+        "required": [
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ShiftRef": {
         "required": [
           "id",
@@ -4760,7 +5216,10 @@
             "format": "double"
           },
           "desiredWeeklyHours": {
-            "type": "number",
+            "type": [
+              "null",
+              "number"
+            ],
             "format": "double"
           },
           "notes": {
@@ -4816,7 +5275,8 @@
           "gives",
           "coworkerName",
           "gets",
-          "wouldMissLevel"
+          "wouldMissLevel",
+          "seen"
         ],
         "type": "object",
         "properties": {
@@ -4844,6 +5304,9 @@
           },
           "wouldMissLevel": {
             "type": "boolean"
+          },
+          "seen": {
+            "type": "boolean"
           }
         }
       },
@@ -4851,7 +5314,6 @@
         "required": [
           "level",
           "worksShifts",
-          "desiredWeeklyHours",
           "maxWeeklyHours",
           "clearMaxWeeklyHours"
         ],
@@ -4869,13 +5331,6 @@
               "null",
               "boolean"
             ]
-          },
-          "desiredWeeklyHours": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
           },
           "maxWeeklyHours": {
             "type": [
@@ -4910,18 +5365,6 @@
               "null",
               "string"
             ]
-          }
-        }
-      },
-      "UpdateMyMembershipRequest": {
-        "required": [
-          "desiredWeeklyHours"
-        ],
-        "type": "object",
-        "properties": {
-          "desiredWeeklyHours": {
-            "type": "number",
-            "format": "double"
           }
         }
       },
@@ -5014,6 +5457,9 @@
     },
     {
       "name": "PeriodEndpoints"
+    },
+    {
+      "name": "CancelPeriod"
     },
     {
       "name": "AvailabilityEndpoints"

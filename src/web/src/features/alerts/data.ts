@@ -35,16 +35,31 @@ export function useMarkAllRead() {
   });
 }
 
-/** How many requests wait for this person to decide: claims to approve, trades to answer or approve. */
+/** 5: one notification read, when tapped. */
+export function useMarkRead() {
+  const { id } = useWorkplace();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (notificationId: string) =>
+      unwrap(
+        api.POST('/api/workplaces/{workplaceId}/notifications/{notificationId}/read', {
+          params: { path: { workplaceId: id, notificationId } },
+        }),
+      ),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['workplace', id, 'notifications'] }),
+  });
+}
+
+/**
+ * How many requests wait for a manager to decide: claims and trades to approve. A trade asked of the
+ * person themselves counts on the Trade tab instead (2.4, 2.5).
+ */
 export function useDecisionCount(): number {
   const board = useMarketplace().data;
   return (
     (board?.claims.length ?? 0) +
-    (board?.trades.filter(
-      (trade) =>
-        (trade.role === 'coworker' && trade.status === 'requested') ||
-        (trade.role === 'approver' && trade.status === 'awaiting_approval'),
-    ).length ?? 0)
+    (board?.trades.filter((trade) => trade.role === 'approver' && trade.status === 'awaiting_approval')
+      .length ?? 0)
   );
 }
 

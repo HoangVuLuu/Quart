@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
+import { useGoBack } from '../../app/useGoBack';
 import { SubPage } from '../../app/SubPage';
 import { messageKeyFor } from '../../i18n/errors';
 import { api, unwrap, type Schemas } from '../../lib/api/client';
@@ -73,7 +73,7 @@ export function EditGeneratorPage() {
 function GeneratorForm({ initial }: { initial: Setup }) {
   const { t, i18n } = useTranslation();
   const { id } = useWorkplace();
-  const navigate = useNavigate();
+  const goBack = useGoBack('/schedule');
   const client = useQueryClient();
   const toast = useToast();
   const [tab, setTab] = useState<'general' | 'shifts'>('general');
@@ -93,7 +93,7 @@ function GeneratorForm({ initial }: { initial: Setup }) {
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: ['workplace', id] });
       toast(t('generator.saved'));
-      void navigate('/schedule');
+      goBack();
     },
   });
 
@@ -116,7 +116,7 @@ function GeneratorForm({ initial }: { initial: Setup }) {
       title={t('generator.title')}
       context={tab === 'general' ? t('generator.general') : t('generator.shifts')}
       // Mockup 1k6: never lose edits by accident.
-      onBack={() => (dirty ? setLeaving(true) : void navigate('/schedule'))}
+      onBack={() => (dirty ? setLeaving(true) : goBack())}
     >
       <div className="flex flex-col gap-4">
         <div role="group" aria-label={t('generator.tabs')} className="flex gap-2">
@@ -269,7 +269,7 @@ function GeneratorForm({ initial }: { initial: Setup }) {
       >
         <div className="flex flex-col gap-2">
           <Button onClick={() => setLeaving(false)}>{t('generator.leave.stay')}</Button>
-          <Button variant="danger" onClick={() => void navigate('/schedule')}>
+          <Button variant="danger" onClick={goBack}>
             {t('generator.leave.leave')}
           </Button>
         </div>

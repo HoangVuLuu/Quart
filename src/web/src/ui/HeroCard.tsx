@@ -9,6 +9,10 @@ type HeroCardProps = {
   children?: ReactNode;
   // Something placed on the right edge, such as the cup.
   decoration?: ReactNode;
+  // A small button in the top-right corner, such as the trash icon; the title leaves room for it.
+  corner?: ReactNode;
+  // Let the content use the whole width, for a row of buttons with an icon at its far end.
+  wide?: boolean;
   className?: string;
 };
 
@@ -20,6 +24,8 @@ export function HeroCard({
   headingLevel = 2,
   children,
   decoration,
+  corner,
+  wide,
   className,
 }: HeroCardProps) {
   const Heading = headingLevel === 1 ? 'h1' : 'h2';
@@ -28,9 +34,18 @@ export function HeroCard({
     <div className={cx('relative overflow-hidden rounded-hero bg-primary p-6 text-on-primary', className)}>
       <div aria-hidden="true" className="absolute -top-12 -right-10 size-48 rounded-full bg-glow" />
       {decoration}
-      {eyebrow && <p className="relative text-xs font-bold tracking-[0.06em] uppercase">{eyebrow}</p>}
-      <Heading className="relative mt-1 text-3xl leading-tight">{title}</Heading>
-      {children && <div className="relative mt-2 max-w-sm text-sm">{children}</div>}
+      {corner && <div className="absolute top-4 right-4">{corner}</div>}
+      {eyebrow && (
+        <p
+          className={cx('relative text-xs font-bold tracking-[0.06em] uppercase', corner != null && 'pr-12')}
+        >
+          {eyebrow}
+        </p>
+      )}
+      <Heading className={cx('relative mt-1 text-3xl leading-tight', corner != null && 'pr-12')}>
+        {title}
+      </Heading>
+      {children && <div className={cx('relative mt-2 text-sm', !wide && 'max-w-sm')}>{children}</div>}
     </div>
   );
 }

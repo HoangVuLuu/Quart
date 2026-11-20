@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +10,7 @@ using NodaTime;
 using Npgsql;
 using Quart.Modules.Notifications.Email;
 using Quart.Modules.Notifications.Persistence;
+using Quart.SharedKernel;
 using Quart.SharedKernel.Access;
 using Quart.SharedKernel.Directory;
 using Quart.SharedKernel.Jobs;
@@ -48,8 +50,11 @@ public static class NotificationsModule
             {
                 _ = workplaceId;
                 var member = http.Member();
-                var rows = await db.Notifications.AsNoTracking()
-                    .Where(x => x.MembershipId == member.MembershipId)
+                // Give-aways and trade requests live in the Trade tab, which counts them itself (2.5, 2026-11-18).
+                var trade = NotificationTypes.TradeTab.ToList();
+                var mine = db.Notifications.AsNoTracking().Where(x => x.MembershipId == member.MembershipId && !trade.Contains(x.Type));
+                var unread = await mine.CountAsync(x => x.ReadAt == null, cancellationToken);
+                var rows = await mine
                     .OrderByDescending(x => x.CreatedAt)
                     .Take(100)
                     .ToListAsync(cancellationToken);
@@ -61,7 +66,7 @@ public static class NotificationsModule
                         x.CreatedAt.ToDateTimeOffset(),
                         x.ReadAt is not null))
                     .ToList();
-                return TypedResults.Ok(new NotificationInbox(items.Count(item => !item.Read), items));
+                return TypedResults.Ok(new NotificationInbox(unread, items));
             })
             .AllowAnyMember()
             .WithName("GetNotifications");
@@ -78,6 +83,20 @@ public static class NotificationsModule
             })
             .AllowAnyMember()
             .WithName("MarkNotificationsRead");
+
+        // Tapping a notification marks it read and goes nowhere (5, 2026-11-18). Only the caller's own.
+        group.MapPost("/{notificationId:guid}/read", async Task<Results<NoContent, ProblemHttpResult>> (Guid workplaceId, Guid notificationId, HttpContext http, NotificationsDbContext db, IClock clock, CancellationToken cancellationToken) =>
+            {
+                _ = workplaceId;
+                var member = http.Member();
+                var now = clock.GetCurrentInstant();
+                var changed = await db.Notifications
+                    .Where(x => x.Id == notificationId && x.MembershipId == member.MembershipId)
+                    .ExecuteUpdateAsync(update => update.SetProperty(x => x.ReadAt, x => x.ReadAt ?? now), cancellationToken);
+                return changed == 0 ? Problems.NotFound() : TypedResults.NoContent();
+            })
+            .AllowAnyMember()
+            .WithName("MarkNotificationRead");
 
         return endpoints;
     }

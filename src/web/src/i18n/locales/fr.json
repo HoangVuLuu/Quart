@@ -42,6 +42,7 @@
     "availabilityLocked": "Verrouillées : l’horaire est en préparation.",
     "view": "Voir",
     "fillIn": "Remplir",
+    "change": "Modifier mes dispos",
     "nothing": "Rien de prévu pour l’instant. Tes quarts s’afficheront ici dès qu’un horaire sera publié.",
     "waiting": "En attente de toi",
     "period": {
@@ -96,6 +97,8 @@
       "password_too_short": "Utilise au moins 8 caractères."
     },
     "availability": {
+      "hours_invalid": "Indique un nombre d’heures de 0 à 168.",
+      "hours_required": "Indique les heures voulues par semaine.",
       "locked": "Les disponibilités sont verrouillées : l’horaire est en préparation.",
       "not_shift_worker": "Tu n’es pas configuré pour faire des quarts ici.",
       "note_empty": "Écris d’abord quelque chose.",
@@ -106,6 +109,7 @@
     "marketplace": {
       "already_offered": "Tu donnes déjà ce quart.",
       "already_requested": "Tu l’as déjà demandé.",
+      "item_invalid": "Cet élément n’existe plus.",
       "missing_level": "Refusé : un quart n’aurait plus le niveau requis.",
       "no_longer_pending": "Cette demande n’est plus en attente.",
       "not_shift_worker": "Tu n’es pas configuré pour faire des quarts ici.",
@@ -122,10 +126,11 @@
       "start_not_monday": "Une période commence un lundi.",
       "template_empty": "Ajoute d’abord tes quarts dans la page Modifier le générateur.",
       "unfinished_exists": "Publie la période en cours avant d’en ouvrir une autre.",
-      "weeks_invalid": "Une période dure de 1 à 4 semaines."
+      "already_started": "Cette période est déjà commencée, elle ne peut plus être annulée."
     },
     "schedule": {
       "already_on_shift": "Cette personne est déjà sur le quart.",
+      "cannot_clear_published": "Un horaire publié ne peut pas être effacé.",
       "double_booking": "Quelqu’un a déjà un quart au même moment ailleurs. Vérifie la liste des problèmes.",
       "not_building": "Commence d’abord la création de l’horaire.",
       "not_on_shift": "Cette personne n’est pas sur le quart.",
@@ -134,7 +139,8 @@
       "publish_blocked": "Des problèmes bloquent la publication. Ouvre la liste des problèmes.",
       "publish_needs_confirmation": "Des problèmes demandent ta confirmation avant de publier.",
       "unknown_member": "Cette personne ne fait plus de quarts ici.",
-      "unknown_shift": "Ce quart n’existe plus."
+      "unknown_shift": "Ce quart n’existe plus.",
+      "visit_ended": "Tu as quitté la page un moment, alors les changements non enregistrés ont été retirés."
     },
     "settings": {
       "max_consecutive_invalid": "Choisis de 1 à 4 quarts de suite, ou sans limite.",
@@ -188,12 +194,11 @@
     "which": "Quel horaire",
     "published": "Publié",
     "next": "Prochaine période",
-    "fillAvailability": "Remplir mes dispos",
-    "edit": "Modifier",
+    "edit": "Modifier l’horaire actuel",
     "emptyTitle": "Pas encore d’horaire",
     "emptyText": "Tes quarts s’afficheront ici dès qu’un horaire sera publié.",
     "emptyCollecting": "Ton gérant recueille les disponibilités pour le prochain horaire.",
-    "editGenerator": "Modifier le générateur",
+    "editGenerator": "Modifier les règles du générateur",
     "mine": "Mes quarts",
     "team": "Toute l’équipe",
     "noShiftsTitle": "Aucun quart pour toi",
@@ -210,7 +215,11 @@
       "keep": "Le garder",
       "giveAway": "Donner",
       "trade": "Échanger",
-      "offeredToast": "Offert à l’équipe. À toi tant que personne ne le prend."
+      "offeredToast": "Offert à l’équipe. À toi tant que personne ne le prend.",
+      "with": "Avec toi",
+      "alone": "Personne d’autre sur ce quart.",
+      "openSpots_one": "{{count}} place libre",
+      "openSpots_other": "{{count}} places libres"
     },
     "ready": {
       "title": "Prêt à créer l’horaire?",
@@ -228,8 +237,14 @@
       "text": "Tous ceux qui font des quarts reçoivent une demande de disponibilités.",
       "start": "Début",
       "startHint": "Un lundi.",
-      "weeks": "Semaines",
-      "submit": "Ouvrir la période"
+      "submit": "Ouvrir la période",
+      "length_one": "Dure {{count}} semaine, selon les règles du générateur.",
+      "length_other": "Dure {{count}} semaines, selon les règles du générateur."
+    },
+    "box": {
+      "open": "La prochaine période est ouverte",
+      "build": "Construire",
+      "continue": "Continuer la construction"
     }
   },
   "availability": {
@@ -250,7 +265,9 @@
     "noteSent": "Note envoyée",
     "sendNote": "Envoyer la note",
     "send": "Envoyer",
-    "sendAgain": "Envoyer à nouveau"
+    "sendAgain": "Envoyer à nouveau",
+    "wanted": "Heures voulues par semaine",
+    "wantedHint": "Pour chaque semaine de cette période."
   },
   "ui": {
     "close": "Fermer",
@@ -699,9 +716,8 @@
   },
   "teamAvailability": {
     "title": "Disponibilités de l’équipe",
-    "mine": "Remplir mes disponibilités",
     "offers": "Offre {{offered}} h/sem. · veut {{wanted}} h/sem.",
-    "noAnswer": "Pas encore de réponse · veut {{wanted}} h/sem.",
+    "noAnswer": "Pas encore de réponse",
     "reopened": "Rouvertes",
     "remind": "Rappeler",
     "remindNamed": "Rappeler {{name}}",
@@ -728,10 +744,11 @@
       "level": "Niveau",
       "worksShifts": "Fait des quarts",
       "worksShiftsText": "Envoie ses disponibilités et peut être mis à l’horaire.",
-      "hours": "Heures voulues par semaine",
-      "hoursText": "Le générateur vise ce nombre.",
       "save": "Enregistrer",
-      "remove": "Retirer du lieu de travail"
+      "remove": "Retirer du lieu de travail",
+      "limit": "Limiter les heures par semaine",
+      "limitText": "S’ils en demandent plus, le générateur leur en donne au plus autant.",
+      "max": "Heures maximum par semaine"
     },
     "remove": {
       "title": "Retirer {{name}}?",
@@ -786,6 +803,13 @@
       "ask": "Demander",
       "askNamed": "Demander à {{name}}",
       "asked": "Demande envoyée à {{name}}"
+    },
+    "new": "Nouveau",
+    "mine": {
+      "title": "Mes quarts à échanger",
+      "empty": "Tu n’as aucun quart à venir à échanger",
+      "offered": "Offert",
+      "pending": "Échange en attente"
     }
   },
   "alerts": {
@@ -793,8 +817,6 @@
     "context": "Rappels, quarts et échanges",
     "waiting_one": "{{count}} en attente de toi",
     "waiting_other": "{{count}} en attente de toi",
-    "reminders": "Rappels",
-    "fillAvailability": "Remplis tes disponibilités",
     "recent": "Récentes",
     "markRead": "Tout marquer comme lu",
     "empty": "Rien pour l’instant.",
@@ -818,7 +840,8 @@
       },
       "shift": {
         "offered": "{{name}} donne son quart du {{date}}, {{start}}–{{end}}",
-        "claimed": "{{name}} a pris le quart du {{date}}, {{start}}–{{end}}"
+        "claimed": "{{name}} a pris le quart du {{date}}, {{start}}–{{end}}",
+        "missing_level": "Un échange ou une prise de quart a laissé le {{date}}, {{start}}–{{end}} sans le niveau requis"
       },
       "claim": {
         "requested": "{{name}} demande le quart du {{date}}, {{start}}–{{end}}",
@@ -833,8 +856,12 @@
         "applied": "L’échange du {{date}}, {{start}}–{{end}} est fait",
         "rejected": "L’échange du {{date}}, {{start}}–{{end}} n’a pas été appliqué",
         "expired": "L’échange du {{date}}, {{start}}–{{end}} a expiré"
+      },
+      "period": {
+        "cancelled": "La période du {{periodStart}} a été annulée"
       }
-    }
+    },
+    "markOneRead": "Marquer comme lu : {{text}}"
   },
   "generator": {
     "title": "Modifier le générateur",
@@ -905,7 +932,6 @@
     "title": "Profil",
     "level": "Niveau de barista",
     "levelHint": "Défini par ton gérant",
-    "wants": "Heures voulues",
     "worksShifts": "Je fais aussi des quarts",
     "worksShiftsText": "Être à l’horaire et envoyer mes disponibilités",
     "workplace": "Lieu de travail",
@@ -940,13 +966,6 @@
     "leave": "Quitter ce lieu de travail",
     "leaveTitle": "Quitter {{workplace}}?",
     "leaveText": "Tu perds l’accès tout de suite et tes prochains quarts deviennent libres.",
-    "wantsEdit": "Modifier →",
-    "hoursSheet": {
-      "title": "Heures voulues par semaine",
-      "text": "Ton gérant les voit quand il prépare l’horaire. C’est un souhait, pas une promesse.",
-      "label": "Heures par semaine",
-      "save": "Enregistrer"
-    },
     "changePassword": {
       "row": "Changer le mot de passe",
       "title": "Changer le mot de passe",
@@ -977,5 +996,40 @@
       "add": "Choisis « Sur l’écran d’accueil ».",
       "open": "Ouvre Quart à partir de sa nouvelle icône."
     }
+  },
+  "building": {
+    "title": "Construction de l’horaire",
+    "editTitle": "Modification de l’horaire",
+    "ended": "Tu as quitté la page un moment, alors les changements non enregistrés ont été retirés.",
+    "save": "Enregistrer le brouillon",
+    "saved": "Brouillon enregistré",
+    "clear": "Effacer",
+    "clearTitle": "Es-tu sûr?",
+    "clearText": "Ceci efface l’horaire en construction.",
+    "clearConfirm": "Effacer l’horaire",
+    "cancel": "Annuler",
+    "leaveTitle": "Quitter sans enregistrer?",
+    "leaveText": "Tes changements depuis le dernier enregistrement seront perdus.",
+    "leave": "Quitter"
+  },
+  "cancelPeriod": {
+    "button": "Annuler la période",
+    "title": "Annuler cette période?",
+    "text": "La période {{range}} et tout ce qu’elle contient seront supprimés pour de bon : disponibilités, notes et brouillon. Tous ceux qui ont envoyé leurs disponibilités seront avertis. Tu pourras ensuite ouvrir une nouvelle période.",
+    "textPublished": "La période {{range}} et tout ce qu’elle contient seront supprimés pour de bon : l’horaire publié, les disponibilités et les notes. Les dons et échanges de ses quarts sont annulés. Tous ceux qui ont envoyé leurs disponibilités ou qui travaillent un quart seront avertis.",
+    "confirm": "Annuler la période",
+    "keep": "La garder",
+    "done": "Période annulée"
+  },
+  "personAvailability": {
+    "hint": "Ce que la personne a envoyé. Elle seule peut le changer.",
+    "can": "disponible",
+    "cannot": "pas disponible",
+    "counter_one": "{{count}} quart · {{hours}} h par semaine",
+    "counter_other": "{{count}} quarts · {{hours}} h par semaine",
+    "notes": "Notes",
+    "goneTitle": "Rien à afficher",
+    "goneText": "Cette période a été annulée, ou cette personne ne fait plus partie de l’équipe.",
+    "wanted": "Heures voulues par semaine"
   }
 }

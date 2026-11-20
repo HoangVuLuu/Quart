@@ -24,7 +24,6 @@ public sealed record WorkplaceMember(
     string Role,
     int Level,
     bool WorksShifts,
-    decimal DesiredWeeklyHours,
     decimal? MaxWeeklyHours,
     IReadOnlySet<Permission> Permissions)
 {
