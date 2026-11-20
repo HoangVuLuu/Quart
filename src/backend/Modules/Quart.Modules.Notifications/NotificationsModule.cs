@@ -36,7 +36,10 @@ public static class NotificationsModule
         services.AddSingleton<EmailOutbox>();
         services.AddSingleton<IEmailOutbox>(provider => provider.GetRequiredService<EmailOutbox>());
         services.AddScoped<IJobHandler, SendEmailHandler>();
+        services.AddScoped<IJobHandler, NotificationRetention>();
+        services.AddSingleton(new NightlyJob(NotificationRetention.JobType));
         services.AddScoped<INotifier, Notifier>();
+        services.AddScoped<IAccountDeletedHandler, ForgetNotificationsOnAccountDeleted>();
         return services;
     }
 
@@ -203,5 +206,23 @@ internal sealed class Notifier(NotificationsDbContext db, IUserDirectory users, 
             messages.Add(message);
         }
         return messages;
+    }
+}
+
+/// <summary>
+/// A deleted account's own alerts go, and so does every email to its address still in the outbox, sent or not
+/// (FR-009). The goodbye email is queued after this runs. Alerts to other people that mention the person's name
+/// stay until the nightly cleanup removes them after 60 days, like every alert (decision log, 2026-11-20).
+/// </summary>
+internal sealed class ForgetNotificationsOnAccountDeleted(NotificationsDbContext db, IUserDirectory users) : IAccountDeletedHandler
+{
+    public async Task HandleAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        await db.Notifications.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+        if ((await users.GetAsync([userId], cancellationToken)).GetValueOrDefault(userId) is { } user)
+        {
+            var address = user.Email.ToUpperInvariant();
+            await db.OutboxMessages.Where(x => x.Recipient.ToUpper() == address).ExecuteDeleteAsync(cancellationToken);
+        }
     }
 }

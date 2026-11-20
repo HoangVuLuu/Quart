@@ -79,8 +79,12 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
   const error = actions.send.error ?? actions.addNote.error ?? actions.previous.error;
   // The first shift of a day is its opening and the last its closing (BR-034).
   const days = byDay(mine.shifts);
+  // FR-094: shifts that overlap one the person already works at another workplace cannot be picked.
+  const busy = new Set(mine.shifts.filter((shift) => shift.busyElsewhere).map((shift) => shift.id));
+  const pickable = (ids: Iterable<string>) => new Set([...ids].filter((id) => !busy.has(id)));
 
   function toggle(shiftId: string) {
+    if (busy.has(shiftId)) return;
     setSelected((current) => {
       const nextSet = new Set(current);
       if (nextSet.has(shiftId)) nextSet.delete(shiftId);
@@ -97,7 +101,7 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
         .map((shift) => `${new Date(`${shift.date}T00:00:00Z`).getUTCDay()}-${shift.blockId}`),
     );
     setSelected(
-      new Set(
+      pickable(
         mine.shifts
           .filter((shift) =>
             pattern.has(`${new Date(`${shift.date}T00:00:00Z`).getUTCDay()}-${shift.blockId}`),
@@ -163,6 +167,8 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
           </div>
         )}
 
+        {busy.size > 0 && <p className="text-sm text-muted">{t('availability.busyElsewhereHint')}</p>}
+
         <Card className="flex flex-col gap-3 p-4" {...swipeWeeks}>
           {days
             .filter((day) => weekOf(mine.period, day.date) === week)
@@ -176,6 +182,7 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
                 <p className="w-14 shrink-0 text-sm font-bold">{formatDayShort(day.date, language)}</p>
                 {day.shifts.map((shift, index) => {
                   const on = selected.has(shift.id);
+                  const elsewhere = shift.busyElsewhere;
                   const name =
                     day.shifts.length > 1 && index === day.shifts.length - 1
                       ? t('scheduling.kind.closing')
@@ -187,21 +194,24 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
                       key={shift.id}
                       type="button"
                       aria-pressed={on}
-                      disabled={locked}
+                      disabled={locked || elsewhere}
                       onClick={() => toggle(shift.id)}
                       className={cx(
                         'min-h-12 flex-1 rounded-chip px-2 py-1.5 text-center shadow-press disabled:opacity-60',
                         on ? 'bg-ink text-bg' : 'bg-surface-3 text-ink',
                       )}
                     >
-                      {/* Colour is never the only sign (NFR-008): a tick or a plus, and the pressed state. */}
+                      {/* Colour is never the only sign (NFR-008): a tick, a plus or a dash, and the pressed state. */}
                       <span className="block text-sm font-bold">
-                        <span aria-hidden="true">{on ? '✓ ' : '+ '}</span>
+                        <span aria-hidden="true">{on ? '✓ ' : elsewhere ? '– ' : '+ '}</span>
                         {name}
                       </span>
                       <span className="block text-[11px]">
                         {shift.start}–{shift.end}
                       </span>
+                      {elsewhere && (
+                        <span className="block text-[11px] font-bold">{t('availability.busyElsewhere')}</span>
+                      )}
                     </button>
                   );
                 })}
@@ -237,7 +247,7 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
                 loading={actions.previous.isPending}
                 onClick={() =>
                   actions.previous.mutate(undefined, {
-                    onSuccess: (suggested) => setSelected(new Set(suggested.shiftIds)),
+                    onSuccess: (suggested) => setSelected(pickable(suggested.shiftIds)),
                   })
                 }
               >

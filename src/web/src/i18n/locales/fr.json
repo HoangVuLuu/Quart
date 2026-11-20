@@ -84,6 +84,7 @@
     "auth": {
       "antiforgery": "Ta session doit être actualisée. Recharge la page et réessaie.",
       "current_password_wrong": "Ton mot de passe actuel n’est pas le bon.",
+      "delete_email_mismatch": "Ce n’est pas le courriel de ce compte.",
       "email_invalid": "Entre une adresse courriel valide.",
       "email_not_verified": "Vérifie d’abord ton courriel : ouvre le lien que nous t’avons envoyé.",
       "email_same": "C’est déjà ton courriel.",
@@ -94,6 +95,7 @@
       "link_used": "Ce lien a déjà été utilisé.",
       "locked_out": "Trop de mots de passe incorrects. Réessaie dans 15 minutes ou réinitialise ton mot de passe.",
       "name_invalid": "Entre ton nom avec des lettres, des espaces, des traits d’union et des apostrophes.",
+      "owns_workplace": "Tu es propriétaire d’un lieu de travail, alors ton compte ne peut pas encore être supprimé. Demande d’abord à l’administrateur de la plateforme de le confier à quelqu’un d’autre.",
       "password_breached": "Ce mot de passe figure dans une fuite de données. Choisis-en un autre.",
       "password_too_short": "Utilise au moins 8 caractères."
     },
@@ -259,6 +261,8 @@
   "availability": {
     "title": "Disponibilités",
     "hint": "Touche les quarts que tu peux faire.",
+    "busyElsewhere": "Travail ailleurs",
+    "busyElsewhereHint": "Les quarts marqués « Travail ailleurs » chevauchent un quart que tu as déjà dans un autre lieu de travail. Tu ne peux pas les choisir.",
     "locked": "Les quarts sont verrouillés : l’horaire est en préparation. Tu peux encore envoyer une note.",
     "sent": "Envoyées",
     "notSent": "Pas envoyées",
@@ -846,7 +850,8 @@
     "types": {
       "member": {
         "joined": "{{name}} a rejoint l’équipe",
-        "left": "{{name}} a quitté l’équipe. Ses prochains quarts sont libres."
+        "left": "{{name}} a quitté l’équipe. Ses prochains quarts sont libres.",
+        "account_deleted": "{{name}} a supprimé son compte. Ses prochains quarts sont libres."
       },
       "availability": {
         "requested": "Les disponibilités sont ouvertes pour la période du {{periodStart}}",
@@ -996,6 +1001,14 @@
       "new": "Nouveau mot de passe",
       "save": "Changer le mot de passe",
       "done": "Mot de passe changé"
+    },
+    "deleteAccount": {
+      "row": "Supprimer le compte",
+      "title": "Supprimer ton compte?",
+      "text": "Ça efface pour de bon ton compte, tes disponibilités et tes demandes. Tes prochains quarts deviennent libres; les heures déjà travaillées restent dans l’historique des horaires de chaque lieu de travail. Impossible de revenir en arrière.",
+      "typeEmail": "Écris ton courriel pour confirmer",
+      "confirm": "Supprimer mon compte",
+      "done": "Ton compte a été supprimé"
     },
     "changeEmail": {
       "title": "Changer de courriel",

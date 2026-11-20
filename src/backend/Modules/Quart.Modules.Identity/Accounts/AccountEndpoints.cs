@@ -17,6 +17,7 @@ using NodaTime;
 using Quart.Modules.Identity.Persistence;
 using Quart.SharedKernel;
 using Quart.SharedKernel.Access;
+using Quart.SharedKernel.Directory;
 using Quart.SharedKernel.Notifications;
 
 namespace Quart.Modules.Identity.Accounts;
@@ -38,6 +39,8 @@ internal static class AccountEndpoints
     public const string LinkUsed = "auth.link_used";
     public const string CurrentPasswordWrong = "auth.current_password_wrong";
     public const string EmailSame = "auth.email_same";
+    public const string DeleteEmailMismatch = "auth.delete_email_mismatch";
+    public const string OwnsWorkplace = "auth.owns_workplace";
 
     /// <summary>At most one link email per account and purpose in this time, so the form cannot flood a mailbox.</summary>
     private static readonly Duration LinkEmailInterval = Duration.FromMinutes(1);
@@ -80,6 +83,7 @@ internal static class AccountEndpoints
         // Both ask for the current password, so they share the sign-in limit and count towards lockout (M2-07).
         endpoints.MapPost("/api/me/password", ChangePasswordAsync).RequireUser().RequireRateLimiting(RateLimitPolicy).WithName("ChangePassword");
         endpoints.MapPost("/api/me/email", ChangeEmailAsync).RequireUser().RequireRateLimiting(RateLimitPolicy).WithName("ChangeEmail");
+        endpoints.MapPost("/api/me/delete", DeleteAccountAsync).RequireUser().RequireRateLimiting(RateLimitPolicy).WithName("DeleteAccount");
         // Public on purpose: the link may open in a browser that is not signed in. The single-use token sent to
         // the new address, after the current password was given, is the proof (section 1.6).
         endpoints.MapPost("/api/me/email/confirm", ConfirmEmailChangeAsync).RequireRateLimiting(RateLimitPolicy).WithName("ConfirmEmailChange");
@@ -500,6 +504,58 @@ internal static class AccountEndpoints
         return TypedResults.NoContent();
     }
 
+    /// <summary>
+    /// Deletes the signed-in account for good (FR-009, M2-16). The person confirms by typing their email, as on
+    /// mockup 1g-del (decision log, 2026-11-20). An owner is refused: the workplace would be left without one.
+    /// Every workplace is left through the same path as leaving one, each module forgets what it keeps about the
+    /// person, a goodbye email goes to the address on file, and only then is the account row itself deleted, so
+    /// the address can sign up again. Past shifts keep the bare ID, which reads as "Former employee".
+    /// </summary>
+    private static async Task<Results<NoContent, ProblemHttpResult>> DeleteAccountAsync(
+        DeleteAccountRequest request,
+        HttpContext http,
+        UserManager<QuartUser> users,
+        IdentityDb db,
+        IWorkplaceDirectory workplaces,
+        IEnumerable<IAccountDeletedHandler> handlers,
+        IEmailOutbox emails,
+        CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(http.CurrentUserId().ToString());
+        if (user is null)
+        {
+            return Problems.Unauthorized();
+        }
+        if (!string.Equals(AccountRules.CleanEmail(request.Email), user.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            return Problems.Validation(new FieldError(DeleteEmailMismatch, "email"));
+        }
+        // Until ownership can be handed over (M2-13), the owner asks the platform admin.
+        var memberships = await workplaces.GetMembershipsOfAsync(user.Id, cancellationToken);
+        if (memberships.Any(x => x.Active && x.Role == Roles.Owner))
+        {
+            return Problems.Conflict(OwnsWorkplace);
+        }
+
+        foreach (var handler in handlers)
+        {
+            await handler.HandleAsync(user.Id, cancellationToken);
+        }
+        await emails.EnqueueAsync(
+            new EmailRequest(user.Email!, EmailTemplates.AccountDeleted, user.Language, new Dictionary<string, string> { ["name"] = user.DisplayName }),
+            cancellationToken);
+
+        await db.Sessions.Where(x => x.UserId == user.Id).ExecuteDeleteAsync(cancellationToken);
+        await db.AccountLinks.Where(x => x.UserId == user.Id).ExecuteDeleteAsync(cancellationToken);
+        var deleted = await users.DeleteAsync(user);
+        if (!deleted.Succeeded)
+        {
+            throw new InvalidOperationException($"Account {user.Id} could not be deleted.");
+        }
+        await http.SignOutAsync(IdentityConstants.ApplicationScheme);
+        return TypedResults.NoContent();
+    }
+
     /// <summary>Null when the password is right; otherwise the refusal. A wrong one counts towards the lockout (FR-007).</summary>
     private static async Task<ProblemHttpResult?> CheckCurrentPasswordAsync(UserManager<QuartUser> users, QuartUser user, string? password)
     {
@@ -611,6 +667,9 @@ public sealed record UpdateMeRequest(string? DisplayName, string? Language);
 public sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
 
 public sealed record ChangeEmailRequest(string? Email, string? CurrentPassword);
+
+/// <param name="Email">Typed by the person to confirm; must be the account's own address.</param>
+public sealed record DeleteAccountRequest(string? Email);
 
 /// <summary>The signed-in account. Memberships come from <c>GET /api/workplaces</c>.</summary>
 public sealed record Me(Guid Id, string FullName, string DisplayName, string Email, string Language, bool IsPlatformAdmin);

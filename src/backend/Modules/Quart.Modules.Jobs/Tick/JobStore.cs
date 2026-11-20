@@ -102,6 +102,20 @@ internal sealed class JobStore(NpgsqlDataSource dataSource)
         return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
     }
 
+    /// <summary>
+    /// Makes sure one job of a nightly type exists (<see cref="NightlyJob"/>), first due at <paramref name="firstRun"/>.
+    /// A no-op while it does; a job that failed for good is replaced, so one bad night does not stop it forever.
+    /// </summary>
+    public async Task EnsureNightlyAsync(string type, Instant firstRun, CancellationToken cancellationToken)
+    {
+        await using (var command = dataSource.CreateCommand("DELETE FROM jobs.scheduled_job WHERE dedupe_key = @key AND status = 'Failed'"))
+        {
+            command.Parameters.Add(new NpgsqlParameter<string>("key", type));
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+        await InsertAsync(new JobRequest(type, firstRun) { DedupeKey = type }, "{}", cancellationToken);
+    }
+
     /// <summary>Moves the heartbeat forward, never back: an older tick finishing late cannot undo a newer one.</summary>
     public async Task RecordHeartbeatAsync(Instant at, CancellationToken cancellationToken)
     {

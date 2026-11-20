@@ -84,6 +84,7 @@
     "auth": {
       "antiforgery": "Your session needs a refresh. Reload the page and try again.",
       "current_password_wrong": "Your current password is not right.",
+      "delete_email_mismatch": "That isn’t the email of this account.",
       "email_invalid": "Enter a valid email address.",
       "email_not_verified": "Verify your email first: open the link we sent you.",
       "email_same": "This is already your email.",
@@ -94,6 +95,7 @@
       "link_used": "This link was already used.",
       "locked_out": "Too many wrong passwords. Try again in 15 minutes, or reset your password.",
       "name_invalid": "Enter your name using letters, spaces, hyphens and apostrophes.",
+      "owns_workplace": "You own a workplace, so your account can’t be deleted yet. Ask the platform admin to hand the workplace over to someone else first.",
       "password_breached": "This password appeared in a data breach. Choose a different one.",
       "password_too_short": "Use at least 8 characters."
     },
@@ -259,6 +261,8 @@
   "availability": {
     "title": "Availability",
     "hint": "Tap the shifts you can work.",
+    "busyElsewhere": "Working elsewhere",
+    "busyElsewhereHint": "Shifts marked “Working elsewhere” overlap a shift you already have at another workplace, so they can’t be picked.",
     "locked": "Shifts are locked: the schedule is being built. You can still send a note.",
     "sent": "Sent",
     "notSent": "Not sent",
@@ -846,7 +850,8 @@
     "types": {
       "member": {
         "joined": "{{name}} joined the team",
-        "left": "{{name}} left the team. Their future shifts are open."
+        "left": "{{name}} left the team. Their future shifts are open.",
+        "account_deleted": "{{name}} deleted their account. Their upcoming shifts are open."
       },
       "availability": {
         "requested": "Availability is open for the period starting {{periodStart}}",
@@ -996,6 +1001,14 @@
       "new": "New password",
       "save": "Change password",
       "done": "Password changed"
+    },
+    "deleteAccount": {
+      "row": "Delete account",
+      "title": "Delete your account?",
+      "text": "This removes your account, your availability and your requests for good. Your upcoming shifts become open; hours already worked stay on the schedule history of each workplace. This can’t be undone.",
+      "typeEmail": "Type your email to confirm",
+      "confirm": "Delete my account",
+      "done": "Your account was deleted"
     },
     "changeEmail": {
       "title": "Change email",

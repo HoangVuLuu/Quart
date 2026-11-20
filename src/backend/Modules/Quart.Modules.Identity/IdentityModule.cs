@@ -22,6 +22,7 @@ using Quart.Modules.Identity.Accounts;
 using Quart.Modules.Identity.Persistence;
 using Quart.SharedKernel;
 using Quart.SharedKernel.Directory;
+using Quart.SharedKernel.Jobs;
 
 namespace Quart.Modules.Identity;
 
@@ -115,6 +116,8 @@ public static class IdentityModule
                 ? new OfflineBreachedPasswordCheck()
                 : provider.GetRequiredService<PwnedPasswordsCheck>());
         services.AddScoped<IUserDirectory, UserDirectory>();
+        services.AddScoped<IJobHandler, Accounts.IdentityRetention>();
+        services.AddSingleton(new NightlyJob(Accounts.IdentityRetention.JobType));
         services.AddAccountRateLimit();
         return services;
     }

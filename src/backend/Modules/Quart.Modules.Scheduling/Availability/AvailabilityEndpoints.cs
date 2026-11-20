@@ -62,7 +62,7 @@ internal static class AvailabilityEndpoints
         {
             return Problems.Forbidden(NotShiftWorker);
         }
-        return TypedResults.Ok(await ViewMineAsync(db, period, member.MembershipId, cancellationToken));
+        return TypedResults.Ok(await ViewMineAsync(db, period, member, cancellationToken));
     }
 
     /// <summary>Saves the taps as a draft: nothing is sent to the admin yet (M4-02).</summary>
@@ -134,7 +134,7 @@ internal static class AvailabilityEndpoints
         {
             await NotifyAdminsAsync(directory, notifier, workplaceId, member.MembershipId, NotificationTypes.AvailabilitySent, period, cancellationToken);
         }
-        return TypedResults.Ok(await ViewMineAsync(db, period, member.MembershipId, cancellationToken));
+        return TypedResults.Ok(await ViewMineAsync(db, period, member, cancellationToken));
     }
 
     /// <summary>
@@ -175,7 +175,7 @@ internal static class AvailabilityEndpoints
         await db.SaveChangesAsync(cancellationToken);
 
         await NotifyAdminsAsync(directory, notifier, workplaceId, member.MembershipId, NotificationTypes.AvailabilityNoteAdded, period, cancellationToken);
-        return TypedResults.Ok(await ViewMineAsync(db, period, member.MembershipId, cancellationToken));
+        return TypedResults.Ok(await ViewMineAsync(db, period, member, cancellationToken));
     }
 
     /// <summary>
@@ -350,24 +350,32 @@ internal static class AvailabilityEndpoints
         var selected = sent ? answer!.Blocks.Select(x => x.ShiftId).ToHashSet() : [];
         var shifts = await db.Shifts.AsNoTracking().Where(x => x.PeriodId == periodId).OrderBy(x => x.Date).ThenBy(x => x.StartTime).ToListAsync(cancellationToken);
         var notes = http.Member().Can(Permission.ViewAvailabilityComments) ? answer?.Notes ?? [] : [];
+        // A shift that overlaps their work at another workplace shows as simply not available: no flag, no reason (FR-094).
+        var busy = await BusyElsewhere.LoadAsync(db, period, [person.UserId], cancellationToken);
         return TypedResults.Ok(new PersonAvailability(
             Support.Summarize(period),
             person.MembershipId,
             person.DisplayName,
             sent ? Availability.Sent : Availability.NotSent,
             sent ? answer!.DesiredWeeklyHours : null,
-            shifts.Select(x => new AvailabilityShift(x.Id, x.SourceBlockId, x.Date.ToDateOnly(), Support.Time(x.StartTime), Support.Time(x.EndTime), x.Hours, selected.Contains(x.Id))).ToList(),
+            shifts.Select(x => new AvailabilityShift(
+                x.Id, x.SourceBlockId, x.Date.ToDateOnly(), Support.Time(x.StartTime), Support.Time(x.EndTime), x.Hours,
+                selected.Contains(x.Id) && !busy.Any(b => b.Overlaps(x)), BusyElsewhere: false)).ToList(),
             notes.OrderBy(x => x.CreatedAt).Select(x => new AvailabilityNoteView(x.Id, x.Body, x.CreatedAt.ToDateTimeOffset())).ToList()));
     }
 
-    private static async Task<MyAvailability> ViewMineAsync(SchedulingDb db, Period period, Guid membershipId, CancellationToken cancellationToken)
+    private static async Task<MyAvailability> ViewMineAsync(SchedulingDb db, Period period, MemberAccess member, CancellationToken cancellationToken)
     {
+        var membershipId = member.MembershipId;
         var availability = await db.Availabilities.AsNoTracking()
             .Include(x => x.Blocks)
             .Include(x => x.Notes)
             .SingleOrDefaultAsync(x => x.PeriodId == period.Id && x.MembershipId == membershipId, cancellationToken);
         var selected = availability?.Blocks.Select(x => x.ShiftId).ToHashSet() ?? [];
         var shifts = await db.Shifts.AsNoTracking().Where(x => x.PeriodId == period.Id).ToListAsync(cancellationToken);
+        // FR-094: blocks that overlap a shift the person holds at another workplace are greyed out. They know where
+        // they work; the response still says only "busy", never where.
+        var busy = await BusyElsewhere.LoadAsync(db, period, [member.UserId], cancellationToken);
         var hasPrevious = await db.Periods.AnyAsync(x => x.WorkplaceId == period.WorkplaceId && x.StartDate < period.StartDate, cancellationToken);
         // BR-032: until this period has a number, offer the one from the person's most recent earlier period.
         var hours = availability?.DesiredWeeklyHours ?? await db.Availabilities.AsNoTracking()
@@ -383,7 +391,13 @@ internal static class AvailabilityEndpoints
             hasPrevious,
             hours,
             shifts.OrderBy(x => x.Date).ThenBy(x => x.StartTime)
-                .Select(x => new AvailabilityShift(x.Id, x.SourceBlockId, x.Date.ToDateOnly(), Support.Time(x.StartTime), Support.Time(x.EndTime), x.Hours, selected.Contains(x.Id)))
+                .Select(x =>
+                {
+                    var elsewhere = busy.Any(b => b.Overlaps(x));
+                    return new AvailabilityShift(
+                        x.Id, x.SourceBlockId, x.Date.ToDateOnly(), Support.Time(x.StartTime), Support.Time(x.EndTime), x.Hours,
+                        selected.Contains(x.Id) && !elsewhere, elsewhere);
+                })
                 .ToList(),
             (availability?.Notes ?? []).OrderBy(x => x.CreatedAt).Select(x => new AvailabilityNoteView(x.Id, x.Body, x.CreatedAt.ToDateTimeOffset())).ToList());
     }
@@ -433,7 +447,12 @@ public sealed record MyAvailability(
     IReadOnlyList<AvailabilityNoteView> Notes);
 
 /// <param name="BlockId">The template block the shift came from; shifts of one block share a label.</param>
-public sealed record AvailabilityShift(Guid Id, Guid BlockId, DateOnly Date, string Start, string End, decimal Hours, bool Selected);
+/// <param name="Selected">Never true for a shift the person cannot work because they work elsewhere then.</param>
+/// <param name="BusyElsewhere">
+/// Only on the person's own answer: they already hold a shift at another workplace at that time, so the block is
+/// greyed out (FR-094). Always false on the managers' view, which sees only "not available".
+/// </param>
+public sealed record AvailabilityShift(Guid Id, Guid BlockId, DateOnly Date, string Start, string End, decimal Hours, bool Selected, bool BusyElsewhere);
 
 public sealed record AvailabilityNoteView(Guid Id, string Body, DateTimeOffset CreatedAt);
 

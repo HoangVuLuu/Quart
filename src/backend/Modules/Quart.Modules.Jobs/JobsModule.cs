@@ -33,6 +33,8 @@ public static class JobsModule
         services.AddSingleton<IJobScheduler, JobScheduler>();
         services.AddSingleton<ITickStatus, TickStatus>();
         services.AddScoped<IJobHandler, HeartbeatHandler>();
+        services.AddScoped<IJobHandler, JobRetention>();
+        services.AddSingleton(new NightlyJob(JobRetention.JobType));
         return services;
     }
 

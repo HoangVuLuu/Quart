@@ -36,7 +36,10 @@ public static class SchedulingModule
         services.AddScoped<DraftBuilder>();
         services.AddScoped<IScheduleLedger, ScheduleLedger>();
         services.AddScoped<IMemberLeftHandler, ReleaseShiftsOnLeave>();
+        services.AddScoped<IAccountDeletedHandler, Availability.ForgetAvailabilityOnAccountDeleted>();
         services.AddScoped<IJobHandler, AvailabilityStepHandler>();
+        services.AddScoped<IJobHandler, SchedulingRetention>();
+        services.AddSingleton(new NightlyJob(SchedulingRetention.JobType));
         services.AddLab();
         return services;
     }

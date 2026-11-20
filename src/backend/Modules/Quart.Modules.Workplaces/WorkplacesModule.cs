@@ -12,6 +12,7 @@ using Npgsql;
 using Quart.Modules.Workplaces.Persistence;
 using Quart.SharedKernel.Access;
 using Quart.SharedKernel.Directory;
+using Quart.SharedKernel.Notifications;
 
 namespace Quart.Modules.Workplaces;
 
@@ -32,6 +33,7 @@ public static class WorkplacesModule
         services.AddScoped<WorkplaceReader>();
         services.AddScoped<IWorkplaceAccess>(provider => provider.GetRequiredService<WorkplaceReader>());
         services.AddScoped<IWorkplaceDirectory>(provider => provider.GetRequiredService<WorkplaceReader>());
+        services.AddScoped<IAccountDeletedHandler, EndMembershipsOnAccountDeleted>();
         // Guessing a join code is rate limited per address (FR-007, M2-11).
         services.AddRateLimiter(options => options.AddPolicy(JoinRateLimitPolicy, context =>
             RateLimitPartition.GetFixedWindowLimiter(
@@ -132,6 +134,12 @@ internal sealed class WorkplaceReader(WorkplacesDb db, IUserDirectory users) : I
             blocks.SelectMany(block => block.Conflicts.Select(x => new TemplateConflict(block.Id, x.MembershipA, x.MembershipB))).ToList());
     }
 
+    public async Task<IReadOnlyList<AccountMembership>> GetMembershipsOfAsync(Guid userId, CancellationToken cancellationToken) =>
+        await db.Memberships.AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .Select(x => new AccountMembership(x.WorkplaceId, x.Id, x.Role, x.LeftAt == null))
+            .ToListAsync(cancellationToken);
+
     internal static WorkplaceSettings ReadSettings(Workplace workplace) =>
         JsonSerializer.Deserialize<WorkplaceSettings>(workplace.Settings, JsonSerializerOptions.Web) ?? new WorkplaceSettings();
 
@@ -152,5 +160,28 @@ internal sealed class WorkplaceReader(WorkplacesDb db, IUserDirectory users) : I
         var permissions = new HashSet<Permission>(Roles.PermissionsOf(membership.Role));
         permissions.UnionWith(grants[membership.Id]);
         return permissions;
+    }
+}
+
+/// <summary>
+/// Someone deleting their account leaves every workplace through the same path as leaving one (FR-009, FR-038):
+/// their future shifts become open and the managers are told. An owner never gets here: the account deletion is
+/// refused first, since ownership must be transferred (M2-16). The managers are told "Paul C. deleted their
+/// account", with the name (Hoang, 2026-11-20).
+/// </summary>
+internal sealed class EndMembershipsOnAccountDeleted(
+    WorkplacesDb db, IWorkplaceDirectory directory, IUserDirectory users, INotifier notifier,
+    IEnumerable<IMemberLeftHandler> handlers, IClock clock) : IAccountDeletedHandler
+{
+    public async Task HandleAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var memberships = await db.Memberships
+            .Where(x => x.UserId == userId && x.LeftAt == null && x.Role != Roles.Owner)
+            .ToListAsync(cancellationToken);
+        foreach (var membership in memberships)
+        {
+            await WorkplaceEndpoints.EndAsync(
+                membership, db, directory, users, notifier, handlers, clock, cancellationToken, NotificationTypes.MemberDeletedAccount);
+        }
     }
 }

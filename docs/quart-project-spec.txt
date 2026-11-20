@@ -275,9 +275,15 @@ FR-007  Login is rate limited and the account locks temporarily after repeated
 FR-008  A user can change their display name, language and notification
         preferences. Changing email requires re-verification.
 FR-009  A user can delete their account. On deletion: profile and their
-        availability comments are deleted; their name in past schedules is
+        availability (with its comments) are deleted; their name in past schedules is
         replaced by "Former employee" so historical schedules stay readable;
         announcements they posted stay, attributed to "Former member".
+        It cannot be undone. They confirm by typing their email (mockup
+        1g-del). They leave every workplace as if they had left it (FR-038):
+        their upcoming shifts become open and the managers are told "<name>
+        deleted their account". A last email confirms the deletion; then
+        nothing in the database holds their email any more, and it can be
+        used for a new account. An owner must hand the workplace over first.
 
 6.2 WORKPLACES AND MEMBERSHIP
 FR-030  A workplace has a name and an address, both entered at creation.
@@ -1378,15 +1384,25 @@ its retention and destruction rules.
   Notifications                   60 days
   Raw availability submissions    60 days after the period ends
   Availability comments           60 days after the period ends
-  Published schedules             2 months
+  Published schedules             2 months after the period ends
   Audit events                    2 months
-  Generation runs (seed, score)   2 months
+  Generation runs (seed, score)   2 months after the period ends
   Payslips (backlog)              to be decided before build (Q-11)
   Payslip access log (backlog)    12 months, so incidents can be investigated
   Accounts                        until deleted by the user
 
 Supporting rules:
-  - Deletion runs nightly as a scheduled job, never manually.
+  - Deletion runs nightly as a scheduled job, never manually: one job per
+    module, at 03:00 Montreal time. "After the period ends" counts from the
+    day after its last day; a period goes whole (shifts, who worked them,
+    versions, generation runs), published or not. The periods live in one
+    place in code (Retention.cs), and a test keeps this table and the code
+    the same (M6-05).
+  - Housekeeping, also nightly: accounts whose email was never confirmed,
+    7 days after sign-up (unless a link sent since still works); sign-in
+    sessions and one-time links one day after they expire; emails in the outbox, with their address, after 7
+    days; give-aways, claims and trades 60 days after they ended, and any
+    still open after 120 days; finished background jobs after 30 days.
   - Admins can export any schedule to CSV and PDF at any time.
   - Philippe automatically receives each month's final schedule by email as
     PDF and CSV (FR-214), so the business keeps records beyond the app's
@@ -1395,7 +1411,7 @@ Supporting rules:
     M6-06). Until they are built, nobody keeps a schedule more than 2 months
     after it ends unless Philippe saves one himself. Accepted on purpose
     (decision log, 2026-11-17).
-  - Deleted accounts: profile and availability comments removed; past
+  - Deleted accounts: profile, availability and its comments removed; past
     schedules show "Former employee"; their announcements show
     "Former member".
 
@@ -1986,6 +2002,29 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             when the period is opened, as before. The deadline can be changed
             while the period is not published, and the reminders follow it.
             (FR-091)
+
+2026-11-20  Same person in two workplaces (M5-11): only published shifts at
+            the other workplace count (never its drafts). The person sees the
+            overlapping blocks greyed out as "Working elsewhere" and cannot
+            pick them; the managers see only "not available", with nothing
+            that names the other workplace.  (BR-002, FR-094)
+2026-11-20  Delete my account (M2-16): confirmed by typing the email only,
+            as mockup 1g-del shows (Hoang; the plan also asked for the
+            password). An owner is refused until ownership can be handed
+            over (M2-13). The account row itself is deleted, not blanked, so
+            the email is free again. Alerts to other people that mention the
+            name ("Paul C. left") stay until the 60-day cleanup (Hoang).
+            (FR-009)
+2026-11-20  Delete my account, after review (Hoang): it cannot be undone;
+            worked shifts stay as "Former employee", upcoming ones become
+            open; managers get "<name> deleted their account"; the goodbye
+            email is sent first and its outbox row is then deleted, so no
+            table keeps the address. Accounts that never confirmed their
+            email are deleted 7 days after sign-up.  (FR-009, 13)
+2026-11-20  Retention (M6-05): "2 months" for schedules and generation runs
+            means after the period ends; the cleanup runs at 03:00 Montreal
+            time, on staging too (Hoang: staging data is test data); the
+            housekeeping periods are listed under section 13.  (13)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

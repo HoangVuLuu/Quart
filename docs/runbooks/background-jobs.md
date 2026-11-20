@@ -65,6 +65,28 @@ The rules every handler follows:
 - **IDs only in payloads.** Payloads stay in the table after the job runs.
 - **Recurring work** returns `JobOutcome.RunAgain(next)` instead of `Done`: the same row runs again at
   `next`, with its attempts reset. A job asking to run again right away still waits for the next tick.
+- **Nightly work** also registers `services.AddSingleton(new NightlyJob(type))`. Every tick then makes sure
+  one job of that type exists, first due at the next 03:00 in Montreal (`Retention.NextNight`); a job of that
+  type that failed for good is replaced. Nothing else has to schedule it.
+
+## Nightly cleanup (retention, M6-05)
+
+Each module that keeps data has one nightly job that deletes what is past its time (spec section 13). The
+periods are constants in `src/backend/Quart.SharedKernel/Retention.cs`; a test keeps them equal to the spec.
+
+| Job                       | Deletes                                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| `scheduling.retention`    | Availability and its notes 60 days after a period ends; the whole period 2 months after       |
+| `notifications.retention` | Alerts after 60 days; outbox emails after 7 days                                             |
+| `identity.retention`      | Sessions and links a day after they expire; unconfirmed accounts 7 days after sign-up         |
+| `marketplace.retention`   | Give-aways, claims and trades 60 days after they ended (120 days if never closed); seen marks |
+| `jobs.retention`          | Finished and failed jobs after 30 days                                                       |
+
+Each logs one line with counts only, for example `Retention: deleted 3 periods and the availability of 14
+people`. Deletes run in batches of 1,000, at most 20 a run; if more is left, the job runs again at the next
+tick instead of waiting a night. On staging they run too, on test data. To see them:
+`SELECT type, status, run_at FROM jobs.scheduled_job WHERE type LIKE '%.retention'`. To run one now locally,
+set its `run_at` to `now()` and call the tick.
 
 ## Failures and retries
 
@@ -147,8 +169,6 @@ why (often the database: check the `db-connection` secret on the job, which the 
 
 ## Not done yet
 
-- **Finished jobs are kept.** Deleting old `Succeeded` and `Failed` rows belongs to retention (M6-05).
-  The heartbeat reuses one row, so it adds nothing.
 - **Scheduling uses its own connection**, not the caller's transaction. When a module needs a job to be
   saved together with its own change (the outbox, AD-030), extend `IJobScheduler` to take part in the
   caller's transaction.

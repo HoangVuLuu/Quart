@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api, unwrap } from '../../lib/api/client';
@@ -7,6 +7,7 @@ import { Sheet } from '../../ui/Sheet';
 import { PasswordField, TextField } from '../../ui/TextField';
 import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
+import { meKey } from '../identity/session';
 import { fieldErrors } from '../identity/fieldErrors';
 import { minPasswordLength } from '../identity/SignUpPage';
 
@@ -160,6 +161,85 @@ export function ChangeEmailSheet({ open, onClose }: { open: boolean; onClose: ()
         <FormError message={errors.form} />
         <Button type="submit" loading={change.isPending} className="w-full">
           {t('profile.changeEmail.send')}
+        </Button>
+      </form>
+    </Sheet>
+  );
+}
+
+/**
+ * Mockup 1g-del (M2-16, FR-009): the person types their own email to confirm. An owner is refused by the
+ * server until ownership can be handed over; the message says so. On success every cached answer is
+ * dropped, since they belonged to an account that no longer exists.
+ */
+export function DeleteAccountSheet({
+  open,
+  email,
+  onClose,
+  onDeleted,
+}: {
+  open: boolean;
+  email: string;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const { t } = useTranslation();
+  const client = useQueryClient();
+  const [typed, setTyped] = useState('');
+  const remove = useMutation({
+    mutationFn: () => unwrap(api.POST('/api/me/delete', { body: { email: typed } })),
+    onSuccess: () => {
+      client.clear();
+      client.setQueryData(meKey, null);
+      onDeleted();
+    },
+  });
+  const errors = fieldErrors(remove.error, t);
+  const matches = typed.trim().toLowerCase() === email.toLowerCase();
+
+  function close() {
+    setTyped('');
+    remove.reset();
+    onClose();
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (matches) remove.mutate();
+  }
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(next) => !next && close()}
+      title={t('profile.deleteAccount.title')}
+      description={t('profile.deleteAccount.text')}
+    >
+      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        <TextField
+          label={t('profile.deleteAccount.typeEmail')}
+          name="confirm-email"
+          type="email"
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder={email}
+          value={typed}
+          onChange={(event) => setTyped(event.target.value)}
+          error={errors.email}
+        />
+        <FormError message={errors.form} />
+        <Button
+          type="submit"
+          variant="danger"
+          disabled={!matches}
+          loading={remove.isPending}
+          className="w-full"
+        >
+          {t('profile.deleteAccount.confirm')}
+        </Button>
+        <Button type="button" variant="white" className="w-full" onClick={close}>
+          {t('team.remove.cancel')}
         </Button>
       </form>
     </Sheet>
