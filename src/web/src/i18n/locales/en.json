@@ -955,6 +955,14 @@
       "delete": "Delete this shift"
     }
   },
+  "offline": {
+    "title": "You’re offline",
+    "copy": "Showing your shifts as of {{time}}. Changes need a connection.",
+    "noCopy": "Some things need a connection. Try again when you’re back online.",
+    "needsConnection": "You’re offline. Giving away or trading a shift needs a connection.",
+    "updateReady": "A new version of Quart is ready.",
+    "reload": "Reload"
+  },
   "profile": {
     "title": "Profile",
     "level": "Barista level",

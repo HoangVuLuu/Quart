@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { useOffline } from '../../lib/connection';
 import { useSwipe } from '../../lib/gestures';
 import { useTranslation } from 'react-i18next';
 import { messageKeyFor } from '../../i18n/errors';
@@ -287,6 +288,7 @@ export function ShiftTradeSheet({
   const actions = useMarketplaceActions();
   const offer = useMarketplace().data?.offers.find((item) => item.mine && item.shift.id === shift.id);
   const [trading, setTrading] = useState(false);
+  const offline = useOffline();
   const error = actions.giveAway.error ?? actions.cancelOffer.error;
 
   if (trading) return <TradeSheet schedule={schedule} mine={shift} onClose={onClose} />;
@@ -304,10 +306,12 @@ export function ShiftTradeSheet({
       </div>
       {offer && <p className="mt-3 text-sm text-muted">{t('schedule.sheet.offeredText')}</p>}
       <FormError message={error ? t(messageKeyFor(error)) : undefined} />
+      {offline && <p className="mt-3 text-sm text-muted">{t('offline.needsConnection')}</p>}
       <div className="mt-4 grid grid-cols-2 gap-3">
         {offer ? (
           <Button
             variant="white"
+            disabled={offline}
             loading={actions.cancelOffer.isPending}
             onClick={() => actions.cancelOffer.mutate(offer.id, { onSuccess: onClose })}
           >
@@ -315,6 +319,7 @@ export function ShiftTradeSheet({
           </Button>
         ) : (
           <Button
+            disabled={offline}
             loading={actions.giveAway.isPending}
             onClick={() =>
               actions.giveAway.mutate(shift.id, {
@@ -328,7 +333,12 @@ export function ShiftTradeSheet({
             {t('schedule.sheet.giveAway')}
           </Button>
         )}
-        <Button variant="white" className="bg-primary text-on-primary" onClick={() => setTrading(true)}>
+        <Button
+          variant="white"
+          className="bg-primary text-on-primary"
+          disabled={offline}
+          onClick={() => setTrading(true)}
+        >
           {t('schedule.sheet.trade')}
         </Button>
       </div>

@@ -12,8 +12,13 @@ public sealed class SecurityHeadersTests : IDisposable
     // Stands in for the React build the Dockerfile copies into wwwroot.
     private readonly string webRoot = Directory.CreateTempSubdirectory("quart-wwwroot-").FullName;
 
-    public SecurityHeadersTests() =>
+    public SecurityHeadersTests()
+    {
         File.WriteAllText(Path.Combine(webRoot, "index.html"), "<!doctype html><title>Quart</title><div id=\"root\"></div>");
+        File.WriteAllText(Path.Combine(webRoot, "sw.js"), "self.addEventListener('fetch', () => {});");
+        Directory.CreateDirectory(Path.Combine(webRoot, "assets"));
+        File.WriteAllText(Path.Combine(webRoot, "assets", "index-AbC123.js"), "console.log('quart');");
+    }
 
     public void Dispose() => Directory.Delete(webRoot, recursive: true);
 
@@ -35,6 +40,25 @@ public sealed class SecurityHeadersTests : IDisposable
         Assert.Equal("nosniff", Header(response, "X-Content-Type-Options"));
         Assert.Equal("no-referrer", Header(response, "Referrer-Policy"));
         Assert.Equal("camera=(), microphone=(), geolocation=()", Header(response, "Permissions-Policy"));
+    }
+
+    [Theory]
+    [InlineData("/sw.js", "no-cache")]
+    [InlineData("/", "no-cache")]
+    [InlineData("/index.html", "no-cache")]
+    [InlineData("/schedule", "no-cache")]
+    [InlineData("/assets/index-AbC123.js", "public, max-age=31536000, immutable")]
+    [InlineData("/api/meta", "no-store")]
+    public async Task A_new_version_reaches_the_phone_on_the_next_load(string path, string cacheControl)
+    {
+        // M8-05: the service worker and index.html are checked every time; only hashed build files are kept.
+        await using var factory = QuartApiFactory.WithDatabaseDown(environment: "Staging", webRoot: webRoot);
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(cacheControl, response.Headers.CacheControl?.ToString());
     }
 
     [Fact]

@@ -22,3 +22,4 @@ take the next number, and never edit an accepted record: supersede it with a new
 | 0011 | Each module owns one DbContext, schema and history     | Accepted |
 | 0012 | Logs are small, structured and free of personal data   | Accepted |
 | 0013 | Browser tests with Playwright, against the built app   | Accepted |
+| 0014 | A hand-written service worker, built by vite-plugin-pwa | Accepted |

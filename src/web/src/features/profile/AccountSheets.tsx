@@ -7,6 +7,7 @@ import { Sheet } from '../../ui/Sheet';
 import { PasswordField, TextField } from '../../ui/TextField';
 import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
+import { forgetOfflineCopies } from '../../lib/connection';
 import { meKey } from '../identity/session';
 import { fieldErrors } from '../identity/fieldErrors';
 import { minPasswordLength } from '../identity/SignUpPage';
@@ -190,6 +191,7 @@ export function DeleteAccountSheet({
     mutationFn: () => unwrap(api.POST('/api/me/delete', { body: { email: typed } })),
     onSuccess: () => {
       client.clear();
+      forgetOfflineCopies();
       client.setQueryData(meKey, null);
       onDeleted();
     },

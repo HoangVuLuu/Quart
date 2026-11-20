@@ -1,4 +1,5 @@
 import createClient from 'openapi-fetch';
+import { noteResponse, noteUnreachable } from '../connection';
 import type { components, paths } from './schema';
 
 // The typed API client. Paths, parameters and response types come from src/lib/api/schema.d.ts,
@@ -49,6 +50,11 @@ api.use({
     }
     return request;
   },
+  // A copy kept by the service worker says when it was saved; the offline banner shows it (M8-05).
+  onResponse({ response }) {
+    noteResponse(response);
+    return response;
+  },
 });
 
 /**
@@ -64,6 +70,7 @@ export async function unwrap<T>(
   } catch (error) {
     // A cancelled request is not a failure; anything else means the server could not be reached.
     if (error instanceof Error && error.name === 'AbortError') throw error;
+    noteUnreachable();
     throw new ApiError(0, 'common.network');
   }
   if (result.response.ok) return result.data as T;

@@ -7,6 +7,7 @@ stores a new piece of personal data adds a line here, so 6.2 picks it up (remain
 | --- | --- | --- | --- | --- |
 | A requested new email address (`identity.account_link.pending_email`) | To send the confirmation link and apply the change once it is opened (M2-07) | Nobody in the app; only the system | The link is used, replaced or expires (24 hours); the row is deleted a day after it expires (1.7) | M2-07 |
 | Hours a person wants per week, given with each period's availability (`scheduling.availability.desired_weekly_hours`) | To build a schedule close to what each person wants (BR-032) | The person and the workplace's admins | Kept with the period's availability, like the rest of it | 2026-11-18 change list |
+| A copy of the person's published schedules, coworkers' names included, on their own phone (the app's offline cache, `quart-api-v1`) | To show "My shifts" without a connection (M8-05, AD-040) | Whoever holds the phone, signed in as that person | Replaced on every load; emptied on sign-in, sign-out, account deletion or an ended session | M8-05 |
 | Which open shifts, give-aways and trade requests a person has opened (`marketplace.seen_item`) | To count unopened items on the Trade tab (FR-215) | Nobody in the app; only the system, to show the count | 60 days (1.7) | 2026-11-18 change list |
 
 ## Retention and deletion (tasks 1.6 and 1.7)

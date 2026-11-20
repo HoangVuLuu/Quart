@@ -21,6 +21,7 @@ import {
 import { flavourOf, useShiftName } from '../scheduling/ShiftName';
 import { ShiftPeopleSheet } from '../schedule/PublishedSchedule';
 import { useWorkplace } from '../workplaces/workplace';
+import { OfflineBanner } from '../offline/OfflineBanner';
 
 /** Monday of the week a date falls in, as "yyyy-mm-dd": hours are counted per week (BR-032). */
 function mondayOf(date: Date): string {
@@ -77,6 +78,8 @@ export function HomePage() {
         )}
         title={t('home.hello', { name: me?.displayName.split(' ')[0] ?? '' })}
       />
+
+      <OfflineBanner />
 
       <InstallCard />
 
