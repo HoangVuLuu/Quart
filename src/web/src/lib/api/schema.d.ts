@@ -420,6 +420,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/deadline': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['ChangeDeadline'];
+    trace?: never;
+  };
   '/api/workplaces/{workplaceId}/periods/{periodId}': {
     parameters: {
       query?: never;
@@ -1104,6 +1120,11 @@ export interface components {
       /** Format: date-time */
       end: string;
     };
+    ChangeDeadlineRequest: {
+      /** Format: date */
+      dueDate: null | string;
+      dueTime: null | string;
+    };
     ChangeEmailRequest: {
       email: null | string;
       currentPassword: null | string;
@@ -1293,8 +1314,6 @@ export interface components {
       maxConsecutiveShifts: null | number;
       openingFairness: boolean;
       closingFairness: boolean;
-      /** Format: int32 */
-      requestDaysBefore: number;
       blocks: null | components['schemas']['BlockSetup'][];
     };
     GeneratorShift: {
@@ -1505,9 +1524,6 @@ export interface components {
       draftSaved: boolean;
       /** Format: date-time */
       dueAt: null | string;
-      /** Format: date-time */
-      requestAt: null | string;
-      requestSent: boolean;
     };
     PersonAvailability: {
       period: components['schemas']['PeriodSummary'];
@@ -2592,6 +2608,42 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['CreatePeriodRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PeriodSummary'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ChangeDeadline: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ChangeDeadlineRequest'];
       };
     };
     responses: {

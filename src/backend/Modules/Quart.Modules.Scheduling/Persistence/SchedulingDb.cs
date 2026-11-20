@@ -161,10 +161,7 @@ internal sealed class Period
     /// <summary>When availability is due (FR-091). Null only for periods opened before deadlines existed.</summary>
     public Instant? AvailabilityDueAt { get; set; }
 
-    /// <summary>When the availability request goes out, or went out; null for periods from before (FR-091).</summary>
-    public Instant? RequestAt { get; set; }
-
-    /// <summary>The automatic steps already done ("request", "48h", "24h", "due"), so a job run twice does nothing the second time.</summary>
+    /// <summary>The automatic steps already done ("48h", "24h", "due"), so a job run twice does nothing the second time.</summary>
     public List<string> StepsDone { get; set; } = [];
 
     public LocalDate EndDate => StartDate.PlusDays((Weeks * 7) - 1);

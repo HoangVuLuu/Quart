@@ -124,14 +124,14 @@
     },
     "period": {
       "due_after_start": "The deadline must be before the period starts.",
-      "due_before_request": "The deadline must be after the request goes out. Check the days in the generator rules.",
       "due_in_past": "This deadline has already passed.",
       "due_required": "Choose when availability is due.",
       "overlaps": "These dates overlap another period.",
       "start_not_monday": "A period starts on a Monday.",
       "template_empty": "Add your shifts in the Edit Generator page first.",
       "unfinished_exists": "Publish the period you are working on before opening another.",
-      "already_started": "This period has already started, so it can't be cancelled."
+      "already_started": "This period has already started, so it can't be cancelled.",
+      "due_published": "This schedule is published: its deadline no longer matters."
     },
     "schedule": {
       "already_on_shift": "This person is already on the shift.",
@@ -149,8 +149,7 @@
     },
     "settings": {
       "max_consecutive_invalid": "Choose 1 to 4 shifts in a row, or no limit.",
-      "period_weeks_invalid": "A period lasts 1 to 4 weeks.",
-      "request_days_invalid": "Choose 0 to 28 days."
+      "period_weeks_invalid": "A period lasts 1 to 4 weeks."
     },
     "template": {
       "conflict_duplicate": "This pair is already listed.",
@@ -237,12 +236,11 @@
       "notSent": "Not sent yet",
       "allSent": "Everyone has sent their availability",
       "team": "See everyone’s availability",
-      "due": "Deadline: {{when}}.",
-      "requestLater": "The request goes out {{when}}. Staff can already fill in."
+      "due": "Deadline: {{when}}."
     },
     "open": {
       "title": "Open the next period",
-      "text": "Everyone who works shifts is asked for their availability, on the day set in the generator rules.",
+      "text": "Everyone who works shifts is asked for their availability as soon as you open it.",
       "start": "Starts on",
       "startHint": "A Monday.",
       "submit": "Open period",
@@ -950,11 +948,6 @@
       "done": "Done",
       "applyAll": "Apply these rules to all shifts",
       "delete": "Delete this shift"
-    },
-    "request": {
-      "title": "Availability request",
-      "text": "How many days before a period starts everyone is asked. 0 asks as soon as you open the period.",
-      "label": "Days before"
     }
   },
   "profile": {
@@ -1060,5 +1053,12 @@
     "goneTitle": "Nothing to show",
     "goneText": "This period was cancelled, or this person is no longer on the team.",
     "wanted": "Hours wanted per week"
+  },
+  "deadline": {
+    "change": "Change the deadline",
+    "title": "Availability deadline",
+    "text": "Reminders move with it: 48 and 24 hours before.",
+    "save": "Save",
+    "changed": "Deadline changed"
   }
 }

@@ -22,8 +22,6 @@ const period: Schemas['PeriodSummary'] = {
   locked: false,
   draftSaved: false,
   dueAt: '2099-10-02T22:00:00Z',
-  requestAt: '2099-09-21T13:00:00Z',
-  requestSent: true,
 };
 const next = { period, myAvailability: 'not_sent', canEditAvailability: true, sentCount: null };
 
@@ -931,5 +929,41 @@ describe('changes of 2026-11-20', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: en.shell.back }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/alerts'));
+  });
+});
+
+describe('changing the deadline', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  it('moves the deadline from the pen beside it in the next-period box', async () => {
+    const dueAt = new Date(2099, 9, 3, 0, 0).toISOString();
+    const calls = signedIn('owner', {
+      [`GET ${base}/periods/current`]: {
+        live: null,
+        next: { ...next, period: { ...period, dueAt }, sentCount: 0 },
+        upcoming: [],
+      },
+      [`PATCH ${base}/periods/${periodId}/deadline`]: { ...period, dueAt },
+    });
+    renderApp('/schedule');
+
+    await userEvent.click(await screen.findByRole('button', { name: en.deadline.change }));
+    const sheet = within(await screen.findByRole('dialog', { name: en.deadline.title }));
+    // It starts from the current deadline.
+    expect(sheet.getByLabelText(en.schedule.open.dueDate)).toHaveValue('2099-10-03');
+    expect(sheet.getByLabelText(en.schedule.open.dueTime)).toHaveValue('00:00');
+    await userEvent.clear(sheet.getByLabelText(en.schedule.open.dueDate));
+    await userEvent.type(sheet.getByLabelText(en.schedule.open.dueDate), '2099-10-04');
+    await userEvent.click(sheet.getByRole('button', { name: en.deadline.save }));
+
+    await waitFor(() =>
+      expect(calls.find((call) => call.method === 'PATCH')?.body).toEqual({
+        dueDate: '2099-10-04',
+        dueTime: '00:00',
+      }),
+    );
+    expect(await screen.findByText(en.deadline.changed)).toBeInTheDocument();
   });
 });

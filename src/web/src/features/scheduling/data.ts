@@ -336,3 +336,19 @@ export function usePersonAvailability(periodId: string, membershipId: string) {
     retry: false,
   });
 }
+
+/** Moves the deadline of a period not published yet; the reminders follow (FR-091, 2026-11-20). */
+export function useChangeDeadline(periodId: string) {
+  const { id } = useWorkplace();
+  const refresh = useRefreshWorkplace();
+  return useMutation({
+    mutationFn: (body: Schemas['ChangeDeadlineRequest']) =>
+      unwrap(
+        api.PATCH('/api/workplaces/{workplaceId}/periods/{periodId}/deadline', {
+          params: { path: { workplaceId: id, periodId } },
+          body,
+        }),
+      ),
+    onSuccess: refresh,
+  });
+}

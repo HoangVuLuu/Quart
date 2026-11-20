@@ -19,13 +19,6 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                 type: "timestamp with time zone",
                 nullable: true);
 
-            migrationBuilder.AddColumn<Instant>(
-                name: "request_at",
-                schema: "scheduling",
-                table: "period",
-                type: "timestamp with time zone",
-                nullable: true);
-
             migrationBuilder.AddColumn<List<string>>(
                 name: "steps_done",
                 schema: "scheduling",
@@ -40,11 +33,6 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
         {
             migrationBuilder.DropColumn(
                 name: "availability_due_at",
-                schema: "scheduling",
-                table: "period");
-
-            migrationBuilder.DropColumn(
-                name: "request_at",
                 schema: "scheduling",
                 table: "period");
 

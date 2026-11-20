@@ -40,7 +40,6 @@ public sealed record WorkplaceTemplate(
 
 /// <param name="MaxConsecutiveShifts">1 to 4, or null for no limit (BR-005).</param>
 /// <param name="PublishChecks">Per issue code: "block", "confirm" or "show" (FR-144).</param>
-/// <param name="RequestDaysBefore">0 to 28: how many days before a period starts its availability request goes out; 0 means when it is opened (FR-091).</param>
 public sealed record WorkplaceRules(
     int PeriodWeeks,
     int? MaxConsecutiveShifts,
@@ -48,8 +47,7 @@ public sealed record WorkplaceRules(
     bool ClosingFairness,
     bool ClaimsNeedApproval,
     bool TradesNeedApproval,
-    IReadOnlyDictionary<string, string> PublishChecks,
-    int RequestDaysBefore);
+    IReadOnlyDictionary<string, string> PublishChecks);
 
 /// <param name="Days">ISO weekdays the block runs on.</param>
 public sealed record TemplateBlock(

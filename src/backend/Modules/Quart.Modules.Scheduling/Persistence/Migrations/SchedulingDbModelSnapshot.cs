@@ -235,9 +235,6 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("published_at");
 
-                    b.Property<Instant?>("RequestAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("request_at");
 
                     b.Property<string>("Rules")
                         .IsRequired()

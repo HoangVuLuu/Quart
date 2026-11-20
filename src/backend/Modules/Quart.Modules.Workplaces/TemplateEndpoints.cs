@@ -20,8 +20,6 @@ internal static class TemplateEndpoints
 {
     public const string PeriodWeeksInvalid = "settings.period_weeks_invalid";
     public const string MaxConsecutiveInvalid = "settings.max_consecutive_invalid";
-    public const string RequestDaysInvalid = "settings.request_days_invalid";
-    public const int MaxRequestDaysBefore = 28;
     public const string TimeInvalid = "template.time_invalid";
     public const string OffGrid = "template.off_grid";
     public const string CrossesMidnight = "template.crosses_midnight";
@@ -60,7 +58,6 @@ internal static class TemplateEndpoints
             settings.LimitConsecutiveShifts ? settings.MaxConsecutiveShifts : null,
             settings.OpeningFairness,
             settings.ClosingFairness,
-            settings.RequestDaysBefore,
             blocks.Select(block => new BlockSetup(
                 block.Id,
                 block.Days.Order().ToList(),
@@ -96,7 +93,6 @@ internal static class TemplateEndpoints
         settings.MaxConsecutiveShifts = request.MaxConsecutiveShifts ?? settings.MaxConsecutiveShifts;
         settings.OpeningFairness = request.OpeningFairness;
         settings.ClosingFairness = request.ClosingFairness;
-        settings.RequestDaysBefore = request.RequestDaysBefore;
         workplace.Settings = WorkplaceReader.WriteSettings(settings);
 
         var existing = await db.ShiftBlocks
@@ -144,10 +140,6 @@ internal static class TemplateEndpoints
         if (request.MaxConsecutiveShifts is < 1 or > 4)
         {
             errors.Add(new FieldError(MaxConsecutiveInvalid, "maxConsecutiveShifts"));
-        }
-        if (request.RequestDaysBefore is < 0 or > MaxRequestDaysBefore)
-        {
-            errors.Add(new FieldError(RequestDaysInvalid, "requestDaysBefore"));
         }
         var blocks = request.Blocks ?? [];
         if (blocks.Count > MaxBlocks)
@@ -231,13 +223,11 @@ internal static class TemplateEndpoints
 /// <summary>Everything on the Edit Generator page (mockups 1k3 to 1k5).</summary>
 /// <param name="PeriodWeeks">1 to 4: the length offered for the next period (FR-090).</param>
 /// <param name="MaxConsecutiveShifts">1 to 4, or null for no limit (BR-005).</param>
-/// <param name="RequestDaysBefore">0 to 28: days before a period starts that the availability request goes out; 0 means when it is opened (FR-091).</param>
 public sealed record GeneratorSetup(
     int PeriodWeeks,
     int? MaxConsecutiveShifts,
     bool OpeningFairness,
     bool ClosingFairness,
-    int RequestDaysBefore,
     IReadOnlyList<BlockSetup>? Blocks);
 
 /// <param name="Id">Null for a new block.</param>

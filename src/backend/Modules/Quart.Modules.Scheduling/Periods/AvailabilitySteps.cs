@@ -14,64 +14,47 @@ using Availability = Persistence.Availability;
 using Period = Persistence.Period;
 
 /// <summary>
-/// The automatic side of an availability cycle (FR-091, M4-05): the request on the day the workplace chose,
-/// reminders 48 and 24 hours before the deadline to people who have not sent, and a note to the admins at
-/// the deadline. Nothing locks by itself: building starts only when an admin starts it (FR-100).
+/// The automatic side of an availability cycle (FR-091, M4-05): reminders 48 and 24 hours before the
+/// deadline to people who have not sent, and a note to the admins at the deadline. The request itself goes
+/// out when the period is opened. Nothing locks by itself: building starts only when an admin starts it (FR-100).
 /// </summary>
 internal static class AvailabilitySteps
 {
     public const string JobType = "scheduling.availability_step";
 
-    public const string Request = "request";
     public const string Reminder48 = "48h";
     public const string Reminder24 = "24h";
     public const string Due = "due";
 
-    /// <summary>The request goes out at this local time on its day.</summary>
-    public static readonly LocalTime RequestTime = new(9, 0);
-
-    /// <summary>When the request goes out: <paramref name="daysBefore"/> days before the start, or now when that has passed or is 0.</summary>
-    public static Instant RequestAt(LocalDate start, int daysBefore, DateTimeZone zone, Instant now)
-    {
-        if (daysBefore <= 0)
-        {
-            return now;
-        }
-        var planned = Support.InstantOf(start.PlusDays(-daysBefore), RequestTime, zone);
-        return planned > now ? planned : now;
-    }
+    /// <summary>When each step happens for a deadline: reminders 48 and 24 hours before it, and the note at it.</summary>
+    public static IReadOnlyList<(string Kind, Instant At)> StepsFor(Instant due) =>
+        [(Reminder48, due - Duration.FromHours(48)), (Reminder24, due - Duration.FromHours(24)), (Due, due)];
 
     /// <summary>
-    /// Schedules every step still ahead. One job per period and step: opening the same period twice, or a
-    /// retried request, adds nothing (the dedupe key).
+    /// Schedules every step still ahead of the period's deadline. One job per period, step and deadline:
+    /// a retried request adds nothing (the dedupe key), and the jobs of an earlier deadline do nothing.
     /// </summary>
     public static async Task ScheduleAsync(IJobScheduler jobs, Period period, Instant now, CancellationToken cancellationToken)
     {
-        var steps = new List<(string Kind, Instant At)>();
-        if (period.RequestAt is { } requestAt && requestAt > now)
+        if (period.AvailabilityDueAt is not { } due)
         {
-            steps.Add((Request, requestAt));
+            return;
         }
-        if (period.AvailabilityDueAt is { } due)
-        {
-            steps.Add((Reminder48, due - Duration.FromHours(48)));
-            steps.Add((Reminder24, due - Duration.FromHours(24)));
-            steps.Add((Due, due));
-        }
-        foreach (var (kind, at) in steps.Where(step => step.At > now))
+        foreach (var (kind, at) in StepsFor(due).Where(step => step.At > now))
         {
             await jobs.ScheduleAsync(
                 new JobRequest(JobType, at)
                 {
                     WorkplaceId = period.WorkplaceId,
-                    Payload = new AvailabilityStepPayload(period.Id, kind),
-                    DedupeKey = $"availability:{period.Id}:{kind}",
+                    Payload = new AvailabilityStepPayload(period.Id, kind, due.ToUnixTimeTicks()),
+                    // One job per period, step and deadline: a changed deadline gets jobs of its own (FR-091).
+                    DedupeKey = $"availability:{period.Id}:{kind}:{due.ToUnixTimeTicks()}",
                 },
                 cancellationToken);
         }
     }
 
-    /// <summary>Asks everyone who works shifts for their availability (FR-091, FR-215).</summary>
+    /// <summary>Asks everyone who works shifts for their availability, as soon as the period is opened (FR-091, FR-215).</summary>
     public static Task SendRequestAsync(INotifier notifier, IReadOnlyList<WorkplaceMember> members, Period period, CancellationToken cancellationToken)
     {
         var parameters = new Dictionary<string, string>
@@ -87,7 +70,8 @@ internal static class AvailabilitySteps
     }
 }
 
-internal sealed record AvailabilityStepPayload(Guid PeriodId, string Kind);
+/// <param name="DueTicks">The deadline the step was scheduled for; a step for an older deadline does nothing.</param>
+internal sealed record AvailabilityStepPayload(Guid PeriodId, string Kind, long DueTicks);
 
 /// <summary>
 /// Runs one step. It looks at the period as it is now, so a reminder never reaches someone who has already
@@ -105,8 +89,9 @@ internal sealed class AvailabilityStepHandler(SchedulingDb db, IWorkplaceDirecto
     {
         var step = job.ReadPayload<AvailabilityStepPayload>();
         var period = await db.Periods.SingleOrDefaultAsync(x => x.Id == step.PeriodId, cancellationToken);
-        // Gone (cancelled), published, or done already: nothing to send.
-        if (period is null || period.Version > 0 || period.StepsDone.Contains(step.Kind))
+        // Gone (cancelled), published, done already, or for a deadline that has since changed: nothing to send.
+        if (period is null || period.Version > 0 || period.StepsDone.Contains(step.Kind)
+            || period.AvailabilityDueAt?.ToUnixTimeTicks() != step.DueTicks)
         {
             return JobOutcome.Done;
         }
@@ -121,21 +106,10 @@ internal sealed class AvailabilityStepHandler(SchedulingDb db, IWorkplaceDirecto
         {
             return JobOutcome.RunAgain(now + RetryWhileBuilding);
         }
-        // Reminders and the due note follow the request; before it, nobody has been asked yet.
-        if (step.Kind != AvailabilitySteps.Request && !period.StepsDone.Contains(AvailabilitySteps.Request))
-        {
-            return JobOutcome.Done;
-        }
-
         period.StepsDone = [.. period.StepsDone, step.Kind];
         await db.SaveChangesAsync(cancellationToken);
 
         var members = await directory.GetMembersAsync(period.WorkplaceId, cancellationToken);
-        if (step.Kind == AvailabilitySteps.Request)
-        {
-            await AvailabilitySteps.SendRequestAsync(notifier, members, period, cancellationToken);
-            return JobOutcome.Done;
-        }
 
         var sent = await db.Availabilities.AsNoTracking()
             .Where(x => x.PeriodId == period.Id && x.Status == Availability.Sent)

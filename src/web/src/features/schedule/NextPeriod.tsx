@@ -9,11 +9,14 @@ import { Button } from '../../ui/Button';
 import { buttonClassName } from '../../ui/button-styles';
 import { HeroCard } from '../../ui/HeroCard';
 import { Icon, iconButtonClassName } from '../../ui/Icon';
+import { Sheet } from '../../ui/Sheet';
 import { TextField } from '../../ui/TextField';
+import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
 import {
   mondayOnOrAfter,
   suggestedDueDate,
+  useChangeDeadline,
   useCreatePeriod,
   useTeamAvailability,
   type NextPeriod,
@@ -60,17 +63,8 @@ export function NextPeriodBox({ next, after }: { next: NextPeriod | null; after?
           </div>
         </>
       )}
-      {/* When availability is due, and when the request goes out if it has not yet (FR-091). */}
-      {next.period.dueAt && (
-        <p className="mt-2">
-          {t('schedule.ready.due', { when: formatDue(next.period.dueAt, i18n.language) })}
-        </p>
-      )}
-      {next.period.requestAt && !next.period.requestSent && (
-        <p className="mt-1">
-          {t('schedule.ready.requestLater', { when: formatDue(next.period.requestAt, i18n.language) })}
-        </p>
-      )}
+      {/* When availability is due, with a pen to move it while the period is not published (FR-091). */}
+      {next.period.dueAt && <Deadline periodId={next.period.id} dueAt={next.period.dueAt} />}
       <div className="mt-4 flex flex-wrap gap-2">
         <Link to="/schedule/build" className={buttonClassName('dark')}>
           {next.period.draftSaved ? t('schedule.box.continue') : t('schedule.box.build')}
@@ -166,5 +160,76 @@ function GeneratorRulesLink() {
     >
       <Icon name="pen" />
     </Link>
+  );
+}
+
+/** "Due Saturday, Dec 5, 12:00 a.m." with a pen that opens the date and time to change it (2026-11-20). */
+function Deadline({ periodId, dueAt }: { periodId: string; dueAt: string }) {
+  const { t, i18n } = useTranslation();
+  const toast = useToast();
+  const change = useChangeDeadline(periodId);
+  const [editing, setEditing] = useState(false);
+  const due = new Date(dueAt);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  const [dueDate, setDueDate] = useState(
+    `${due.getFullYear()}-${pad(due.getMonth() + 1)}-${pad(due.getDate())}`,
+  );
+  const [dueTime, setDueTime] = useState(`${pad(due.getHours())}:${pad(due.getMinutes())}`);
+
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <p className="min-w-0 flex-1">{t('schedule.ready.due', { when: formatDue(dueAt, i18n.language) })}</p>
+      <button
+        type="button"
+        aria-label={t('deadline.change')}
+        className={`${iconButtonClassName} size-9 text-ink`}
+        onClick={() => setEditing(true)}
+      >
+        <Icon name="pen" className="size-4" />
+      </button>
+      <Sheet
+        open={editing}
+        onOpenChange={setEditing}
+        title={t('deadline.title')}
+        description={t('deadline.text')}
+      >
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-[3fr_2fr] gap-3">
+            <TextField
+              label={t('schedule.open.dueDate')}
+              type="date"
+              required
+              value={dueDate}
+              onChange={(event) => setDueDate(event.target.value)}
+            />
+            <TextField
+              label={t('schedule.open.dueTime')}
+              type="time"
+              step={900}
+              required
+              value={dueTime}
+              onChange={(event) => setDueTime(event.target.value)}
+            />
+          </div>
+          <FormError message={change.error ? t(messageKeyFor(change.error)) : undefined} />
+          <Button
+            loading={change.isPending}
+            onClick={() =>
+              change.mutate(
+                { dueDate, dueTime },
+                {
+                  onSuccess: () => {
+                    setEditing(false);
+                    toast(t('deadline.changed'));
+                  },
+                },
+              )
+            }
+          >
+            {t('deadline.save')}
+          </Button>
+        </div>
+      </Sheet>
+    </div>
   );
 }

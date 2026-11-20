@@ -18,8 +18,6 @@ const period: Schemas['PeriodSummary'] = {
   locked: false,
   draftSaved: false,
   dueAt: '2099-10-02T22:00:00Z',
-  requestAt: '2099-09-21T13:00:00Z',
-  requestSent: true,
 };
 const next = { period, myAvailability: 'not_sent', canEditAvailability: true, sentCount: null };
 const mine: Schemas['MyAvailability'] = {

@@ -124,14 +124,14 @@
     },
     "period": {
       "due_after_start": "La date limite doit être avant le début de la période.",
-      "due_before_request": "La date limite doit être après l’envoi de la demande. Vérifie les jours dans les règles du générateur.",
       "due_in_past": "Cette date limite est déjà passée.",
       "due_required": "Choisis quand les disponibilités sont dues.",
       "overlaps": "Ces dates chevauchent une autre période.",
       "start_not_monday": "Une période commence un lundi.",
       "template_empty": "Ajoute d’abord tes quarts dans la page Modifier le générateur.",
       "unfinished_exists": "Publie la période en cours avant d’en ouvrir une autre.",
-      "already_started": "Cette période est déjà commencée, elle ne peut plus être annulée."
+      "already_started": "Cette période est déjà commencée, elle ne peut plus être annulée.",
+      "due_published": "Cet horaire est publié : sa date limite ne compte plus."
     },
     "schedule": {
       "already_on_shift": "Cette personne est déjà sur le quart.",
@@ -149,8 +149,7 @@
     },
     "settings": {
       "max_consecutive_invalid": "Choisis de 1 à 4 quarts de suite, ou sans limite.",
-      "period_weeks_invalid": "Une période dure de 1 à 4 semaines.",
-      "request_days_invalid": "Choisis de 0 à 28 jours."
+      "period_weeks_invalid": "Une période dure de 1 à 4 semaines."
     },
     "template": {
       "conflict_duplicate": "Ce duo est déjà dans la liste.",
@@ -237,12 +236,11 @@
       "notSent": "Pas encore envoyées",
       "allSent": "Tout le monde a envoyé ses disponibilités",
       "team": "Voir les disponibilités de l’équipe",
-      "due": "Date limite : {{when}}.",
-      "requestLater": "La demande part {{when}}. L’équipe peut déjà remplir."
+      "due": "Date limite : {{when}}."
     },
     "open": {
       "title": "Ouvrir la prochaine période",
-      "text": "Tous ceux qui font des quarts reçoivent une demande de disponibilités, le jour choisi dans les règles du générateur.",
+      "text": "Tous ceux qui font des quarts reçoivent une demande de disponibilités dès que tu l’ouvres.",
       "start": "Début",
       "startHint": "Un lundi.",
       "submit": "Ouvrir la période",
@@ -950,11 +948,6 @@
       "done": "Terminé",
       "applyAll": "Appliquer ces règles à tous les quarts",
       "delete": "Supprimer ce quart"
-    },
-    "request": {
-      "title": "Demande de disponibilités",
-      "text": "Combien de jours avant le début d’une période tout le monde reçoit la demande. 0 l’envoie dès que tu ouvres la période.",
-      "label": "Jours avant"
     }
   },
   "profile": {
@@ -1060,5 +1053,12 @@
     "goneTitle": "Rien à afficher",
     "goneText": "Cette période a été annulée, ou cette personne ne fait plus partie de l’équipe.",
     "wanted": "Heures voulues par semaine"
+  },
+  "deadline": {
+    "change": "Changer la date limite",
+    "title": "Date limite des disponibilités",
+    "text": "Les rappels suivent : 48 et 24 heures avant.",
+    "save": "Enregistrer",
+    "changed": "Date limite changée"
   }
 }

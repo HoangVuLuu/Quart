@@ -37,9 +37,7 @@ internal static class Support
             period.Version,
             period.LockedAt is not null,
             period.Version == 0 && period.DraftSavedAt is not null,
-            period.AvailabilityDueAt?.ToDateTimeOffset(),
-            period.RequestAt?.ToDateTimeOffset(),
-            period.RequestAt is null || period.StepsDone.Contains(AvailabilitySteps.Request));
+            period.AvailabilityDueAt?.ToDateTimeOffset());
 
     public static PeriodRules RulesOf(Period period) =>
         JsonSerializer.Deserialize<PeriodRules>(period.Rules, JsonSerializerOptions.Web)
