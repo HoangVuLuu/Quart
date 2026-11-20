@@ -17,9 +17,13 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   void import('virtual:pwa-register').then(({ registerSW }) => {
     const update = registerSW({
       onNeedRefresh: () => offerUpdate(() => void update(true)),
-      // An installed app can stay open for days: look for a new version every hour.
+      // An installed app can stay open for days: look for a new version each time it comes back to the
+      // screen. Never on a timer: that would wake the sleeping server when nobody is using the app (NFR-006).
       onRegisteredSW: (_url, registration) => {
-        if (registration) setInterval(() => void registration.update(), 60 * 60 * 1000);
+        if (!registration) return;
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') void registration.update();
+        });
       },
     });
   });
