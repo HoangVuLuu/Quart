@@ -22,6 +22,6 @@ public static class EmailTemplates
     public const string ChangeEmail = "change_email";
     public const string EmailChanged = "email_changed";
 
-    /// <summary>The last email to an account that was just deleted (FR-009). Once sent, its address is erased too.</summary>
+    /// <summary>The last email to an account that was just deleted (FR-009). Once sent, its outbox row is deleted too.</summary>
     public const string AccountDeleted = "account_deleted";
 }

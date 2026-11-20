@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using NodaTime;
@@ -86,6 +87,28 @@ public sealed partial class RetentionTests(PostgresFixture postgres)
 
         Assert.Equal(0, result.Retried + result.Failed);
         Assert.Equal(NightlyTypes.Select(type => (type, "Pending", tonight + Duration.FromDays(1))), await NightlyJobsAsync(app));
+    }
+
+    [Fact]
+    public async Task An_account_whose_email_was_never_confirmed_goes_7_days_after_sign_up()
+    {
+        await using var app = await TestApp.StartAsync(postgres); // Monday 2 November, 09:00 in Montreal
+        using var browser = app.Browser();
+        using var signUp = await browser.PostAsJsonAsync(
+            "/api/auth/sign-up", new { fullName = "Una Never", email = "una@quart.test", password = TestApp.Password, language = "en" }, Cancellation);
+        Assert.Equal(System.Net.HttpStatusCode.Accepted, signUp.StatusCode);
+        var confirmed = await app.PersonAsync("Carl Sure", "carl@quart.test");
+        const string Accounts = "SELECT count(*) FROM identity.\"user\" WHERE email = '{0}'";
+
+        await NightAsync(app, new LocalDate(2026, 11, 9)); // 6 days and 18 hours
+        Assert.Equal(1, await CountAsync(app, string.Format(System.Globalization.CultureInfo.InvariantCulture, Accounts, "una@quart.test")));
+        await NightAsync(app, new LocalDate(2026, 11, 10)); // 7 days and 18 hours
+
+        Assert.Equal(0, await CountAsync(app, string.Format(System.Globalization.CultureInfo.InvariantCulture, Accounts, "una@quart.test")));
+        Assert.Equal(1, await CountAsync(app, string.Format(System.Globalization.CultureInfo.InvariantCulture, Accounts, "carl@quart.test")));
+        Assert.Equal(0, await CountAsync(app, "SELECT count(*) FROM identity.account_link"));
+        // The address is simply free.
+        await app.PersonAsync("Una Never", "una@quart.test");
     }
 
     /// <summary>The ticks of one night in Montreal: one just before 03:00 creates the jobs if needed, one just after runs them.</summary>

@@ -5,6 +5,7 @@ import type { NotificationItem } from './data';
 export const notificationTypes = [
   'member.joined',
   'member.left',
+  'member.account_deleted',
   'availability.requested',
   'availability.reminder',
   'availability.reopened',

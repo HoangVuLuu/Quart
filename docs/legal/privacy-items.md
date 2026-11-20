@@ -14,6 +14,7 @@ stores a new piece of personal data adds a line here, so 6.2 picks it up (remain
 - The retention table for the privacy page is `Retention.Table` in `src/backend/Quart.SharedKernel/Retention.cs`. It
   is the spec's section 13 table word for word (a test checks it); 6.2 should show it from there, with the
   housekeeping periods listed under section 13.
-- Deleting an account (FR-009) removes the profile, sessions, links, the person's alerts, their availability and
-  notes, and every email to their address still in the outbox. What stays: bare IDs on past schedules (shown as
+- Deleting an account (FR-009) cannot be undone. It removes the profile, sessions, links, the person's alerts, their
+  availability and notes, and every email to their address in the outbox; the goodbye email's row goes once sent.
+- Accounts whose email was never confirmed are deleted 7 days after sign-up. What stays: bare IDs on past schedules (shown as
   "Former employee"), and for up to 60 days the short name inside other people's alerts ("Paul C. left").

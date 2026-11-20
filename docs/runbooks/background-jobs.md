@@ -78,7 +78,7 @@ periods are constants in `src/backend/Quart.SharedKernel/Retention.cs`; a test k
 | ------------------------- | -------------------------------------------------------------------------------------------- |
 | `scheduling.retention`    | Availability and its notes 60 days after a period ends; the whole period 2 months after       |
 | `notifications.retention` | Alerts after 60 days; outbox emails after 7 days                                             |
-| `identity.retention`      | Sessions and one-time links a day after they expire                                          |
+| `identity.retention`      | Sessions and links a day after they expire; unconfirmed accounts 7 days after sign-up         |
 | `marketplace.retention`   | Give-aways, claims and trades 60 days after they ended (120 days if never closed); seen marks |
 | `jobs.retention`          | Finished and failed jobs after 30 days                                                       |
 

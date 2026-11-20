@@ -87,10 +87,11 @@ internal sealed class EmailOutbox(
         // The parameters can hold a one-time link. Once the email has left, nothing here needs them, and a
         // copy of this table must not be a list of working reset links.
         message.Parameters = "{}";
-        // The goodbye email to a deleted account is the last place its address lived (FR-009).
+        // The goodbye email to a deleted account is the last place its address lived: once it has left, the
+        // row goes too, as if the account had never existed (FR-009).
         if (message.Template == EmailTemplates.AccountDeleted)
         {
-            message.Recipient = string.Empty;
+            db.OutboxMessages.Remove(message);
         }
         await db.SaveChangesAsync(cancellationToken);
     }

@@ -26,6 +26,9 @@ public static class NotificationTypes
 {
     public const string MemberJoined = "member.joined";
     public const string MemberLeft = "member.left";
+
+    /// <summary>To managers: someone deleted their account, so they left and their upcoming shifts are open (FR-009).</summary>
+    public const string MemberDeletedAccount = "member.account_deleted";
     public const string AvailabilityRequested = "availability.requested";
     public const string AvailabilityReminder = "availability.reminder";
     public const string AvailabilityReopened = "availability.reopened";
@@ -67,6 +70,7 @@ public static class NotificationTypes
         {
             [MemberJoined] = ["name"],
             [MemberLeft] = ["name"],
+            [MemberDeletedAccount] = ["name"],
             [AvailabilityRequested] = ["periodStart", "weeks"],
             [AvailabilityReminder] = ["periodStart"],
             [AvailabilityReopened] = ["periodStart"],

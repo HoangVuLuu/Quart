@@ -34,7 +34,8 @@ public sealed class AccountDeletionTests(PostgresFixture postgres)
         Assert.Equal(before.Where(x => Start(x) < now).Select(Team.Id), kept.Select(Team.Id));
         Assert.All(kept, shift => Assert.Null(
             shift["people"]!.AsArray().Single(p => p!["membershipId"]!.GetValue<string>() == paul.MembershipId.ToString())!["name"]));
-        Assert.Contains("member.left", await team.NotificationTypesAsync(team.Owner));
+        var told = Assert.Single((await team.Owner.GetAsync($"{team.Base}/notifications"))["items"]!.AsArray(), x => x!["type"]!.GetValue<string>() == "member.account_deleted");
+        Assert.Equal("Paul C.", told!["parameters"]!["name"]!.GetValue<string>());
         Assert.Equal(HttpStatusCode.NotFound, (await team.Owner.TryAsync(HttpMethod.Get, $"{team.Period}/availability/{paul.MembershipId}")).Status);
         Assert.Equal(HttpStatusCode.Unauthorized, (await paul.TryAsync(HttpMethod.Get, "/api/me")).Status);
         var goodbye = Assert.Single(app.Emails.To(paul.Email), x => x.Subject == "Your Quart account was deleted");

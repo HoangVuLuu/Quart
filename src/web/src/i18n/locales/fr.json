@@ -850,7 +850,8 @@
     "types": {
       "member": {
         "joined": "{{name}} a rejoint l’équipe",
-        "left": "{{name}} a quitté l’équipe. Ses prochains quarts sont libres."
+        "left": "{{name}} a quitté l’équipe. Ses prochains quarts sont libres.",
+        "account_deleted": "{{name}} a supprimé son compte. Ses prochains quarts sont libres."
       },
       "availability": {
         "requested": "Les disponibilités sont ouvertes pour la période du {{periodStart}}",
@@ -1004,7 +1005,7 @@
     "deleteAccount": {
       "row": "Supprimer le compte",
       "title": "Supprimer ton compte?",
-      "text": "Ça efface tes disponibilités et tes demandes. Les heures déjà travaillées restent dans l’historique des horaires de chaque lieu de travail.",
+      "text": "Ça efface pour de bon ton compte, tes disponibilités et tes demandes. Tes prochains quarts deviennent libres; les heures déjà travaillées restent dans l’historique des horaires de chaque lieu de travail. Impossible de revenir en arrière.",
       "typeEmail": "Écris ton courriel pour confirmer",
       "confirm": "Supprimer mon compte",
       "done": "Ton compte a été supprimé"

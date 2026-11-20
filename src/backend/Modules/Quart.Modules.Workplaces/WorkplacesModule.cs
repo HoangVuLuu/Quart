@@ -166,7 +166,8 @@ internal sealed class WorkplaceReader(WorkplacesDb db, IUserDirectory users) : I
 /// <summary>
 /// Someone deleting their account leaves every workplace through the same path as leaving one (FR-009, FR-038):
 /// their future shifts become open and the managers are told. An owner never gets here: the account deletion is
-/// refused first, since ownership must be transferred (M2-16).
+/// refused first, since ownership must be transferred (M2-16). The managers are told "Paul C. deleted their
+/// account", with the name (Hoang, 2026-11-20).
 /// </summary>
 internal sealed class EndMembershipsOnAccountDeleted(
     WorkplacesDb db, IWorkplaceDirectory directory, IUserDirectory users, INotifier notifier,
@@ -179,7 +180,8 @@ internal sealed class EndMembershipsOnAccountDeleted(
             .ToListAsync(cancellationToken);
         foreach (var membership in memberships)
         {
-            await WorkplaceEndpoints.EndAsync(membership, db, directory, users, notifier, handlers, clock, cancellationToken);
+            await WorkplaceEndpoints.EndAsync(
+                membership, db, directory, users, notifier, handlers, clock, cancellationToken, NotificationTypes.MemberDeletedAccount);
         }
     }
 }

@@ -850,7 +850,8 @@
     "types": {
       "member": {
         "joined": "{{name}} joined the team",
-        "left": "{{name}} left the team. Their future shifts are open."
+        "left": "{{name}} left the team. Their future shifts are open.",
+        "account_deleted": "{{name}} deleted their account. Their upcoming shifts are open."
       },
       "availability": {
         "requested": "Availability is open for the period starting {{periodStart}}",
@@ -1004,7 +1005,7 @@
     "deleteAccount": {
       "row": "Delete account",
       "title": "Delete your account?",
-      "text": "This removes your availability and requests. Hours already worked stay on the schedule history of each workplace.",
+      "text": "This removes your account, your availability and your requests for good. Your upcoming shifts become open; hours already worked stay on the schedule history of each workplace. This can’t be undone.",
       "typeEmail": "Type your email to confirm",
       "confirm": "Delete my account",
       "done": "Your account was deleted"

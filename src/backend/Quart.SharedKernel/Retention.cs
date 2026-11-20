@@ -26,6 +26,9 @@ public static class Retention
     /// <summary>Emails in the outbox: their address and template, after sending or failing for good.</summary>
     public const int EmailDays = 7;
 
+    /// <summary>Accounts whose email was never confirmed, from sign-up. They could never sign in.</summary>
+    public const int UnconfirmedAccountDays = 7;
+
     /// <summary>Sign-in sessions and one-time links, once expired or used.</summary>
     public const int ExpiredSignInDays = 1;
 
