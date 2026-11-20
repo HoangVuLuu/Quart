@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Navigate } from 'react-router';
+import { Link, Navigate } from 'react-router';
 import { SubPage } from '../../app/SubPage';
 import { messageKeyFor } from '../../i18n/errors';
 import { formatDateRange, formatNumber } from '../../i18n/format';
@@ -88,7 +88,13 @@ function People({ periodId, locked, people }: { periodId: string; locked: boolea
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-bold">
-                    {person.name}{' '}
+                    {/* Opens their answer, read-only (2026-11-18). */}
+                    <Link
+                      to={`/availability/people/${periodId}/${person.membershipId}`}
+                      className="underline decoration-line underline-offset-4"
+                    >
+                      {person.name}
+                    </Link>{' '}
                     <span className="text-xs text-muted">
                       {t('scheduling.levelShort', { level: person.level })}
                     </span>

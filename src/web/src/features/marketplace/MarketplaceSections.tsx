@@ -126,6 +126,21 @@ export function MarketplaceSections({
         </Section>
       )}
 
+      {/* Trades come first on the Trade tab (2026-11-18). */}
+      {data.trades.length > 0 && (
+        <Section title={t('marketplace.trades')}>
+          {data.trades.map((trade) => (
+            <TradeCard
+              key={trade.id}
+              trade={trade}
+              busy={busy}
+              onOpen={() => open(`trade:${trade.id}`, trade.seen || trade.role !== 'coworker')}
+              onAct={(action) => actions.trade.mutate({ tradeId: trade.id, action })}
+            />
+          ))}
+        </Section>
+      )}
+
       {data.openShifts.length + data.offers.length > 0 && (
         <Section title={t('marketplace.open')}>
           {data.openShifts.map((item) => (
@@ -196,20 +211,6 @@ export function MarketplaceSections({
                 </Button>
               )}
             </Card>
-          ))}
-        </Section>
-      )}
-
-      {data.trades.length > 0 && (
-        <Section title={t('marketplace.trades')}>
-          {data.trades.map((trade) => (
-            <TradeCard
-              key={trade.id}
-              trade={trade}
-              busy={busy}
-              onOpen={() => open(`trade:${trade.id}`, trade.seen || trade.role !== 'coworker')}
-              onAct={(action) => actions.trade.mutate({ tradeId: trade.id, action })}
-            />
           ))}
         </Section>
       )}

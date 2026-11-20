@@ -1020,5 +1020,16 @@
     "confirm": "Cancel the period",
     "keep": "Keep it",
     "done": "Period cancelled"
+  },
+  "personAvailability": {
+    "hint": "What they sent. Only they can change it.",
+    "can": "available",
+    "cannot": "not available",
+    "counter_one": "{{count}} shift · {{hours}} h per week",
+    "counter_other": "{{count}} shifts · {{hours}} h per week",
+    "notes": "Notes",
+    "goneTitle": "Nothing to show",
+    "goneText": "This period was cancelled, or this person is no longer on the team.",
+    "wanted": "Hours wanted per week"
   }
 }

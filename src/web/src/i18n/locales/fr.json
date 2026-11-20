@@ -1020,5 +1020,16 @@
     "confirm": "Annuler la période",
     "keep": "La garder",
     "done": "Période annulée"
+  },
+  "personAvailability": {
+    "hint": "Ce que la personne a envoyé. Elle seule peut le changer.",
+    "can": "disponible",
+    "cannot": "pas disponible",
+    "counter_one": "{{count}} quart · {{hours}} h par semaine",
+    "counter_other": "{{count}} quarts · {{hours}} h par semaine",
+    "notes": "Notes",
+    "goneTitle": "Rien à afficher",
+    "goneText": "Cette période a été annulée, ou cette personne ne fait plus partie de l’équipe.",
+    "wanted": "Heures voulues par semaine"
   }
 }

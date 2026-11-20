@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useEdgeSwipeBack } from '../lib/gestures';
 import { useGoBack } from './useGoBack';
 
 type SubPageProps = {
@@ -19,8 +20,13 @@ const backClassName =
 export function SubPage({ backTo, title, context, onBack, children }: SubPageProps) {
   const { t } = useTranslation();
   const goBack = useGoBack(backTo);
+  // Swiping right from the edge does what the arrow does, including a "Leave without saving?" prompt.
+  const swipeBack = useEdgeSwipeBack(onBack ?? goBack);
   return (
-    <div className="mx-auto min-h-dvh max-w-xl px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))]">
+    <div
+      {...swipeBack}
+      className="mx-auto min-h-dvh max-w-xl px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))]"
+    >
       <button type="button" onClick={onBack ?? goBack} aria-label={t('shell.back')} className={backClassName}>
         <span aria-hidden="true">‹</span>
       </button>

@@ -8,6 +8,7 @@ import { api, unwrap } from '../../lib/api/client';
 import { Button } from '../../ui/Button';
 import { buttonClassName } from '../../ui/button-styles';
 import { HeroCard } from '../../ui/HeroCard';
+import { Icon, iconButtonClassName } from '../../ui/Icon';
 import { TextField } from '../../ui/TextField';
 import { FormError } from '../identity/FormError';
 import { mondayOnOrAfter, useCreatePeriod, useTeamAvailability, type NextPeriod } from '../scheduling/data';
@@ -35,6 +36,8 @@ export function NextPeriodBox({ next, after }: { next: NextPeriod | null; after?
       title={t('schedule.box.open')}
       headingLevel={2}
       className={complete ? 'bg-opening' : undefined}
+      corner={<CancelPeriodButton period={next.period} icon />}
+      wide
     >
       {total > 0 && (
         <>
@@ -58,7 +61,7 @@ export function NextPeriodBox({ next, after }: { next: NextPeriod | null; after?
         <Link to="/availability/team" className={buttonClassName('white')}>
           {t('schedule.ready.team')}
         </Link>
-        <CancelPeriodButton period={next.period} className={buttonClassName('white')} />
+        <GeneratorRulesLink />
       </div>
     </HeroCard>
   );
@@ -86,7 +89,7 @@ function OpenPeriodBox({ after }: { after?: string }) {
   const [startDate, setStartDate] = useState(mondayOnOrAfter(earliest > today ? earliest : today));
 
   return (
-    <HeroCard eyebrow={t('home.period.none')} title={t('schedule.open.title')} headingLevel={2}>
+    <HeroCard eyebrow={t('home.period.none')} title={t('schedule.open.title')} headingLevel={2} wide>
       <p className="text-sm">{t('schedule.open.text')}</p>
       <div className="mt-4 flex flex-col gap-3">
         <TextField
@@ -99,14 +102,29 @@ function OpenPeriodBox({ after }: { after?: string }) {
         />
         {rules && <p className="text-sm">{t('schedule.open.length', { count: rules.periodWeeks })}</p>}
         <FormError message={create.error ? t(messageKeyFor(create.error)) : undefined} />
-        <Button
-          className="self-start"
-          loading={create.isPending}
-          onClick={() => create.mutate({ startDate })}
-        >
-          {t('schedule.open.submit')}
-        </Button>
+        <div className="flex items-end gap-2">
+          <Button loading={create.isPending} onClick={() => create.mutate({ startDate })}>
+            {t('schedule.open.submit')}
+          </Button>
+          <GeneratorRulesLink />
+        </div>
       </div>
     </HeroCard>
+  );
+}
+
+/** "Edit generator rules" as a pen icon in the bottom-right corner of the box (2026-11-18). */
+function GeneratorRulesLink() {
+  const { t } = useTranslation();
+  const { can } = useWorkplace();
+  if (!can('ManageTemplate')) return null;
+  return (
+    <Link
+      to="/generator"
+      aria-label={t('schedule.editGenerator')}
+      className={`${iconButtonClassName} ml-auto self-end text-ink`}
+    >
+      <Icon name="pen" />
+    </Link>
   );
 }

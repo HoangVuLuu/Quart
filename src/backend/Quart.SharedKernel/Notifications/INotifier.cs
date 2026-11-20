@@ -52,7 +52,8 @@ public static class NotificationTypes
     public const string TradeRejected = "trade.rejected";
     public const string TradeExpired = "trade.expired";
 
-    private static readonly string[] Shift = ["date", "start", "end", "name"];
+    // shiftId and periodId: the shift the alert opens on the Schedule tab, when there is one (2026-11-18).
+    private static readonly string[] Shift = ["date", "start", "end", "name", "shiftId", "periodId"];
 
     /// <summary>
     /// Types that belong to the Trade tab, not to Alerts (2.5, 2026-11-18): they are stored, pushed and emailed
@@ -68,8 +69,8 @@ public static class NotificationTypes
             [AvailabilityRequested] = ["periodStart", "weeks"],
             [AvailabilityReminder] = ["periodStart"],
             [AvailabilityReopened] = ["periodStart"],
-            [AvailabilitySent] = ["name", "periodStart"],
-            [AvailabilityNoteAdded] = ["name", "periodStart"],
+            [AvailabilitySent] = ["name", "periodStart", "periodId", "membershipId"],
+            [AvailabilityNoteAdded] = ["name", "periodStart", "periodId", "membershipId"],
             [SchedulePublished] = ["periodStart", "version"],
             [PeriodCancelled] = ["periodStart", "weeks"],
             [ScheduleChanged] = ["periodStart", "added", "removed"],

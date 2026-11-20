@@ -324,4 +324,60 @@ public sealed class ChangeListTests(PostgresFixture postgres)
         app.Clock.Advance(Duration.FromDays(14));
         Assert.Equal((HttpStatusCode.Conflict, "period.already_started"), await team.Owner.TryAsync(HttpMethod.Delete, team.Period));
     }
+
+    // Changes of 2026-11-19 -------------------------------------------------------------------------------
+
+    private static async Task<JsonObject> LatestAsync(Team team, TestUser person, string type) =>
+        (await person.GetAsync($"{team.Base}/notifications"))["items"]!.AsArray().First(x => x!["type"]!.GetValue<string>() == type)!["parameters"]!.AsObject();
+
+    [Fact]
+    public async Task A_manager_reads_one_answer_from_its_alert_and_a_draft_stays_private()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        var (lea, marc) = (team.Staff[0], team.Staff[1]);
+        await team.OpenPeriodAsync();
+        await team.SendAvailabilityAsync(lea, shift => shift["start"]!.GetValue<string>() == "10:00", 24);
+        await lea.PostAsync($"{team.Period}/availability/me/notes", new { body = "Exams that week" });
+        await marc.SendAsync(HttpMethod.Put, $"{team.Period}/availability/me", new { shiftIds = new[] { Team.Id((await marc.GetAsync($"{team.Period}/availability/me"))["shifts"]![0]!) } });
+
+        // The alert carries what it needs to open her answer.
+        var alert = await LatestAsync(team, team.Owner, "availability.sent");
+        Assert.Equal(lea.MembershipId.ToString(), alert["membershipId"]!.GetValue<string>());
+        var periodId = alert["periodId"]!.GetValue<string>();
+        Assert.Equal(periodId, (await LatestAsync(team, team.Owner, "availability.note_added"))["periodId"]!.GetValue<string>());
+
+        var hers = await team.Owner.GetAsync($"{team.Base}/periods/{periodId}/availability/{lea.MembershipId}");
+        Assert.Equal("sent", hers["status"]!.GetValue<string>());
+        Assert.Equal(24m, hers["desiredWeeklyHours"]!.GetValue<decimal>());
+        Assert.All(hers["shifts"]!.AsArray(), x => Assert.Equal(x!["start"]!.GetValue<string>() == "10:00", x["selected"]!.GetValue<bool>()));
+        Assert.Equal("Exams that week", hers["notes"]![0]!["body"]!.GetValue<string>());
+
+        // A saved draft is not an answer: nothing shows.
+        var his = await team.Owner.GetAsync($"{team.Base}/periods/{periodId}/availability/{marc.MembershipId}");
+        Assert.Equal("not_sent", his["status"]!.GetValue<string>());
+        Assert.DoesNotContain(his["shifts"]!.AsArray(), x => x!["selected"]!.GetValue<bool>());
+        Assert.Null(his["desiredWeeklyHours"]);
+
+        // Staff cannot read someone else's answer.
+        Assert.Equal(HttpStatusCode.Forbidden, (await marc.TryAsync(HttpMethod.Get, $"{team.Base}/periods/{periodId}/availability/{lea.MembershipId}")).Status);
+    }
+
+    [Fact]
+    public async Task A_done_trade_alert_opens_the_shift_each_person_took()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        await team.Owner.SendAsync(HttpMethod.Patch, $"{team.Base}/settings", new { claimsNeedApproval = false, tradesNeedApproval = false });
+        var schedule = await team.PublishAsync();
+        var (nora, omar) = (team.Staff[2], team.Staff[3]);
+        var hers = Team.ShiftsOf(schedule, nora).First(x => !Team.Holds(x, omar));
+        var his = Team.ShiftsOf(schedule, omar).First(x => !Team.Holds(x, nora) && Team.Id(x) != Team.Id(hers));
+        await nora.PostAsync($"{team.Base}/marketplace/trades", new { myShiftId = Team.Id(hers), theirShiftId = Team.Id(his), theirMembershipId = omar.MembershipId });
+        var trade = (await omar.GetAsync($"{team.Base}/marketplace"))["trades"]!.AsArray().Single()!;
+        await omar.PostAsync($"{team.Base}/marketplace/trades/{Team.Id(trade)}/accept");
+
+        Assert.Equal(Team.Id(his), (await LatestAsync(team, nora, "trade.applied"))["shiftId"]!.GetValue<string>());
+        Assert.Equal(Team.Id(hers), (await LatestAsync(team, omar, "trade.applied"))["shiftId"]!.GetValue<string>());
+    }
 }

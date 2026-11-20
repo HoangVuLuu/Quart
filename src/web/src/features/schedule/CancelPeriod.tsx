@@ -6,6 +6,7 @@ import { messageKeyFor } from '../../i18n/errors';
 import { formatDateRange } from '../../i18n/format';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
+import { Icon, iconButtonClassName } from '../../ui/Icon';
 import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
 import { useCancelPeriod, type PeriodSummary } from '../scheduling/data';
@@ -18,10 +19,13 @@ import { useWorkplace } from '../workplaces/workplace';
 export function CancelPeriodButton({
   period,
   className,
+  icon,
   onCancelling,
 }: {
   period: PeriodSummary;
   className?: string;
+  /** A red trash icon instead of the words, as in the corner of the next-period box (2026-11-18). */
+  icon?: boolean;
   /** Called just before leaving the page, so a "Leave without saving?" prompt does not get in the way. */
   onCancelling?: () => void;
 }) {
@@ -48,9 +52,24 @@ export function CancelPeriodButton({
 
   return (
     <>
-      <Button variant="white" className={className ?? 'min-h-11 px-4 text-sm'} onClick={() => setOpen(true)}>
-        {t('cancelPeriod.button')}
-      </Button>
+      {icon ? (
+        <button
+          type="button"
+          aria-label={t('cancelPeriod.button')}
+          className={`${iconButtonClassName} text-danger`}
+          onClick={() => setOpen(true)}
+        >
+          <Icon name="trash" />
+        </button>
+      ) : (
+        <Button
+          variant="white"
+          className={className ?? 'min-h-11 px-4 text-sm'}
+          onClick={() => setOpen(true)}
+        >
+          {t('cancelPeriod.button')}
+        </Button>
+      )}
       <Dialog
         open={open}
         onOpenChange={setOpen}

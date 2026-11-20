@@ -44,6 +44,7 @@ internal static class AvailabilityEndpoints
         group.MapPost("/me/notes", AddNoteAsync).AllowAnyMember().WithName("AddAvailabilityNote");
         group.MapGet("/me/previous", GetPreviousAsync).AllowAnyMember().WithName("GetPreviousAvailability");
         group.MapGet("/", GetTeamAsync).RequirePermission(Permission.ManageSchedule).WithName("GetTeamAvailability");
+        group.MapGet("/{membershipId:guid}", GetPersonAsync).RequirePermission(Permission.ManageSchedule).WithName("GetPersonAvailability");
         group.MapPost("/{membershipId:guid}/reopen", ReopenAsync).RequirePermission(Permission.ManageSchedule).WithName("ReopenAvailability");
         group.MapPost("/remind", RemindAsync).RequirePermission(Permission.ManageSchedule).WithName("RemindAvailability");
     }
@@ -324,6 +325,41 @@ internal static class AvailabilityEndpoints
         return availability;
     }
 
+    /// <summary>
+    /// One person's answer, read-only, for a manager (2026-11-18): the shifts they can work, their hours per
+    /// week and their notes, as they see them. Someone who has not sent shows nothing selected: a draft is
+    /// private. Notes only for those who may read them (FR-103).
+    /// </summary>
+    private static async Task<Results<Ok<PersonAvailability>, ProblemHttpResult>> GetPersonAsync(
+        Guid workplaceId, Guid periodId, Guid membershipId, HttpContext http, SchedulingDb db, IWorkplaceDirectory directory, CancellationToken cancellationToken)
+    {
+        if (await FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
+        {
+            return Problems.NotFound();
+        }
+        var person = (await directory.GetMembersAsync(workplaceId, cancellationToken)).SingleOrDefault(x => x.MembershipId == membershipId);
+        if (person is null)
+        {
+            return Problems.NotFound();
+        }
+        var answer = await db.Availabilities.AsNoTracking()
+            .Include(x => x.Blocks)
+            .Include(x => x.Notes)
+            .SingleOrDefaultAsync(x => x.PeriodId == periodId && x.MembershipId == membershipId, cancellationToken);
+        var sent = answer?.Status == Availability.Sent;
+        var selected = sent ? answer!.Blocks.Select(x => x.ShiftId).ToHashSet() : [];
+        var shifts = await db.Shifts.AsNoTracking().Where(x => x.PeriodId == periodId).OrderBy(x => x.Date).ThenBy(x => x.StartTime).ToListAsync(cancellationToken);
+        var notes = http.Member().Can(Permission.ViewAvailabilityComments) ? answer?.Notes ?? [] : [];
+        return TypedResults.Ok(new PersonAvailability(
+            Support.Summarize(period),
+            person.MembershipId,
+            person.DisplayName,
+            sent ? Availability.Sent : Availability.NotSent,
+            sent ? answer!.DesiredWeeklyHours : null,
+            shifts.Select(x => new AvailabilityShift(x.Id, x.SourceBlockId, x.Date.ToDateOnly(), Support.Time(x.StartTime), Support.Time(x.EndTime), x.Hours, selected.Contains(x.Id))).ToList(),
+            notes.OrderBy(x => x.CreatedAt).Select(x => new AvailabilityNoteView(x.Id, x.Body, x.CreatedAt.ToDateTimeOffset())).ToList()));
+    }
+
     private static async Task<MyAvailability> ViewMineAsync(SchedulingDb db, Period period, Guid membershipId, CancellationToken cancellationToken)
     {
         var availability = await db.Availabilities.AsNoTracking()
@@ -358,6 +394,9 @@ internal static class AvailabilityEndpoints
         var members = await directory.GetMembersAsync(workplaceId, cancellationToken);
         var parameters = PeriodParameters(period);
         parameters["name"] = members.SingleOrDefault(x => x.MembershipId == aboutMembershipId)?.DisplayName ?? string.Empty;
+        // So the alert opens that person's answer (2026-11-18).
+        parameters["periodId"] = period.Id.ToString();
+        parameters["membershipId"] = aboutMembershipId.ToString();
         await notifier.NotifyAsync(
             members.Where(x => x.Can(Permission.ManageSchedule) && x.MembershipId != aboutMembershipId)
                 .Select(x => new NotificationRequest(workplaceId, x.MembershipId, x.UserId, type, parameters))
@@ -397,6 +436,17 @@ public sealed record MyAvailability(
 public sealed record AvailabilityShift(Guid Id, Guid BlockId, DateOnly Date, string Start, string End, decimal Hours, bool Selected);
 
 public sealed record AvailabilityNoteView(Guid Id, string Body, DateTimeOffset CreatedAt);
+
+/// <param name="DesiredWeeklyHours">Only once sent.</param>
+/// <param name="Notes">Empty unless the caller may read availability notes (FR-103).</param>
+public sealed record PersonAvailability(
+    PeriodSummary Period,
+    Guid MembershipId,
+    string Name,
+    string Status,
+    decimal? DesiredWeeklyHours,
+    IReadOnlyList<AvailabilityShift> Shifts,
+    IReadOnlyList<AvailabilityNoteView> Notes);
 
 public sealed record TeamAvailability(PeriodSummary Period, int SentCount, int Total, IReadOnlyList<TeamAvailabilityRow> People);
 

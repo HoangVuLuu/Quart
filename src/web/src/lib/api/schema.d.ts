@@ -516,6 +516,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/availability/{membershipId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetPersonAvailability'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/workplaces/{workplaceId}/periods/{periodId}/availability/{membershipId}/reopen': {
     parameters: {
       query?: never;
@@ -1482,6 +1498,17 @@ export interface components {
       version: number;
       locked: boolean;
       draftSaved: boolean;
+    };
+    PersonAvailability: {
+      period: components['schemas']['PeriodSummary'];
+      /** Format: uuid */
+      membershipId: string;
+      name: string;
+      status: string;
+      /** Format: double */
+      desiredWeeklyHours: null | number;
+      shifts: components['schemas']['AvailabilityShift'][];
+      notes: components['schemas']['AvailabilityNoteView'][];
     };
     PublishRequest: {
       confirmed: boolean;
@@ -2799,6 +2826,39 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['TeamAvailability'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetPersonAvailability: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+        membershipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PersonAvailability'];
         };
       };
       /** @description Any error, as problem details with a machine-readable code (AD-023). */

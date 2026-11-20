@@ -300,3 +300,19 @@ export function hasStarted(period: PeriodSummary): boolean {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   return period.startDate <= today;
 }
+
+/** One person's sent availability, read-only, for a manager (2026-11-18). */
+export function usePersonAvailability(periodId: string, membershipId: string) {
+  const { id } = useWorkplace();
+  return useQuery({
+    queryKey: ['workplace', id, 'availability', periodId, 'person', membershipId],
+    queryFn: ({ signal }) =>
+      unwrap(
+        api.GET('/api/workplaces/{workplaceId}/periods/{periodId}/availability/{membershipId}', {
+          params: { path: { workplaceId: id, periodId, membershipId } },
+          signal,
+        }),
+      ),
+    retry: false,
+  });
+}

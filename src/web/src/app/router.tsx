@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { AlertsPage } from '../features/alerts/AlertsPage';
 import { AvailabilityPage } from '../features/availability/AvailabilityPage';
+import { PersonAvailabilityPage } from '../features/availability/PersonAvailabilityPage';
 import { TeamAvailabilityPage } from '../features/availability/TeamAvailabilityPage';
 import { ForcedErrorPage } from '../features/diagnostics/ForcedErrorPage';
 import { EditGeneratorPage } from '../features/generator/EditGeneratorPage';
@@ -115,6 +116,10 @@ export const routes: RouteObject[] = [
                   { path: 'team', element: <TeamPage /> },
                   { path: 'availability', element: <AvailabilityPage /> },
                   { path: 'availability/team', element: <TeamAvailabilityPage /> },
+                  {
+                    path: 'availability/people/:periodId/:membershipId',
+                    element: <PersonAvailabilityPage />,
+                  },
                   { path: 'generator', element: <EditGeneratorPage /> },
                   { path: 'trade/mine', element: <MyShiftsToTradePage /> },
                   { path: 'schedule/build', element: <BuildingPage mode="build" /> },

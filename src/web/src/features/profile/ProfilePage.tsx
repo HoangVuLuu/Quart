@@ -14,6 +14,7 @@ import { Select } from '../../ui/Select';
 import { Switch } from '../../ui/Switch';
 import { TextField } from '../../ui/TextField';
 import { useToast } from '../../ui/toast-context';
+import { Icon } from '../../ui/Icon';
 import { FormError } from '../identity/FormError';
 import { initialsOf, useMe, useSignOut, useUpdateMe } from '../identity/session';
 import { useRefreshWorkplace } from '../scheduling/data';
@@ -180,7 +181,7 @@ export function ProfilePage() {
                   {t('schedule.editGenerator')}
                   <span className="block text-xs text-muted">{t('profile.generatorText')}</span>
                 </span>
-                <span aria-hidden="true">›</span>
+                <Icon name="pen" />
               </Link>
             )}
             <Button

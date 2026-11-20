@@ -382,7 +382,7 @@ internal static class MarketplaceEndpoints
 
         if (context.Shifts.TryGetValue(claim.ShiftId, out var before))
         {
-            await context.NotifyAsync([claimant], NotificationTypes.ClaimApproved, before, claimant.MembershipId, cancellationToken);
+            await context.NotifyAsync([claimant], NotificationTypes.ClaimApproved, before, claimant.MembershipId, cancellationToken, opens: before);
             await context.NotifyAsync(
                 context.Members.Values.Where(x => declined.Any(d => d.MembershipId == x.MembershipId)),
                 NotificationTypes.ClaimDeclined, before, claimant.MembershipId, cancellationToken);
@@ -547,7 +547,9 @@ internal static class MarketplaceEndpoints
             await db.SaveChangesAsync(cancellationToken);
             if (shift is not null)
             {
-                await context.NotifyAsync(parties, NotificationTypes.TradeApplied, shift, trade.AMembershipId, cancellationToken);
+                // Each opens the shift they took: A now works B's shift, and B works A's.
+                await context.NotifyAsync(parties.Where(x => x.MembershipId == trade.AMembershipId), NotificationTypes.TradeApplied, shift, trade.AMembershipId, cancellationToken, opens: context.Shifts.GetValueOrDefault(trade.BShiftId));
+                await context.NotifyAsync(parties.Where(x => x.MembershipId == trade.BMembershipId), NotificationTypes.TradeApplied, shift, trade.AMembershipId, cancellationToken, opens: shift);
                 if (!approved && !levelsHeld)
                 {
                     var broken = LevelsCovered(context, trade, first: true) ? context.Shifts[trade.BShiftId] : shift;
@@ -670,7 +672,8 @@ internal static class MarketplaceEndpoints
         public string NameOf(Guid membershipId) => Members.GetValueOrDefault(membershipId)?.DisplayName ?? string.Empty;
 
         /// <param name="about">Whose name the notification carries ("Sarah is giving away...").</param>
-        public Task NotifyAsync(IEnumerable<WorkplaceMember> to, string type, LiveShift shift, Guid about, CancellationToken cancellationToken, string? reason = null)
+        /// <param name="opens">The shift the alert opens on the Schedule tab: the one the person now holds.</param>
+        public Task NotifyAsync(IEnumerable<WorkplaceMember> to, string type, LiveShift shift, Guid about, CancellationToken cancellationToken, string? reason = null, LiveShift? opens = null)
         {
             var parameters = new Dictionary<string, string>
             {
@@ -682,6 +685,11 @@ internal static class MarketplaceEndpoints
             if (reason is not null)
             {
                 parameters["reason"] = reason;
+            }
+            if (opens is not null)
+            {
+                parameters["shiftId"] = opens.Id.ToString();
+                parameters["periodId"] = opens.PeriodId.ToString();
             }
             return notifier.NotifyAsync(
                 to.Select(x => new NotificationRequest(workplaceId, x.MembershipId, x.UserId, type, parameters)).ToList(), cancellationToken);

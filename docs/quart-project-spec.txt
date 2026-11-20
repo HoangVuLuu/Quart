@@ -443,6 +443,14 @@ FR-103  An employee may add optional notes about their availability for the
         (section 13). They are rendered as text, never as HTML. Admins are
         notified when a note is added or when availability is sent or
         updated (FR-215); the notification never contains the note text.
+FR-104a An admin can open one person's availability, read-only, from their
+        name in "Who has sent" or from their alert: the same layout as the
+        form, with the shifts they can work, their hours per week and their
+        notes (FR-103 rules on who reads notes). Someone who has not sent
+        shows nothing selected: a draft is private. The page has no tab bar;
+        the back arrow, or a swipe right from the edge, returns to the
+        previous page (2026-11-19).
+
 FR-104  An admin can cancel a period for good: one that is not published yet,
         or a published one that has not started. Everything in it is deleted
         (shifts, availability and notes, drafts, published versions), its dates
@@ -593,7 +601,12 @@ FR-215  Notification events: availability requested; availability reminder;
         pushed and emailed, and the Trade tab counts its items (open shifts,
         give-aways, trade requests) until each is opened. Everything else,
         including claim and trade outcomes for the people in them, stays in
-        Alerts; tapping a notification marks it read and goes nowhere.
+        Alerts. Each alert has an eye button that marks it read. Tapping an
+        alert opens its page and marks it read for four kinds: "sent their
+        availability" and "added a note" open that person's answer
+        (read-only, FR-104a); "the shift is yours" and "the trade is done"
+        open the Schedule tab with that shift's pop-up (who works it). Other
+        alerts go nowhere when tapped (2026-11-19).
 FR-216  Notification and email text never carries sensitive content: no
         availability comments, no announcement photos, and (backlog) never pay
         amounts or payslip files. Push notifications appear on lock screens.
@@ -1922,6 +1935,19 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             Also added: an admin can cancel a period (FR-104), including a
             published one before it starts; its data is deleted, and who
             sent availability or holds a shift in it is told.
+
+2026-11-19  More changes from testing (Hoang): on Schedule, Cancel period is a
+            red trash icon in the corner of the next-period box, "Edit
+            generator rules" is a pen icon at its bottom right (and on
+            Profile), and "Edit current schedule" is a pen at the end of the
+            My shifts / Whole team row; Whole team stays chosen when switching
+            periods (bug); on Home the availability title keeps to one line
+            and "View shift" opens who works it; managers read one person's
+            availability (FR-104a); alerts get an eye to mark read, and four
+            kinds open their page (FR-215); trades come above open shifts on
+            the Trade tab; a swipe right from the edge goes back on every page
+            with a back arrow, in the app installed on an iPhone (browsers and
+            Android already do it).
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { formatDateRange } from '../../i18n/format';
-import { buttonClassName } from '../../ui/button-styles';
 import { EmptyState } from '../../ui/EmptyState';
+import { Icon, iconButtonClassName } from '../../ui/Icon';
 import { PageHeader } from '../../ui/PageHeader';
 import { Skeleton } from '../../ui/Skeleton';
 import { useCurrentPeriods } from '../scheduling/data';
 import { useWorkplace } from '../workplaces/workplace';
 import { NextPeriodBox } from './NextPeriod';
-import { PublishedSchedule } from './PublishedSchedule';
+import { PublishedSchedule, type ScheduleScope } from './PublishedSchedule';
 import { Pill } from './Pill';
 
 // The Schedule tab. Everyone sees the published period (mockups 1c, 1d). Managers also get the next-period
@@ -24,7 +24,10 @@ export function SchedulePage() {
   const next = periods.data?.next ?? null;
   // Published ahead of time: staff read them, and managers edit them, before the current one ends.
   const published = [...(live ? [live] : []), ...(periods.data?.upcoming ?? [])];
-  const [chosen, setChosen] = useState<string | null>(null);
+  // An alert can open a shift: /schedule?period=…&shift=… shows that period with the shift's pop-up (2026-11-18).
+  const [params] = useSearchParams();
+  const [chosen, setChosen] = useState<string | null>(params.get('period'));
+  const [scheduleView, setScheduleView] = useState<ScheduleScope>('mine');
   const shown = published.find((period) => period.id === chosen) ?? live;
 
   if (periods.isPending) {
@@ -46,14 +49,7 @@ export function SchedulePage() {
         subtitle={range ? `${range} · ${t('schedule.state.published')}` : undefined}
       />
 
-      {manages && (
-        <>
-          <NextPeriodBox next={next} after={live?.endDate} />
-          <Link to="/generator" className={buttonClassName('white', 'self-start')}>
-            {t('schedule.editGenerator')}
-          </Link>
-        </>
-      )}
+      {manages && <NextPeriodBox next={next} after={live?.endDate} />}
 
       {published.length > 1 && (
         <div role="group" aria-label={t('schedule.which')} className="flex flex-wrap gap-2">
@@ -69,17 +65,19 @@ export function SchedulePage() {
         <PublishedSchedule
           key={shown.id}
           periodId={shown.id}
+          view={scheduleView}
+          onViewChange={setScheduleView}
+          initialShift={shown.id === params.get('period') ? params.get('shift') : null}
           action={
-            <>
-              {manages && (
-                <Link
-                  to={`/schedule/edit?period=${shown.id}`}
-                  className={buttonClassName('white', 'min-h-11 px-4 text-sm')}
-                >
-                  {t('schedule.edit')}
-                </Link>
-              )}
-            </>
+            manages && (
+              <Link
+                to={`/schedule/edit?period=${shown.id}`}
+                aria-label={t('schedule.edit')}
+                className={`${iconButtonClassName} text-ink`}
+              >
+                <Icon name="pen" />
+              </Link>
+            )
           }
         />
       ) : (
