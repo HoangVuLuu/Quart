@@ -86,8 +86,8 @@ describe('changes of 2026-11-18', () => {
     const button = await screen.findByRole('link', { name: en.trade.fromSchedule });
     expect(button).toHaveAttribute('href', '/trade/mine');
     expect(await screen.findByRole('link', { name: `${en.nav.trade} 1 waiting` })).toBeInTheDocument();
-    const card = (await screen.findByText(en.trade.new)).closest('div')!;
-    await userEvent.click(card);
+    // The eye marks it seen without opening it (2026-11-20).
+    await userEvent.click(await screen.findByRole('button', { name: /Mark as read/ }));
 
     expect(calls.find((call) => call.path.endsWith('/marketplace/seen'))?.body).toEqual({
       key: 'slot:mon-open',
@@ -146,7 +146,7 @@ describe('changes of 2026-11-18', () => {
     expect(body).toEqual({
       startDate: expect.any(String) as string,
       dueDate: expect.any(String) as string,
-      dueTime: '18:00',
+      dueTime: '00:00',
     });
   });
 

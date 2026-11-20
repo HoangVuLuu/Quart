@@ -183,14 +183,10 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
     await expect(toast(staff, 'Offered to the team. Still yours until taken.')).toBeVisible();
 
     await kevin.page.goto('/trade');
-    // The card around the offer: the innermost block holding both its text and its Claim button.
-    const offer = kevin.page
-      .getByRole('main')
-      .locator('div')
-      .filter({ hasText: 'Offered by Sophie C.' })
-      .filter({ has: kevin.page.getByRole('button', { name: 'Claim' }) })
-      .last();
-    await offer.getByRole('button', { name: 'Claim' }).click();
+    // Tapping the offer opens the shift; Claim asks "Are you sure?" first (2026-11-20).
+    await kevin.page.getByRole('button', { name: /^Open / }).filter({ hasText: 'Offered by Sophie C.' }).click();
+    await kevin.page.getByRole('dialog').getByRole('button', { name: 'Claim' }).click();
+    await kevin.page.getByRole('dialog', { name: 'Take this shift?' }).getByRole('button', { name: 'Yes' }).click();
     await expect(toast(kevin.page, 'The shift is yours')).toBeVisible();
 
     await staff.goto('/schedule');

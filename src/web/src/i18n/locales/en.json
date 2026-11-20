@@ -802,6 +802,16 @@
       "accept": "Accept",
       "cancel": "Cancel request",
       "approve": "Approve"
+    },
+    "sheet": {
+      "with": "Working with you",
+      "alone": "Nobody else yet",
+      "request": "Request this shift",
+      "askRequest": "Ask your manager for this shift?",
+      "askClaim": "Take this shift?",
+      "yes": "Yes",
+      "no": "No",
+      "open": "Open {{shift}}"
     }
   },
   "trade": {

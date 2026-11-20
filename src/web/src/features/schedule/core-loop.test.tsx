@@ -136,7 +136,7 @@ describe('availability', () => {
     expect(await screen.findByText(due)).toBeInTheDocument();
   });
 
-  it('opens a period with a deadline three days before it starts, at 18:00 unless changed', async () => {
+  it('opens a period with a deadline 48 hours before it starts: the Saturday at 00:00', async () => {
     const calls = signedIn('owner', {
       [`GET ${base}/periods/current`]: { live: null, next: null, upcoming: [] },
       [`POST ${base}/periods`]: period,
@@ -151,8 +151,8 @@ describe('availability', () => {
     const opened = calls.find((call) => call.method === 'POST' && call.path === `${base}/periods`);
     expect(opened?.body).toEqual({
       startDate: '2099-10-05',
-      dueDate: '2099-10-02',
-      dueTime: '18:00',
+      dueDate: '2099-10-03',
+      dueTime: '00:00',
     });
   });
 
@@ -549,13 +549,26 @@ describe('the marketplace', () => {
         ],
       },
       [`POST ${base}/marketplace/claims`]: { applied: true },
+      [`GET ${base}/periods/${periodId}/schedule`]: schedule,
     });
     renderApp('/trade');
 
     expect(await screen.findByText('Offered by Kevin T.')).toBeInTheDocument();
+    // 2026-11-20: no Claim on the card; tapping it opens the shift with who works it.
+    expect(screen.queryByRole('button', { name: en.marketplace.claim })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^Open .*16:00–23:00/ }));
+    const sheet = within(await screen.findByRole('dialog', { name: /Closing/ }));
+    expect(sheet.getByText(en.marketplace.sheet.with)).toBeInTheDocument();
+    // Kevin gives it away, so Sophie would work it with nobody else yet.
+    expect(sheet.getByText(en.marketplace.sheet.alone)).toBeInTheDocument();
     // FR-186: a warning, not a block.
-    expect(screen.getByText(en.marketplace.wouldMissLevel)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: en.marketplace.claim }));
+    expect(sheet.getByText(en.marketplace.wouldMissLevel)).toBeInTheDocument();
+    await userEvent.click(sheet.getByRole('button', { name: en.marketplace.claim }));
+
+    // "Are you sure?" first: No changes nothing, Yes claims.
+    const ask = within(await screen.findByRole('dialog', { name: en.marketplace.sheet.askClaim }));
+    expect(calls.some((call) => call.path.endsWith('/marketplace/claims'))).toBe(false);
+    await userEvent.click(ask.getByRole('button', { name: en.marketplace.sheet.yes }));
 
     expect(calls.find((call) => call.path.endsWith('/marketplace/claims'))?.body).toEqual({
       shiftId: 'mon-close',
@@ -828,5 +841,95 @@ describe('changes of 2026-11-19', () => {
     );
     expect(headings.indexOf(en.marketplace.trades)).toBeLessThan(headings.indexOf(en.marketplace.open));
     expect(headings.indexOf(en.marketplace.trades)).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('changes of 2026-11-20', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  it('says Request in the claim pop-up when a manager must approve, and No changes nothing', async () => {
+    const shift = { id: 'mon-open', periodId, date: '2099-10-05', start: '10:00', end: '16:00' };
+    const calls = signedIn('employee', {
+      [`GET ${base}/marketplace`]: {
+        ...emptyBoard,
+        claimsNeedApproval: true,
+        openShifts: [{ shift, openSlots: 1, requested: false, seen: true }],
+      },
+      [`GET ${base}/periods/${periodId}/schedule`]: schedule,
+    });
+    renderApp('/trade');
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Open .*10:00–16:00/ }));
+    const sheet = within(await screen.findByRole('dialog', { name: /Opening/ }));
+    expect(sheet.getByText('Kevin T.')).toBeInTheDocument();
+    await userEvent.click(sheet.getByRole('button', { name: en.marketplace.sheet.request }));
+    const ask = within(await screen.findByRole('dialog', { name: en.marketplace.sheet.askRequest }));
+    await userEvent.click(ask.getByRole('button', { name: en.marketplace.sheet.no }));
+
+    expect(calls.some((call) => call.path.endsWith('/marketplace/claims'))).toBe(false);
+  });
+
+  it('opens someone’s answer from anywhere on their row in Team availability, not only the name', async () => {
+    const team: Schemas['TeamAvailability'] = {
+      period,
+      sentCount: 0,
+      total: 1,
+      people: [
+        {
+          membershipId: kevin,
+          name: 'Kevin T.',
+          level: 3,
+          status: 'not_sent',
+          reopened: false,
+          hoursOffered: 0,
+          desiredWeeklyHours: null,
+          notes: [],
+        },
+      ],
+    };
+    signedIn('owner', {
+      [`GET ${base}/periods/current`]: { live: null, next: { ...next, sentCount: 0 }, upcoming: [] },
+      [`GET ${base}/periods/${periodId}/availability`]: team,
+    });
+    renderApp('/availability/team');
+
+    const link = await screen.findByRole('link', { name: 'Kevin T.' });
+    expect(link).toHaveAttribute('href', `/availability/people/${periodId}/${kevin}`);
+    // The link is stretched over the row; Remind stays its own button above it.
+    expect(link.className).toContain('after:inset-0');
+    expect(link.className).not.toContain('underline');
+    expect(screen.getByRole('button', { name: 'Remind Kevin T.' })).toBeInTheDocument();
+  });
+
+  it('opens the availability form from "Availability is open", and back returns to Alerts', async () => {
+    const calls = signedIn('employee', {
+      [`GET ${base}/notifications`]: {
+        unread: 1,
+        items: [
+          {
+            id: 'n1',
+            type: 'availability.requested',
+            parameters: { periodStart: '2099-10-05', weeks: '1' },
+            createdAt: '2099-10-01T12:00:00Z',
+            read: false,
+          },
+        ],
+      },
+      [`POST ${base}/notifications/n1/read`]: status(204),
+      [`GET ${base}/periods/current`]: { live: null, next, upcoming: [] },
+      [`GET ${base}/periods/${periodId}/availability/me`]: myAvailability,
+    });
+    const router = renderApp('/alerts');
+
+    await userEvent.click(await screen.findByRole('link', { name: /Availability is open/ }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/availability'));
+    expect(calls.some((call) => call.method === 'POST' && call.path.endsWith('/notifications/n1/read'))).toBe(
+      true,
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: en.shell.back }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/alerts'));
   });
 });

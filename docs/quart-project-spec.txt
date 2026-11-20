@@ -386,8 +386,8 @@ FR-091  The admin sets how many days before the period starts the availability
         The number of days (0 to 28; 0 = when the period is opened) is a
         workplace setting in Edit Generator; the request goes out at 09:00
         on that day. The deadline is required when a period is opened,
-        prefilled to 18:00 three days before it starts. Staff may fill in
-        and send before the request goes out. Reminders go out 48 and 24
+        prefilled to 48 hours before it starts (the Saturday at 00:00).
+        Staff may fill in and send before the request goes out. Reminders go out 48 and 24
         hours before the deadline to people who have not sent; at the
         deadline the admins are told how many have sent. Nothing locks at
         the deadline (FR-100). While the admin is on Building Schedule
@@ -1973,6 +1973,15 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             the generator rules; the next-period box shows it; automatic steps
             wait while the admin is on Building Schedule instead of being
             dropped.  (FR-091)
+
+2026-11-20  The deadline offered when opening a period is 48 hours before it
+            starts, the Saturday at 00:00 (was 18:00 three days before).
+            (FR-091) Also: on the Trade tab an open shift or give-away opens
+            a pop-up with who works it and a Claim (or Request) button behind
+            an "Are you sure?", and an eye marks it seen (FR-185); in Team
+            availability the whole row opens a person's answer; the "is
+            open", reminder and reopened availability alerts open the form,
+            and back returns to Alerts (FR-215).
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

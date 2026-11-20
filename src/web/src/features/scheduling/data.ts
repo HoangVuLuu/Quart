@@ -262,13 +262,14 @@ export function addDays(date: string, days: number): string {
 }
 
 /**
- * The deadline offered when a period is opened (FR-091): three days before it starts, the day before when
- * that is too soon, or tomorrow for a period that has already started. The manager can change it.
+ * The deadline offered when a period is opened (FR-091): 48 hours before it starts, so the Saturday at
+ * 00:00 (2026-11-20); the day before when that is too soon, or tomorrow for a period that has already
+ * started. The manager can change it.
  */
 export function suggestedDueDate(startDate: string, today: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return '';
-  const three = addDays(startDate, -3);
-  if (three > today) return three;
+  const two = addDays(startDate, -2);
+  if (two > today) return two;
   const one = addDays(startDate, -1);
   return one > today ? one : addDays(today, 1);
 }

@@ -802,6 +802,16 @@
       "accept": "Accepter",
       "cancel": "Annuler la demande",
       "approve": "Approuver"
+    },
+    "sheet": {
+      "with": "Tu travaillerais avec",
+      "alone": "Personne d’autre pour l’instant",
+      "request": "Demander ce quart",
+      "askRequest": "Demander ce quart à ton gestionnaire?",
+      "askClaim": "Prendre ce quart?",
+      "yes": "Oui",
+      "no": "Non",
+      "open": "Ouvrir {{shift}}"
     }
   },
   "trade": {

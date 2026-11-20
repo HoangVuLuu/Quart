@@ -108,7 +108,7 @@ function OpenPeriodBox({ after }: { after?: string }) {
   // FR-091: the deadline follows the start date until the manager picks one of their own.
   const [chosenDue, setChosenDue] = useState<string | null>(null);
   const dueDate = chosenDue ?? suggestedDueDate(startDate, today);
-  const [dueTime, setDueTime] = useState('18:00');
+  const [dueTime, setDueTime] = useState('00:00');
 
   return (
     <HeroCard eyebrow={t('home.period.none')} title={t('schedule.open.title')} headingLevel={2} wide>

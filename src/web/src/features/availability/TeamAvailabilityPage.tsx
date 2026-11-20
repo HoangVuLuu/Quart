@@ -83,7 +83,7 @@ function People({ periodId, locked, people }: { periodId: string; locked: boolea
             return (
               <li
                 key={person.membershipId}
-                className="flex items-start gap-3 border-b border-line py-3 last:border-b-0"
+                className="relative flex items-start gap-3 border-b border-line py-3 last:border-b-0"
               >
                 <span
                   aria-hidden="true"
@@ -93,10 +93,10 @@ function People({ periodId, locked, people }: { periodId: string; locked: boolea
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-bold">
-                    {/* Opens their answer, read-only (2026-11-18). */}
+                    {/* The whole row opens their answer, read-only (2026-11-20): the link covers the row. */}
                     <Link
                       to={`/availability/people/${periodId}/${person.membershipId}`}
-                      className="underline decoration-line underline-offset-4"
+                      className="after:absolute after:inset-0"
                     >
                       {person.name}
                     </Link>{' '}
@@ -124,7 +124,8 @@ function People({ periodId, locked, people }: { periodId: string; locked: boolea
                     </p>
                   ))}
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                {/* Above the row's link, so Remind and Reopen stay their own buttons. */}
+                <div className="relative z-10 flex flex-col items-end gap-2">
                   <StatusChip tone={sent ? 'success' : person.reopened ? 'warning' : 'neutral'}>
                     {sent
                       ? t('availability.sent')

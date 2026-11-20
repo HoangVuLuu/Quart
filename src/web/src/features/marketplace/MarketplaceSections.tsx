@@ -1,12 +1,14 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { messageKeyFor } from '../../i18n/errors';
 import { formatShortDate } from '../../i18n/format';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
+import { Icon, iconButtonClassName } from '../../ui/Icon';
 import { StatusChip } from '../../ui/StatusChip';
 import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
+import { ClaimSheet } from './ClaimSheet';
 import { useMarketplace, useMarketplaceActions, type ShiftRef, type TradeView } from './data';
 
 /** "Fri, Sep 25 · 10:00–16:00": a shift named inside a sentence. */
@@ -51,6 +53,14 @@ export function MarketplaceSections({
   const board = useMarketplace();
   const actions = useMarketplaceActions();
   const shiftText = useShiftText();
+  const [claiming, setClaiming] = useState<{
+    shift: ShiftRef;
+    giveAwayId: string | null;
+    fromName?: string;
+    fromMembershipId?: string;
+    requested: boolean;
+    wouldMissLevel: boolean;
+  } | null>(null);
   if (board.error) throw board.error;
   if (!board.data) return null;
   const all = board.data;
@@ -143,38 +153,42 @@ export function MarketplaceSections({
 
       {data.openShifts.length + data.offers.length > 0 && (
         <Section title={t('marketplace.open')}>
+          {/* 2026-11-20: tapping a card opens the shift with a Claim button; the eye only marks it seen. */}
           {data.openShifts.map((item) => (
-            <Card
-              key={item.shift.id}
-              className="flex items-center gap-3 p-4"
-              onClick={() => open(`slot:${item.shift.id}`, item.seen)}
-            >
-              {!item.seen && <NewDot />}
-              <div className="min-w-0 flex-1">
+            <Card key={item.shift.id} className="flex items-center gap-3 p-4">
+              <button
+                type="button"
+                className="min-w-0 flex-1 text-left"
+                aria-label={t('marketplace.sheet.open', { shift: shiftText(item.shift) })}
+                onClick={() => {
+                  open(`slot:${item.shift.id}`, item.seen);
+                  setClaiming({
+                    shift: item.shift,
+                    giveAwayId: null,
+                    requested: item.requested,
+                    wouldMissLevel: false,
+                  });
+                }}
+              >
                 <p className="font-bold">{shiftText(item.shift)}</p>
                 <p className="text-sm text-muted">{t('marketplace.openSlots', { count: item.openSlots })}</p>
-              </div>
+              </button>
               {item.requested ? (
                 <StatusChip tone="warning">{t('marketplace.waiting')}</StatusChip>
               ) : (
-                <Button
-                  className="min-h-11 px-4 text-sm"
-                  disabled={busy}
-                  onClick={() => claim(item.shift.id, null)}
-                >
-                  {t('marketplace.claim')}
-                </Button>
+                !item.seen && (
+                  <SeenEye
+                    shift={shiftText(item.shift)}
+                    onClick={() => open(`slot:${item.shift.id}`, false)}
+                  />
+                )
               )}
             </Card>
           ))}
-          {data.offers.map((item) => (
-            <Card
-              key={item.id}
-              className="flex items-center gap-3 p-4"
-              onClick={() => open(`offer:${item.id}`, item.seen || item.mine || item.onShift)}
-            >
-              {!item.seen && !item.mine && !item.onShift && <NewDot />}
-              <div className="min-w-0 flex-1">
+          {data.offers.map((item) => {
+            const claimable = !item.mine && !item.onShift;
+            const text = (
+              <>
                 <p className="font-bold">{shiftText(item.shift)}</p>
                 <p className="text-sm text-muted">
                   {item.mine
@@ -184,37 +198,84 @@ export function MarketplaceSections({
                 {item.onShift && !item.mine && (
                   <p className="text-sm text-muted">{t('marketplace.onShift')}</p>
                 )}
-                {item.wouldMissLevel && !item.onShift && (
-                  <StatusChip tone="warning" className="mt-1">
-                    {t('marketplace.wouldMissLevel')}
-                  </StatusChip>
+              </>
+            );
+            return (
+              <Card key={item.id} className="flex items-center gap-3 p-4">
+                {claimable ? (
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 text-left"
+                    aria-label={t('marketplace.sheet.open', { shift: shiftText(item.shift) })}
+                    onClick={() => {
+                      open(`offer:${item.id}`, item.seen);
+                      setClaiming({
+                        shift: item.shift,
+                        giveAwayId: item.id,
+                        fromName: item.fromName,
+                        fromMembershipId: item.fromMembershipId,
+                        requested: item.requested,
+                        wouldMissLevel: item.wouldMissLevel,
+                      });
+                    }}
+                  >
+                    {text}
+                  </button>
+                ) : (
+                  <div className="min-w-0 flex-1">{text}</div>
                 )}
-              </div>
-              {item.mine ? (
-                <Button
-                  variant="white"
-                  className="min-h-11 px-4 text-sm"
-                  disabled={actions.cancelOffer.isPending}
-                  onClick={() => actions.cancelOffer.mutate(item.id)}
-                >
-                  {t('marketplace.keep')}
-                </Button>
-              ) : item.requested ? (
-                <StatusChip tone="warning">{t('marketplace.waiting')}</StatusChip>
-              ) : item.onShift ? null : (
-                <Button
-                  className="min-h-11 px-4 text-sm"
-                  disabled={busy}
-                  onClick={() => claim(item.shift.id, item.id)}
-                >
-                  {t('marketplace.claim')}
-                </Button>
-              )}
-            </Card>
-          ))}
+                {item.mine ? (
+                  <Button
+                    variant="white"
+                    className="min-h-11 px-4 text-sm"
+                    disabled={actions.cancelOffer.isPending}
+                    onClick={() => actions.cancelOffer.mutate(item.id)}
+                  >
+                    {t('marketplace.keep')}
+                  </Button>
+                ) : item.requested ? (
+                  <StatusChip tone="warning">{t('marketplace.waiting')}</StatusChip>
+                ) : (
+                  claimable &&
+                  !item.seen && (
+                    <SeenEye shift={shiftText(item.shift)} onClick={() => open(`offer:${item.id}`, false)} />
+                  )
+                )}
+              </Card>
+            );
+          })}
         </Section>
       )}
+      {claiming && (
+        <ClaimSheet
+          shift={claiming.shift}
+          fromName={claiming.fromName}
+          fromMembershipId={claiming.fromMembershipId}
+          requested={claiming.requested}
+          needsApproval={all.claimsNeedApproval}
+          wouldMissLevel={claiming.wouldMissLevel}
+          busy={busy}
+          onClaim={() => claim(claiming.shift.id, claiming.giveAwayId)}
+          onClose={() => setClaiming(null)}
+        />
+      )}
     </>
+  );
+}
+
+/** The eye on a Trade tab item not opened yet: marks it seen without opening it (2026-11-20). */
+function SeenEye({ shift, onClick }: { shift: string; onClick: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <button
+      type="button"
+      aria-label={t('alerts.markOneRead', { text: shift })}
+      className={`${iconButtonClassName} text-ink`}
+      onClick={onClick}
+    >
+      <Icon name="eye" />
+      <span className="sr-only">{t('trade.new')}</span>
+    </button>
   );
 }
 
