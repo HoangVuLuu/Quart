@@ -75,7 +75,9 @@ public sealed class MarketplaceTests(PostgresFixture postgres)
         Assert.Equal("Nora S.", offer["fromName"]!.GetValue<string>());
         Assert.False(offer["mine"]!.GetValue<bool>());
         Assert.True((await nora.GetAsync($"{team.Base}/marketplace"))["offers"]![0]!["mine"]!.GetValue<bool>());
-        Assert.Contains("shift.offered", await team.NotificationTypesAsync(omar));
+        // 2.5 (2026-11-18): a give-away belongs to the Trade tab, which counts it until opened; not to Alerts.
+        Assert.DoesNotContain("shift.offered", await team.NotificationTypesAsync(omar));
+        Assert.Equal(1, (await omar.GetAsync($"{team.Base}/marketplace"))["unseen"]!.GetValue<int>());
         Assert.Equal("marketplace.own_shift", (await nora.TryAsync(Post, $"{team.Base}/marketplace/claims", new { shiftId = shift, giveAwayId = Team.Id(offer) })).Code);
 
         // With approval off the first claim wins at once (FR-187); the second person is told it is gone.
@@ -211,7 +213,8 @@ public sealed class MarketplaceTests(PostgresFixture postgres)
         Assert.Empty((await paul.GetAsync($"{team.Base}/marketplace"))["trades"]!.AsArray());
         Assert.Equal(HttpStatusCode.NotFound, (await paul.TryAsync(Post, $"{team.Base}/marketplace/trades/{Team.Id(forOmar)}/accept")).Status);
         Assert.Equal(HttpStatusCode.NotFound, (await nora.TryAsync(Post, $"{team.Base}/marketplace/trades/{Team.Id(forOmar)}/accept")).Status);
-        Assert.Contains("trade.requested", await team.NotificationTypesAsync(omar));
+        Assert.DoesNotContain("trade.requested", await team.NotificationTypesAsync(omar));
+        Assert.False((await omar.GetAsync($"{team.Base}/marketplace"))["trades"]![0]!["seen"]!.GetValue<bool>());
 
         await omar.PostAsync($"{team.Base}/marketplace/trades/{Team.Id(forOmar)}/accept");
 
@@ -267,7 +270,8 @@ public sealed class MarketplaceTests(PostgresFixture postgres)
         await team.Owner.PostAsync($"{team.Base}/marketplace/trades/{fine}/approve");
         Assert.True(Team.Holds(await ShiftAsync(team, hers), omar));
 
-        // 2. A level 3 swaps with a level 1 on a shift where she is the only level 3: refused, nothing moves (FR-192).
+        // 2. A level 3 swaps with a level 1 on a shift where she is the only level 3. The approver sees the
+        // warning and may approve anyway (3.3, 2026-11-18); the two people never see levels (3.1).
         schedule = await team.ScheduleAsync();
         var level3 = new[] { team.Owner, team.Staff[0], team.Staff[1] };
         var leas = Team.ShiftsOf(schedule, lea).FirstOrDefault(shift => level3.Count(x => Team.Holds(shift, x)) == 1);
@@ -279,13 +283,13 @@ public sealed class MarketplaceTests(PostgresFixture postgres)
         var risky = Team.Id((await junior.GetAsync($"{team.Base}/marketplace"))["trades"]![0]!);
         await junior.PostAsync($"{team.Base}/marketplace/trades/{risky}/accept");
         Assert.True((await team.Owner.GetAsync($"{team.Base}/marketplace"))["trades"]![0]!["wouldMissLevel"]!.GetValue<bool>());
+        Assert.False((await lea.GetAsync($"{team.Base}/marketplace"))["trades"]![0]!["wouldMissLevel"]!.GetValue<bool>());
 
-        var refused = await team.Owner.TryAsync(Post, $"{team.Base}/marketplace/trades/{risky}/approve");
+        await team.Owner.PostAsync($"{team.Base}/marketplace/trades/{risky}/approve");
 
-        Assert.Equal((HttpStatusCode.Conflict, "marketplace.missing_level"), refused);
-        Assert.True(Team.Holds(await ShiftAsync(team, Team.Id(leas!)), lea));
-        Assert.True(Team.Holds(await ShiftAsync(team, theirs), junior));
-        Assert.Contains("trade.rejected", await team.NotificationTypesAsync(lea));
+        Assert.True(Team.Holds(await ShiftAsync(team, Team.Id(leas!)), junior));
+        Assert.True(Team.Holds(await ShiftAsync(team, theirs), lea));
+        Assert.Contains("trade.applied", await team.NotificationTypesAsync(lea));
     }
 
     [Fact]

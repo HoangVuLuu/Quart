@@ -6,6 +6,7 @@ import { useWorkplace } from '../workplaces/workplace';
 export type MarketplaceBoard = Schemas['MarketplaceBoard'];
 export type ShiftRef = Schemas['ShiftRef'];
 export type TradeView = Schemas['TradeView'];
+export type MyShiftView = Schemas['MyShiftView'];
 
 /** Open shifts, offers, and the requests that concern the caller (M7-01). */
 export function useMarketplace() {
@@ -32,6 +33,14 @@ export function useMarketplaceActions() {
   // Whatever the answer, the board is stale afterwards: a refusal usually means someone else got there first.
   const done = { onSettled: refresh };
   return {
+    // 2.4: opening a Trade tab item takes it off the tab's count. Quiet: a failure only leaves the dot.
+    seen: useMutation({
+      mutationFn: (key: string) =>
+        unwrap(
+          api.POST('/api/workplaces/{workplaceId}/marketplace/seen', { params: { path }, body: { key } }),
+        ),
+      ...done,
+    }),
     giveAway: useMutation({
       mutationFn: (shiftId: string) =>
         unwrap(

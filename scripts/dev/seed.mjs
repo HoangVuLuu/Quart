@@ -96,7 +96,7 @@ const workplace = `/api/workplaces/${created.workplaceId}`;
 const view = await owner.get(workplace);
 // FR-036: Philippe works shifts too.
 await owner.send('PATCH', `${workplace}/members/${view.me.membershipId}`, {
-  level: 3, worksShifts: true, desiredWeeklyHours: 26, maxWeeklyHours: null, clearMaxWeeklyHours: null,
+  level: 3, worksShifts: true,
 });
 
 console.log('Saving the two shifts a day (2 people, at least one level 3)…');
@@ -115,18 +115,19 @@ for (const [fullName, email, level, desiredWeeklyHours] of staff) {
   await browser.post('/api/workplaces/join', { code: view.joinCode });
   const membershipId = (await browser.get(workplace)).me.membershipId;
   await owner.send('PATCH', `${workplace}/members/${membershipId}`, {
-    level, worksShifts: true, desiredWeeklyHours, maxWeeklyHours: null, clearMaxWeeklyHours: null,
+    level, worksShifts: true,
   });
-  people.push({ browser, email });
+  people.push({ browser, email, desiredWeeklyHours });
 }
 
 console.log('Opening a two-week period; everyone but Liam sends their availability…');
-// FR-091: availability is due at 18:00 three days before the period starts.
+// FR-091: availability is due at 18:00 three days before the period starts. The length comes from the
+// generator rules saved above (FR-090).
 const startDate = nextMonday();
 const dueDate = new Date(Date.parse(`${startDate}T00:00:00Z`) - 3 * 86_400_000).toISOString().slice(0, 10);
-const period = await owner.post(`${workplace}/periods`, { startDate, weeks: 2, dueDate, dueTime: '18:00' });
+const period = await owner.post(`${workplace}/periods`, { startDate, dueDate, dueTime: '18:00' });
 const availability = `${workplace}/periods/${period.id}/availability/me`;
-for (const { browser, email } of [...people, { browser: owner, email: 'philippe@demo.quart' }]) {
+for (const { browser, email, desiredWeeklyHours } of [...people, { browser: owner, email: 'philippe@demo.quart', desiredWeeklyHours: 26 }]) {
   if (email === 'liam@demo.quart') continue;
   const shifts = (await browser.get(availability)).shifts;
   // Léa only opens; everyone else can work anything except one day off, different for each.
@@ -134,7 +135,8 @@ for (const { browser, email } of [...people, { browser: owner, email: 'philippe@
   const can = shifts.filter((shift) =>
     email === 'lea@demo.quart' ? shift.start === '10:00' : new Date(`${shift.date}T00:00:00Z`).getUTCDay() !== dayOff % 7,
   );
-  await browser.post(`${availability}/send`, { shiftIds: can.map((shift) => shift.id) });
+  // The hours wanted per week come with the availability (BR-032).
+  await browser.post(`${availability}/send`, { shiftIds: can.map((shift) => shift.id), desiredWeeklyHours });
 }
 await people[1].browser.post(`${availability}/notes`, { body: 'Examens la 2e semaine, soirs seulement si possible.' });
 

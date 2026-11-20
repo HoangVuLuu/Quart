@@ -36,6 +36,7 @@ internal static class Support
             period.Status,
             period.Version,
             period.LockedAt is not null,
+            period.Version == 0 && period.DraftSavedAt is not null,
             period.AvailabilityDueAt?.ToDateTimeOffset(),
             period.RequestAt?.ToDateTimeOffset(),
             period.RequestAt is null || period.StepsDone.Contains(AvailabilitySteps.Request));

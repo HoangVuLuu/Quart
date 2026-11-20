@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
+using Quart.Modules.Scheduling.Drafts;
 using Quart.Modules.Scheduling.Persistence;
 using Quart.SharedKernel.Access;
 using Quart.SharedKernel.Directory;
@@ -93,17 +94,32 @@ internal sealed record AvailabilityStepPayload(Guid PeriodId, string Kind);
 /// sent, and nothing happens once building has started or the period is gone. A step is marked done before
 /// anyone is notified: after a crash in between, a reminder is lost rather than sent twice.
 /// </summary>
-internal sealed class AvailabilityStepHandler(SchedulingDb db, IWorkplaceDirectory directory, INotifier notifier) : IJobHandler
+internal sealed class AvailabilityStepHandler(SchedulingDb db, IWorkplaceDirectory directory, INotifier notifier, IClock clock) : IJobHandler
 {
+    /// <summary>How long to wait before trying again while the manager is building.</summary>
+    public static readonly Duration RetryWhileBuilding = Duration.FromMinutes(5);
+
     public string Type => AvailabilitySteps.JobType;
 
     public async Task<JobOutcome> RunAsync(JobContext job, CancellationToken cancellationToken)
     {
         var step = job.ReadPayload<AvailabilityStepPayload>();
         var period = await db.Periods.SingleOrDefaultAsync(x => x.Id == step.PeriodId, cancellationToken);
-        if (period is null || period.Status != Period.Collecting || period.LockedAt is not null || period.StepsDone.Contains(step.Kind))
+        // Gone (cancelled), published, or done already: nothing to send.
+        if (period is null || period.Version > 0 || period.StepsDone.Contains(step.Kind))
         {
             return JobOutcome.Done;
+        }
+        // The manager is on Building Schedule, so availability is locked for now (FR-100, 2026-11-18). A
+        // closed app ends the visit after its timeout; otherwise wait a little and try again, so nothing is lost.
+        var now = clock.GetCurrentInstant();
+        if (await BuildSession.SettleAsync(db, period, now, cancellationToken))
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        if (period.LockedAt is not null)
+        {
+            return JobOutcome.RunAgain(now + RetryWhileBuilding);
         }
         // Reminders and the due note follow the request; before it, nobody has been asked yet.
         if (step.Kind != AvailabilitySteps.Request && !period.StepsDone.Contains(AvailabilitySteps.Request))

@@ -44,6 +44,7 @@ internal sealed class SchedulingDb(DbContextOptions<SchedulingDb> options) : DbC
             period.Property(x => x.Rules).HasColumnType("jsonb");
             // Empty for existing rows, and for any row the previous version inserts during a deploy.
             period.Property(x => x.StepsDone).HasDefaultValueSql("'{}'::text[]");
+            period.Property(x => x.SavedDraft).HasColumnType("jsonb");
             period.HasIndex(x => new { x.WorkplaceId, x.StartDate });
         });
 
@@ -132,8 +133,20 @@ internal sealed class Period
     /// <summary>The scheduling rules copied from the workplace when the period was created (FR-068).</summary>
     public required string Rules { get; set; }
 
-    /// <summary>Set when building starts; availability is read-only from then on (FR-100).</summary>
+    /// <summary>
+    /// Set while the manager is on Building Schedule, and for good once published; availability is read-only
+    /// meanwhile (FR-100). Leaving Building Schedule clears it again (4.3, 2026-11-18).
+    /// </summary>
     public Instant? LockedAt { get; set; }
+
+    /// <summary>The last sign of life from an open Building or Editing Schedule page; null when nobody is on it (4.3).</summary>
+    public Instant? SessionSeenAt { get; set; }
+
+    /// <summary>The draft as last saved, or as it was on entering: what leaving without saving puts back (4.3).</summary>
+    public string? SavedDraft { get; set; }
+
+    /// <summary>When the manager last tapped Save draft; "Continue building" is offered while set and unpublished.</summary>
+    public Instant? DraftSavedAt { get; set; }
 
     /// <summary>0 until first published, then 1, 2, ... (FR-160, FR-163).</summary>
     public int Version { get; set; }
@@ -230,6 +243,12 @@ internal sealed class Availability
 
     /// <summary>Set when an admin reopens this person after the lock; cleared when they send again (FR-101).</summary>
     public Instant? ReopenedAt { get; set; }
+
+    /// <summary>
+    /// Hours per week the person wants in this period, given with their availability (BR-032). Required to
+    /// send; null until then. The generator caps it at the manager's maximum without telling them.
+    /// </summary>
+    public decimal? DesiredWeeklyHours { get; set; }
 
     public List<AvailabilityBlock> Blocks { get; set; } = [];
 

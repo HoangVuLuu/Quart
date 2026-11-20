@@ -36,6 +36,8 @@ internal static class DraftEndpoints
     public const string PublishNeedsConfirmation = "schedule.publish_needs_confirmation";
     public const string NothingToPublish = "schedule.nothing_to_publish";
     public const string DoubleBooking = "schedule.double_booking";
+    public const string VisitEnded = "schedule.visit_ended";
+    public const string ClearPublished = "schedule.cannot_clear_published";
 
     /// <summary>
     /// Whatever the settings say, this can never be published: the database refuses one person in two places
@@ -49,6 +51,10 @@ internal static class DraftEndpoints
             .RequirePermission(Permission.ManageSchedule);
         group.MapGet("/", GetAsync).WithName("GetDraft");
         group.MapPost("/start", StartAsync).WithName("StartBuilding");
+        group.MapPost("/heartbeat", HeartbeatAsync).WithName("KeepBuilding");
+        group.MapPost("/save", SaveAsync).WithName("SaveDraft");
+        group.MapPost("/leave", LeaveAsync).WithName("LeaveBuilding");
+        group.MapPost("/clear", ClearAsync).WithName("ClearDraft");
         group.MapPost("/generate", GenerateAsync).WithName("GenerateDraft");
         group.MapPost("/assignments", AddAsync).WithName("AddDraftAssignment");
         group.MapDelete("/assignments/{shiftId:guid}/{membershipId:guid}", RemoveAsync).WithName("RemoveDraftAssignment");
@@ -74,9 +80,88 @@ internal static class DraftEndpoints
         {
             return Problems.NotFound();
         }
+        // 4.3: entering Building or Editing Schedule. A visit left open by a closed app ends first, unsaved.
+        await BuildSession.EnterAsync(db, period, clock.GetCurrentInstant(), cancellationToken);
         Lock(period, clock);
         await RefreshRulesAsync(db, directory, period, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+        return TypedResults.Ok(await ViewAsync(db, builder, period, http.Member(), cancellationToken));
+    }
+
+    /// <summary>
+    /// The open page's sign of life, every 30 seconds. A visit that already ended (the page went quiet for
+    /// longer than the timeout and someone needed the answer) answers 409, so the page knows its unsaved
+    /// changes are gone.
+    /// </summary>
+    private static async Task<Results<NoContent, ProblemHttpResult>> HeartbeatAsync(
+        Guid workplaceId, Guid periodId, SchedulingDb db, IClock clock, CancellationToken cancellationToken)
+    {
+        if (await AvailabilityEndpoints.FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
+        {
+            return Problems.NotFound();
+        }
+        if (period.SessionSeenAt is null)
+        {
+            return Problems.Conflict(VisitEnded);
+        }
+        period.SessionSeenAt = clock.GetCurrentInstant();
+        await db.SaveChangesAsync(cancellationToken);
+        return TypedResults.NoContent();
+    }
+
+    /// <summary>"Save draft": progress kept for later, and what leaving puts back from now on (4.3).</summary>
+    private static async Task<Results<Ok<DraftView>, ProblemHttpResult>> SaveAsync(
+        Guid workplaceId, Guid periodId, HttpContext http, SchedulingDb db, DraftBuilder builder, IClock clock, CancellationToken cancellationToken)
+    {
+        if (await AvailabilityEndpoints.FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
+        {
+            return Problems.NotFound();
+        }
+        if (period.LockedAt is null)
+        {
+            return Problems.Conflict(NotBuilding);
+        }
+        await BuildSession.SaveAsync(db, period, clock.GetCurrentInstant(), cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+        return TypedResults.Ok(await ViewAsync(db, builder, period, http.Member(), cancellationToken));
+    }
+
+    /// <summary>
+    /// Leaving the page: unsaved changes are dropped, and an unpublished period's availability unlocks
+    /// (4.3). Editing a published schedule unlocks nothing (4.4). Leaving twice changes nothing.
+    /// </summary>
+    private static async Task<Results<NoContent, ProblemHttpResult>> LeaveAsync(
+        Guid workplaceId, Guid periodId, SchedulingDb db, CancellationToken cancellationToken)
+    {
+        if (await AvailabilityEndpoints.FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
+        {
+            return Problems.NotFound();
+        }
+        if (period.SessionSeenAt is not null)
+        {
+            await BuildSession.LeaveAsync(db, period, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        return TypedResults.NoContent();
+    }
+
+    /// <summary>"Clear" on Building Schedule wipes the draft, kept or not. Never on a published schedule (4.4).</summary>
+    private static async Task<Results<Ok<DraftView>, ProblemHttpResult>> ClearAsync(
+        Guid workplaceId, Guid periodId, HttpContext http, SchedulingDb db, DraftBuilder builder, CancellationToken cancellationToken)
+    {
+        if (await AvailabilityEndpoints.FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
+        {
+            return Problems.NotFound();
+        }
+        if (period.Version > 0)
+        {
+            return Problems.Conflict(ClearPublished);
+        }
+        if (period.LockedAt is null)
+        {
+            return Problems.Conflict(NotBuilding);
+        }
+        await db.Assignments.Where(x => x.PeriodId == period.Id && x.IsDraft).ExecuteDeleteAsync(cancellationToken);
         return TypedResults.Ok(await ViewAsync(db, builder, period, http.Member(), cancellationToken));
     }
 
@@ -276,6 +361,10 @@ internal static class DraftEndpoints
             period.Version++;
             period.Status = Period.Published;
             period.PublishedAt = now;
+            // The visit ends with the publish: what is live is now what there is to come back to (4.3).
+            period.SessionSeenAt = null;
+            period.SavedDraft = null;
+            period.DraftSavedAt = null;
             db.ScheduleVersions.Add(new ScheduleVersion
             {
                 Id = Guid.NewGuid(),
@@ -423,7 +512,7 @@ internal static class DraftEndpoints
             person.MembershipId,
             person.DisplayName,
             person.Level,
-            person.DesiredWeeklyHours,
+            DraftBuilder.DesiredOf(data, person),
             person.MaxWeeklyHours,
             availabilityOf.GetValueOrDefault(person.MembershipId)?.Status ?? Persistence.Availability.NotSent,
             summaries.TryGetValue(DraftBuilder.Id(person.MembershipId), out var summary) ? summary.WeeklyHours : new decimal[period.Weeks],
@@ -438,6 +527,7 @@ internal static class DraftEndpoints
             shifts.Sum(x => Math.Max(0, x.Headcount - x.People.Count)),
             // FR-161: Update only shows when the draft differs from what is live.
             period.Version == 0 || !draftKeys.SetEquals(liveKeys),
+            BuildSession.HasUnsavedChanges(period, draft),
             shifts,
             people,
             evaluation.Issues.Select(x => new DraftIssue(
@@ -484,6 +574,7 @@ public sealed record DraftView(
     int Score,
     int OpenSlots,
     bool HasUnpublishedChanges,
+    bool HasUnsavedChanges,
     IReadOnlyList<DraftShift> Shifts,
     IReadOnlyList<DraftPerson> People,
     IReadOnlyList<DraftIssue> Issues);
@@ -515,7 +606,7 @@ public sealed record DraftPerson(
     Guid MembershipId,
     string Name,
     int Level,
-    decimal DesiredWeeklyHours,
+    decimal? DesiredWeeklyHours,
     decimal? MaxWeeklyHours,
     string Availability,
     IReadOnlyList<decimal> WeeklyHours,

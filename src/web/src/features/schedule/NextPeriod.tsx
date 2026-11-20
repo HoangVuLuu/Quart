@@ -1,111 +1,118 @@
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { messageKeyFor } from '../../i18n/errors';
-import { formatDue } from '../../i18n/format';
+import { formatDateRange, formatDue } from '../../i18n/format';
+import { api, unwrap } from '../../lib/api/client';
 import { Button } from '../../ui/Button';
 import { buttonClassName } from '../../ui/button-styles';
-import { Card } from '../../ui/Card';
-import { Cup } from '../../ui/Cup';
 import { HeroCard } from '../../ui/HeroCard';
-import { Stepper } from '../../ui/Stepper';
+import { Icon, iconButtonClassName } from '../../ui/Icon';
 import { TextField } from '../../ui/TextField';
 import { FormError } from '../identity/FormError';
 import {
   mondayOnOrAfter,
   suggestedDueDate,
   useCreatePeriod,
-  useDraftActions,
   useTeamAvailability,
+  type NextPeriod,
 } from '../scheduling/data';
+import { useWorkplace } from '../workplaces/workplace';
+import { CancelPeriodButton } from './CancelPeriod';
 
-/** Mockups 1k and 1k2: who has sent, and the two ways to start building. Either one locks availability (FR-100). */
-export function ReadyToBuild({ periodId }: { periodId: string }) {
+/**
+ * The manager's box at the top of Schedule (4.1, 2026-11-18), always there and styled like the period box
+ * on Home: it opens the next period, then shows it is open, how many have sent, and the way into Building
+ * Schedule ("Build", or "Continue building" once a draft was saved).
+ */
+export function NextPeriodBox({ next, after }: { next: NextPeriod | null; after?: string }) {
   const { t, i18n } = useTranslation();
-  const team = useTeamAvailability(periodId).data;
-  const actions = useDraftActions(periodId);
-  const missing = team?.people.filter((person) => person.status !== 'sent') ?? [];
-  const complete = team !== undefined && missing.length === 0;
-  const error = actions.generate.error ?? actions.start.error;
+  const team = useTeamAvailability(next?.period.id).data;
 
+  if (!next) return <OpenPeriodBox after={after} />;
+
+  const range = formatDateRange(next.period.startDate, next.period.endDate, i18n.language);
+  const sent = team?.sentCount ?? next.sentCount ?? 0;
+  const total = team?.total ?? 0;
+  const complete = total > 0 && sent === total;
   return (
-    <>
-      <HeroCard
-        title={t('schedule.ready.title')}
-        headingLevel={2}
-        className={complete ? 'bg-opening' : undefined}
-        decoration={
-          <Cup
-            flavour={complete ? 'milk-tea' : 'opening'}
-            mood={complete ? 'happy' : 'wow'}
-            className="w-14"
-          />
-        }
-      >
-        <p>
-          {team ? t('schedule.ready.sent', { sent: team.sentCount, total: team.total }) : null}{' '}
-          {t('schedule.ready.locks')}
+    <HeroCard
+      eyebrow={range}
+      title={t('schedule.box.open')}
+      headingLevel={2}
+      className={complete ? 'bg-opening' : undefined}
+      corner={<CancelPeriodButton period={next.period} icon />}
+      wide
+    >
+      {total > 0 && (
+        <>
+          <p className="font-bold">{t('home.period.sent', { sent, total })}</p>
+          <div
+            role="progressbar"
+            aria-label={t('home.period.sent', { sent, total })}
+            aria-valuemin={0}
+            aria-valuemax={total}
+            aria-valuenow={sent}
+            className="mt-2 h-2 overflow-hidden rounded-pill bg-glow"
+          >
+            <div className="h-full rounded-pill bg-ink" style={{ width: `${(sent / total) * 100}%` }} />
+          </div>
+        </>
+      )}
+      {/* When availability is due, and when the request goes out if it has not yet (FR-091). */}
+      {next.period.dueAt && (
+        <p className="mt-2">
+          {t('schedule.ready.due', { when: formatDue(next.period.dueAt, i18n.language) })}
         </p>
-        {team?.period.dueAt && (
-          <p className="mt-1">
-            {t('schedule.ready.due', { when: formatDue(team.period.dueAt, i18n.language) })}
-          </p>
-        )}
-        {team?.period.requestAt && !team.period.requestSent && (
-          <p className="mt-1">
-            {t('schedule.ready.requestLater', { when: formatDue(team.period.requestAt, i18n.language) })}
-          </p>
-        )}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button loading={actions.generate.isPending} onClick={() => actions.generate.mutate(null)}>
-            {t('schedule.ready.generate')}
-          </Button>
-          <Button variant="white" loading={actions.start.isPending} onClick={() => actions.start.mutate()}>
-            {t('schedule.ready.byHand')}
-          </Button>
-        </div>
-      </HeroCard>
-      <FormError message={error ? t(messageKeyFor(error)) : undefined} />
-      <Card>
-        <h2 className="text-sm font-bold text-muted">
-          {complete ? t('schedule.ready.allSentLabel') : t('schedule.ready.notSent')}
-        </h2>
-        <p className="mt-1 font-bold">
-          {complete ? t('schedule.ready.allSent') : missing.map((person) => person.name).join(' · ')}
+      )}
+      {next.period.requestAt && !next.period.requestSent && (
+        <p className="mt-1">
+          {t('schedule.ready.requestLater', { when: formatDue(next.period.requestAt, i18n.language) })}
         </p>
-        <Link to="/availability/team" className="mt-2 block text-sm font-bold text-link">
-          {t('schedule.ready.team')} →
+      )}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link to="/schedule/build" className={buttonClassName('dark')}>
+          {next.period.draftSaved ? t('schedule.box.continue') : t('schedule.box.build')}
         </Link>
-      </Card>
-      <Link to="/generator" className={buttonClassName('white', 'self-start')}>
-        {t('schedule.editGenerator')}
-      </Link>
-    </>
+        <Link to="/availability/team" className={buttonClassName('white')}>
+          {t('schedule.ready.team')}
+        </Link>
+        <GeneratorRulesLink />
+      </div>
+    </HeroCard>
   );
 }
 
 /**
- * Opens the next period: a Monday, 1 to 4 weeks (FR-090) and when availability is due (FR-091). Everyone who
- * works shifts is asked for their availability, now or on the day set in Edit Generator.
+ * Opens the next period on a Monday, with when availability is due (FR-091). Its length is the one set in
+ * Edit generator rules, shown here but only changed there (FR-090). Everyone who works shifts is asked, now
+ * or on the day set in Edit generator rules.
  */
-export function OpenPeriodCard({ after }: { after?: string }) {
+function OpenPeriodBox({ after }: { after?: string }) {
   const { t } = useTranslation();
   const create = useCreatePeriod();
+  const { id } = useWorkplace();
+  const rules = useQuery({
+    queryKey: ['workplace', id, 'generator'],
+    queryFn: ({ signal }) =>
+      unwrap(
+        api.GET('/api/workplaces/{workplaceId}/generator', { params: { path: { workplaceId: id } }, signal }),
+      ),
+  }).data;
   const today = new Date().toISOString().slice(0, 10);
   const earliest = after
     ? new Date(Date.parse(`${after}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10)
     : today;
   const [startDate, setStartDate] = useState(mondayOnOrAfter(earliest > today ? earliest : today));
-  const [weeks, setWeeks] = useState(2);
-  // Follows the start date until the manager picks a deadline of their own.
+  // FR-091: the deadline follows the start date until the manager picks one of their own.
   const [chosenDue, setChosenDue] = useState<string | null>(null);
   const dueDate = chosenDue ?? suggestedDueDate(startDate, today);
   const [dueTime, setDueTime] = useState('18:00');
 
   return (
-    <Card>
-      <h2 className="text-[17px]">{t('schedule.open.title')}</h2>
-      <p className="mt-1 text-sm text-muted">{t('schedule.open.text')}</p>
+    <HeroCard eyebrow={t('home.period.none')} title={t('schedule.open.title')} headingLevel={2} wide>
+      <p className="text-sm">{t('schedule.open.text')}</p>
       <div className="mt-4 flex flex-col gap-3">
         <TextField
           label={t('schedule.open.start')}
@@ -115,7 +122,7 @@ export function OpenPeriodCard({ after }: { after?: string }) {
           value={startDate}
           onChange={(event) => setStartDate(event.target.value)}
         />
-        <Stepper label={t('schedule.open.weeks')} value={weeks} min={1} max={4} onChange={setWeeks} />
+        {rules && <p className="text-sm">{t('schedule.open.length', { count: rules.periodWeeks })}</p>}
         <div className="grid grid-cols-[3fr_2fr] gap-3">
           <TextField
             label={t('schedule.open.dueDate')}
@@ -135,18 +142,29 @@ export function OpenPeriodCard({ after }: { after?: string }) {
           />
         </div>
         <FormError message={create.error ? t(messageKeyFor(create.error)) : undefined} />
-        <div className="flex flex-wrap gap-2">
-          <Button
-            loading={create.isPending}
-            onClick={() => create.mutate({ startDate, weeks, dueDate, dueTime })}
-          >
+        <div className="flex items-end gap-2">
+          <Button loading={create.isPending} onClick={() => create.mutate({ startDate, dueDate, dueTime })}>
             {t('schedule.open.submit')}
           </Button>
-          <Link to="/generator" className={buttonClassName('white')}>
-            {t('schedule.editGenerator')}
-          </Link>
+          <GeneratorRulesLink />
         </div>
       </div>
-    </Card>
+    </HeroCard>
+  );
+}
+
+/** "Edit generator rules" as a pen icon in the bottom-right corner of the box (2026-11-18). */
+function GeneratorRulesLink() {
+  const { t } = useTranslation();
+  const { can } = useWorkplace();
+  if (!can('ManageTemplate')) return null;
+  return (
+    <Link
+      to="/generator"
+      aria-label={t('schedule.editGenerator')}
+      className={`${iconButtonClassName} ml-auto self-end text-ink`}
+    >
+      <Icon name="pen" />
+    </Link>
   );
 }

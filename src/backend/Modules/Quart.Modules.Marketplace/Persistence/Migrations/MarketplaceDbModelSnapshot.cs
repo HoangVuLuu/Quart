@@ -124,6 +124,26 @@ namespace Quart.Modules.Marketplace.Persistence.Migrations
                     b.ToTable("give_away", "marketplace");
                 });
 
+            modelBuilder.Entity("Quart.Modules.Marketplace.Persistence.SeenItem", b =>
+                {
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("membership_id");
+
+                    b.Property<string>("ItemKey")
+                        .HasColumnType("text")
+                        .HasColumnName("item_key");
+
+                    b.Property<Instant>("SeenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("seen_at");
+
+                    b.HasKey("MembershipId", "ItemKey")
+                        .HasName("pk_seen_item");
+
+                    b.ToTable("seen_item", "marketplace");
+                });
+
             modelBuilder.Entity("Quart.Modules.Marketplace.Persistence.Trade", b =>
                 {
                     b.Property<Guid>("Id")

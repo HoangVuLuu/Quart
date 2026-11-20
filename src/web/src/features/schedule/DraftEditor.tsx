@@ -48,12 +48,12 @@ function useIssueText(draft: DraftView) {
 
 type DraftEditorProps = {
   periodId: string;
-  /** Given when the draft of an already published period is open: the way back to what staff see. */
-  onDone?: () => void;
+  /** Called once the schedule is published or updated: Building and Editing Schedule then go back (4.3). */
+  onPublished?: () => void;
 };
 
 // Mockup 1l, with the shift editor (1p) and the issues list (1q). Only admins come here (AD-012).
-export function DraftEditor({ periodId, onDone }: DraftEditorProps) {
+export function DraftEditor({ periodId, onPublished }: DraftEditorProps) {
   const { t } = useTranslation();
   const toast = useToast();
   const draft = useDraft(periodId);
@@ -84,7 +84,7 @@ export function DraftEditor({ periodId, onDone }: DraftEditorProps) {
     actions.publish.mutateAsync(true).then(
       () => {
         toast(published ? t('draft.updated') : t('draft.publishedToast'));
-        onDone?.();
+        onPublished?.();
       },
       () => undefined,
     );
@@ -130,11 +130,6 @@ export function DraftEditor({ periodId, onDone }: DraftEditorProps) {
         >
           {published ? t('draft.update') : t('draft.publish')}
         </Button>
-        {onDone && (
-          <Button variant="white" className="min-h-11 px-4 text-sm" onClick={onDone}>
-            {t('draft.back')}
-          </Button>
-        )}
       </div>
       <p className="text-sm text-muted">
         {t('draft.hint')} {data.seed !== null && t('draft.seed', { seed: data.seed })}{' '}
@@ -411,7 +406,8 @@ function ShiftEditor({
   const full = shift.people.length >= shift.headcount;
   const error = actions.add.error ?? actions.remove.error ?? actions.keep.error;
   const hours = (person: DraftPerson) =>
-    `${formatNumber(person.weeklyHours[week] ?? 0, i18n.language)}/${formatNumber(person.desiredWeeklyHours, i18n.language)} h`;
+    // No target until the person sends availability with their hours (BR-032).
+    `${formatNumber(person.weeklyHours[week] ?? 0, i18n.language)}/${person.desiredWeeklyHours == null ? '–' : formatNumber(person.desiredWeeklyHours, i18n.language)} h`;
 
   return (
     <Sheet

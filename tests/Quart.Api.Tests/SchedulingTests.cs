@@ -77,10 +77,11 @@ public sealed class SchedulingTests(PostgresFixture postgres)
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
 
-        Assert.Equal("period.start_not_monday", (await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-10", weeks = 2 })).Code);
-        Assert.Equal("period.weeks_invalid", (await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-09", weeks = 5 })).Code);
+        Assert.Equal("period.start_not_monday", (await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-10" })).Code);
+        // The length comes from the generator rules (two weeks here); the request has none (FR-090).
         await team.OpenPeriodAsync(weeks: 2);
-        Assert.Equal("period.unfinished_exists", (await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-23", weeks = 2 })).Code);
+        Assert.Equal(2, (await team.Owner.GetAsync($"{team.Base}/periods/current"))["next"]!["period"]!["weeks"]!.GetValue<int>());
+        Assert.Equal("period.unfinished_exists", (await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-23" })).Code);
 
         var mine = await team.Staff[0].GetAsync($"{team.Period}/availability/me");
         // Two weeks of two shifts a day (spec 2.2).
@@ -102,7 +103,7 @@ public sealed class SchedulingTests(PostgresFixture postgres)
         var owner = await app.PersonAsync("Philippe Roy");
         var workplaceId = await app.WorkplaceAsync(owner, withTemplate: false);
 
-        var result = await owner.TryAsync(HttpMethod.Post, $"/api/workplaces/{workplaceId}/periods", new { startDate = "2026-11-09", weeks = 2 });
+        var result = await owner.TryAsync(HttpMethod.Post, $"/api/workplaces/{workplaceId}/periods", new { startDate = "2026-11-09" });
 
         Assert.Equal((HttpStatusCode.Conflict, "period.template_empty"), result);
     }
@@ -154,11 +155,11 @@ public sealed class SchedulingTests(PostgresFixture postgres)
 
         await lea.SendAsync(Put, $"{team.Period}/availability/me", new { shiftIds = shifts.Take(3) });
         Assert.Equal("not_sent", (await lea.GetAsync($"{team.Period}/availability/me"))["status"]!.GetValue<string>());
-        Assert.Equal("availability.unknown_shift", (await lea.TryAsync(HttpMethod.Post, $"{team.Period}/availability/me/send", new { shiftIds = new[] { Guid.NewGuid() } })).Code);
-        await lea.PostAsync($"{team.Period}/availability/me/send", new { shiftIds = shifts.Take(2) });
+        Assert.Equal("availability.unknown_shift", (await lea.TryAsync(HttpMethod.Post, $"{team.Period}/availability/me/send", new { desiredWeeklyHours = 20, shiftIds = new[] { Guid.NewGuid() } })).Code);
+        await lea.PostAsync($"{team.Period}/availability/me/send", new { desiredWeeklyHours = 20, shiftIds = shifts.Take(2) });
         await lea.PostAsync($"{team.Period}/availability/me/notes", new { body = "Exams on the 12th, evenings only." });
         // FR-098: sending again replaces the answer.
-        var resent = await lea.PostAsync($"{team.Period}/availability/me/send", new { shiftIds = shifts.Take(4) });
+        var resent = await lea.PostAsync($"{team.Period}/availability/me/send", new { desiredWeeklyHours = 20, shiftIds = shifts.Take(4) });
 
         Assert.Equal(4, resent["shifts"]!.AsArray().Count(x => x!["selected"]!.GetValue<bool>()));
         Assert.Equal(HttpStatusCode.Forbidden, (await marc.TryAsync(HttpMethod.Get, $"{team.Period}/availability")).Status);
@@ -217,7 +218,7 @@ public sealed class SchedulingTests(PostgresFixture postgres)
 
         // FR-100: a build by hand locks exactly as Generate does.
         await team.Owner.PostAsync($"{team.Period}/draft/start");
-        Assert.Equal((HttpStatusCode.Conflict, "availability.locked"), await marc.TryAsync(HttpMethod.Post, $"{team.Period}/availability/me/send", new { shiftIds = shifts }));
+        Assert.Equal((HttpStatusCode.Conflict, "availability.locked"), await marc.TryAsync(HttpMethod.Post, $"{team.Period}/availability/me/send", new { desiredWeeklyHours = 20, shiftIds = shifts }));
         Assert.Equal((HttpStatusCode.Conflict, "availability.locked"), await lea.TryAsync(Put, $"{team.Period}/availability/me", new { shiftIds = shifts.Take(1) }));
         // FR-103: notes stay possible after the lock.
         await marc.PostAsync($"{team.Period}/availability/me/notes", new { body = "Sorry, I forgot to answer." });
@@ -225,10 +226,10 @@ public sealed class SchedulingTests(PostgresFixture postgres)
         Assert.Equal(HttpStatusCode.Forbidden, (await lea.TryAsync(HttpMethod.Post, $"{team.Period}/availability/{marc.MembershipId}/reopen")).Status);
         await team.Owner.PostAsync($"{team.Period}/availability/{marc.MembershipId}/reopen");
         Assert.Contains("availability.reopened", await team.NotificationTypesAsync(marc));
-        await marc.PostAsync($"{team.Period}/availability/me/send", new { shiftIds = shifts });
+        await marc.PostAsync($"{team.Period}/availability/me/send", new { desiredWeeklyHours = 20, shiftIds = shifts });
         // FR-101: the reopening is used up by sending, and nobody else was let back in.
-        Assert.Equal("availability.locked", (await marc.TryAsync(HttpMethod.Post, $"{team.Period}/availability/me/send", new { shiftIds = shifts })).Code);
-        Assert.Equal("availability.locked", (await lea.TryAsync(HttpMethod.Post, $"{team.Period}/availability/me/send", new { shiftIds = shifts })).Code);
+        Assert.Equal("availability.locked", (await marc.TryAsync(HttpMethod.Post, $"{team.Period}/availability/me/send", new { desiredWeeklyHours = 20, shiftIds = shifts })).Code);
+        Assert.Equal("availability.locked", (await lea.TryAsync(HttpMethod.Post, $"{team.Period}/availability/me/send", new { desiredWeeklyHours = 20, shiftIds = shifts })).Code);
     }
 
     [Fact]
@@ -633,8 +634,8 @@ public sealed class SchedulingTests(PostgresFixture postgres)
 
         // A draft shift counts too: the person would vanish from the draft tools but stay on it.
         Assert.Equal((HttpStatusCode.Conflict, "workplace.has_upcoming_shifts"), await team.Owner.TryAsync(HttpMethod.Patch, member, new { worksShifts = false }));
-        // Wanted hours and level still change while the person has shifts.
-        await team.Owner.SendAsync(HttpMethod.Patch, member, new { worksShifts = true, desiredWeeklyHours = 12 });
+        // The maximum and level still change while the person has shifts.
+        await team.Owner.SendAsync(HttpMethod.Patch, member, new { worksShifts = true, maxWeeklyHours = 12 });
         // A member of another workplace cannot reach Paul at all (1.6).
         var stranger = await app.PersonAsync("Sam Other");
         var elsewhere = await app.WorkplaceAsync(stranger);

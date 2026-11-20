@@ -33,9 +33,15 @@ public static class NotificationTypes
     public const string AvailabilityNoteAdded = "availability.note_added";
     public const string AvailabilityDue = "availability.due";
     public const string SchedulePublished = "schedule.published";
+
+    /// <summary>To who sent availability or holds a shift in it: the admin cancelled the period (2026-11-18).</summary>
+    public const string PeriodCancelled = "period.cancelled";
     public const string ScheduleChanged = "schedule.changed";
     public const string ShiftOffered = "shift.offered";
     public const string ShiftClaimed = "shift.claimed";
+
+    /// <summary>To managers: a claim or trade that needed no approval left a shift without its required level (3.3).</summary>
+    public const string ShiftMissingLevel = "shift.missing_level";
     public const string ClaimRequested = "claim.requested";
     public const string ClaimApproved = "claim.approved";
     public const string ClaimDeclined = "claim.declined";
@@ -47,7 +53,14 @@ public static class NotificationTypes
     public const string TradeRejected = "trade.rejected";
     public const string TradeExpired = "trade.expired";
 
-    private static readonly string[] Shift = ["date", "start", "end", "name"];
+    // shiftId and periodId: the shift the alert opens on the Schedule tab, when there is one (2026-11-18).
+    private static readonly string[] Shift = ["date", "start", "end", "name", "shiftId", "periodId"];
+
+    /// <summary>
+    /// Types that belong to the Trade tab, not to Alerts (2.5, 2026-11-18): they are stored, pushed and emailed
+    /// like any other, but the Alerts list and its count leave them out. The Trade tab counts its own items.
+    /// </summary>
+    public static IReadOnlySet<string> TradeTab { get; } = new HashSet<string>(StringComparer.Ordinal) { ShiftOffered, TradeRequested };
 
     public static IReadOnlyDictionary<string, IReadOnlyList<string>> AllowedParameters { get; } =
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
@@ -57,13 +70,15 @@ public static class NotificationTypes
             [AvailabilityRequested] = ["periodStart", "weeks"],
             [AvailabilityReminder] = ["periodStart"],
             [AvailabilityReopened] = ["periodStart"],
-            [AvailabilitySent] = ["name", "periodStart"],
-            [AvailabilityNoteAdded] = ["name", "periodStart"],
+            [AvailabilitySent] = ["name", "periodStart", "periodId", "membershipId"],
+            [AvailabilityNoteAdded] = ["name", "periodStart", "periodId", "membershipId"],
             [AvailabilityDue] = ["periodStart", "sent", "total"],
             [SchedulePublished] = ["periodStart", "version"],
+            [PeriodCancelled] = ["periodStart", "weeks"],
             [ScheduleChanged] = ["periodStart", "added", "removed"],
             [ShiftOffered] = Shift,
             [ShiftClaimed] = Shift,
+            [ShiftMissingLevel] = Shift,
             [ClaimRequested] = Shift,
             [ClaimApproved] = Shift,
             [ClaimDeclined] = Shift,

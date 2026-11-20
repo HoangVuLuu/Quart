@@ -116,13 +116,14 @@ public sealed class WorkplaceTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task Levels_and_hours_are_set_by_admins_only_and_coworkers_see_nothing_more_than_name_role_level_and_email()
+    public async Task Levels_are_set_and_seen_by_admins_only_and_coworkers_see_nothing_more_than_name_role_and_email()
     {
         await using var app = await TestApp.StartAsync(postgres);
         var owner = await app.PersonAsync("Philippe Roy");
         var workplaceId = await app.WorkplaceAsync(owner, withTemplate: false);
-        var sophie = await app.JoinAsync(owner, workplaceId, "Sophie Tran", level: 2, desiredHours: 13);
+        var sophie = await app.JoinAsync(owner, workplaceId, "Sophie Tran", level: 2);
         var kevin = await app.JoinAsync(owner, workplaceId, "Kevin Tremblay");
+        await owner.SendAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/members/{sophie.MembershipId}", new { maxWeeklyHours = 24 });
 
         // 5.4: an employee can never change a level, including their own.
         var (own, _) = await sophie.TryAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/members/{sophie.MembershipId}", new { level = 3 });
@@ -135,38 +136,15 @@ public sealed class WorkplaceTests(PostgresFixture postgres)
 
         Assert.Equal(HttpStatusCode.Forbidden, own);
         Assert.Equal((HttpStatusCode.BadRequest, "workplace.level_invalid"), (invalid, invalidCode));
-        Assert.Equal(2, sophieForKevin["level"]!.GetValue<int>());
+        // 3.1 (2026-11-18): workers see no levels at all, not even their own.
+        Assert.Null(sophieForKevin["level"]);
+        Assert.Null(kevinForKevin["level"]);
+        Assert.Null((await kevin.GetAsync($"/api/workplaces/{workplaceId}"))["me"]!["level"]);
+        Assert.Equal(2, sophieForOwner["level"]!.GetValue<int>());
         Assert.Equal(sophie.Email, sophieForKevin["email"]!.GetValue<string>());
-        Assert.Null(sophieForKevin["desiredWeeklyHours"]);
         Assert.Null(sophieForKevin["worksShifts"]);
-        Assert.Equal(13m, sophieForOwner["desiredWeeklyHours"]!.GetValue<decimal>());
-        Assert.Equal(20m, kevinForKevin["desiredWeeklyHours"]!.GetValue<decimal>());
-    }
-
-    [Fact]
-    public async Task Staff_set_their_own_wanted_hours_but_never_above_the_maximum_or_for_someone_else()
-    {
-        await using var app = await TestApp.StartAsync(postgres);
-        var owner = await app.PersonAsync("Philippe Roy");
-        var workplaceId = await app.WorkplaceAsync(owner, withTemplate: false);
-        var sophie = await app.JoinAsync(owner, workplaceId, "Sophie Tran", desiredHours: 13);
-        var kevin = await app.JoinAsync(owner, workplaceId, "Kevin Tremblay");
-        await owner.SendAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/members/{sophie.MembershipId}", new { maxWeeklyHours = 24 });
-
-        // FR-037: the wish is the person's own; the maximum and everyone else's hours are not.
-        var (saved, _) = await sophie.TryAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/me", new { desiredWeeklyHours = 18 });
-        var (aboveMax, aboveMaxCode) = await sophie.TryAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/me", new { desiredWeeklyHours = 30 });
-        var (negative, _) = await sophie.TryAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/me", new { desiredWeeklyHours = -1 });
-        var (someoneElse, _) = await sophie.TryAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/members/{kevin.MembershipId}", new { desiredWeeklyHours = 5 });
-        var members = (await owner.GetAsync($"/api/workplaces/{workplaceId}/members")).AsArray();
-        decimal HoursOf(string name) => members.Single(x => x!["displayName"]!.GetValue<string>() == name)!["desiredWeeklyHours"]!.GetValue<decimal>();
-
-        Assert.Equal(HttpStatusCode.NoContent, saved);
-        Assert.Equal((HttpStatusCode.BadRequest, "workplace.hours_invalid"), (aboveMax, aboveMaxCode));
-        Assert.Equal(HttpStatusCode.BadRequest, negative);
-        Assert.Equal(HttpStatusCode.Forbidden, someoneElse);
-        Assert.Equal(18m, HoursOf("Sophie T."));
-        Assert.Equal(20m, HoursOf("Kevin T."));
+        Assert.Null(sophieForKevin["maxWeeklyHours"]);
+        Assert.Equal(24m, sophieForOwner["maxWeeklyHours"]!.GetValue<decimal>());
     }
 
     [Fact]

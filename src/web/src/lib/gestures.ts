@@ -61,3 +61,41 @@ export function useSwipe({ onNext, onPrevious }: SwipeHandlers) {
     },
   };
 }
+
+/**
+ * Swipe right from the left edge to go back, like the back arrow (2026-11-18). Browsers already do this
+ * themselves, and so does Android, so it only listens in the app installed on an iPhone's home screen,
+ * where nothing else would. Pass `enabled` to force it, as tests do.
+ */
+export function useEdgeSwipeBack(onBack: () => void, enabled = isInstalledOnIphone()) {
+  const start = useRef<{ x: number; y: number } | null>(null);
+  if (!enabled) return {};
+  return {
+    onTouchStart(event: TouchEvent) {
+      const touch = event.touches[0];
+      start.current =
+        event.touches.length === 1 &&
+        touch &&
+        touch.clientX <= backGestureEdge + 12 &&
+        !ownsItsTouches(event.target)
+          ? { x: touch.clientX, y: touch.clientY }
+          : null;
+    },
+    onTouchEnd(event: TouchEvent) {
+      const from = start.current;
+      const touch = event.changedTouches[0];
+      start.current = null;
+      if (!from || !touch) return;
+      const dx = touch.clientX - from.x;
+      const dy = touch.clientY - from.y;
+      if (dx >= swipeDistance * 1.5 && dx >= Math.abs(dy) * 2) onBack();
+    },
+    onTouchCancel() {
+      start.current = null;
+    },
+  };
+}
+
+function isInstalledOnIphone(): boolean {
+  return typeof navigator !== 'undefined' && (navigator as { standalone?: boolean }).standalone === true;
+}

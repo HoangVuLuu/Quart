@@ -301,9 +301,9 @@ FR-036  Each membership has an "I work shifts too" flag. When on, that member
         schedule: the app refuses and says to remove those shifts first.
 FR-037  Each member who works shifts has a weekly desired hours target, and an
         optional maximum set by an admin. There is no minimum-hours concept.
-        The target is set by the member from Profile, or by an admin from the
-        team list; it can never be above the maximum. Level, "works shifts"
-        and the maximum stay with admins.
+        The target is given with each period's availability (BR-032); nobody
+        else changes it, and it is not set anywhere else. Level, "works
+        shifts" and the maximum stay with admins (team list).
 FR-038  A member can leave a workplace. An admin can remove a member. In both
         cases every future shift held by that person becomes an open slot and
         the admins are notified. Past shifts are left intact.
@@ -377,8 +377,9 @@ FR-073  The Edit Generator page has two tabs: General (period length, maximum
 FR-090  The admin sets a period length of 1, 2, 3 or 4 weeks per period.
         "Monthly" means 4-week blocks, not calendar months, so that weeks and
         hours targets stay aligned. The setting is on the Edit Generator page's
-        General tab (mockup 1k3). Changing the period length mid-period adds
-        weeks with no submitted availability.
+        General tab (mockup 1k3), and only there: opening a period asks for
+        its start date only and shows the length from the rules (2026-11-18).
+        A change applies to the next period opened, never to one already open.
 FR-091  The admin sets how many days before the period starts the availability
         request goes out, and a submission deadline. Automatic reminders are
         sent to anyone who has not submitted.
@@ -389,7 +390,11 @@ FR-091  The admin sets how many days before the period starts the availability
         and send before the request goes out. Reminders go out 48 and 24
         hours before the deadline to people who have not sent; at the
         deadline the admins are told how many have sent. Nothing locks at
-        the deadline (FR-100). A period opened after it has started may take
+        the deadline (FR-100). While the admin is on Building Schedule
+        (availability locked), the request, reminders and deadline note wait
+        and go out once they leave; once published, none go out. The
+        next-period box on Schedule shows the deadline, and the day the
+        request goes out while it has not yet. A period opened after it has started may take
         any future deadline before it ends.
 FR-092  Starting a period copies the template into real, dated shifts. From that
         point the period has its own shifts, which the admin may edit for that
@@ -413,17 +418,27 @@ FR-097  Helper: import from Google Calendar. Uses the free/busy lookup, which
         themselves. Import is one-time per press, never a continuous sync.
 FR-098  Submitting sends the availability to the admin. An employee may edit and
         resend as many times as they like until the schedule is generated.
+        Availability is opened from Home only: its button says "Fill in"
+        until sent, then "Change availability" (or "View" once locked). Send
+        and the back arrow both return to Home.
 FR-099  Anyone who has not submitted has the status "not sent". They are never
         treated as available. The admin can still place them on a shift by hand
         (FR-121).
-FR-100  Availability locks the moment the admin starts building the schedule,
-        whether by clicking Generate or by starting a manual build. Both paths
-        behave identically. After the lock the availability grid is read-only
-        but people can still add notes (FR-103).
+FR-100  Availability locks while the admin is on Building Schedule, the page
+        where the schedule is generated and edited before it is first
+        published. Leaving the page, with or without saving a draft, unlocks
+        it again; entering locks it again. Closing the app counts as leaving
+        without saving: the page sends a sign of life every 30 seconds, and
+        after 2 minutes without one the visit ends, unsaved changes are
+        dropped and availability unlocks. Changes made while unlocked show up
+        on return: the issues list flags draft assignments that no longer
+        match, and Generate uses the latest answers. Once published, a period
+        stays locked; Editing Schedule unlocks nothing. While locked the grid
+        is read-only but people can still add notes (FR-103).
 FR-101  After the lock, an admin can reopen availability for one specific person
         without reopening it for everyone. That person is notified.
-FR-102  Because availability locks, there is no "my availability changed after
-        publishing" flow. After the lock, the only way out of a shift is to give
+FR-102  Because availability locks for good once published, there is no "my
+        availability changed after publishing" flow. After the lock, the only way out of a shift is to give
         it away (6.7). This is a deliberate simplification of the original idea
         and removes the auto-removal race it created.
 FR-103  An employee may add optional notes about their availability for the
@@ -441,6 +456,22 @@ FR-103  An employee may add optional notes about their availability for the
         (section 13). They are rendered as text, never as HTML. Admins are
         notified when a note is added or when availability is sent or
         updated (FR-215); the notification never contains the note text.
+FR-104a An admin can open one person's availability, read-only, from their
+        name in "Who has sent" or from their alert: the same layout as the
+        form, with the shifts they can work, their hours per week and their
+        notes (FR-103 rules on who reads notes). Someone who has not sent
+        shows nothing selected: a draft is private. The page has no tab bar;
+        the back arrow, or a swipe right from the edge, returns to the
+        previous page (2026-11-19).
+
+FR-104  An admin can cancel a period for good: one that is not published yet,
+        or a published one that has not started. Everything in it is deleted
+        (shifts, availability and notes, drafts, published versions), its dates
+        are free for a new period, and give-aways, claims and trades on its
+        shifts are cancelled. "Cancel period" is in the next-period box and on
+        Building Schedule, and on Editing Schedule until the period starts,
+        always behind an "Are you sure?". The people who sent availability or
+        hold a shift in it are told (FR-215), except the admin who cancelled.
 
 6.5 SCHEDULE GENERATION
 FR-120  The admin clicks Generate and receives a complete draft schedule.
@@ -465,7 +496,9 @@ FR-141  Tapping a shift opens a panel with: the current roster, and a list of
         everyone who could be added. Every name carries a colour for their
         availability status (available / not available / no answer), their
         level, and a live hours counter for the week that shift falls in, shown
-        as assigned/desired, e.g. 3/13.
+        as assigned/desired, e.g. 3/13, or 3/– for someone who has not sent
+        availability with their hours. Levels are shown to admins only:
+        workers never see a level, their own included.
 FR-142  From that panel the admin can add someone, remove someone, or lock an
         assignment. The admin may add people past the shift's headcount, for
         an extra pair of hands that day; it is shown as an issue and never
@@ -523,11 +556,13 @@ FR-183  If an offered shift is still unclaimed X hours before it starts, the
         admins are notified. X is a workplace setting, 24 hours by default.
 FR-184  An employee can claim an open slot or an offered shift.
 FR-185  Claims are not restricted by desired hours, by level, or by whether the
-        person marked themselves available. The app warns but does not block.
+        person marked themselves available. Workers see no level warning.
         The one hard block: a person cannot claim a shift that overlaps another
         shift they already hold, in this workplace or any other.
-FR-186  A warning is shown when the claim would leave the shift without its
-        required level.
+FR-186  When a claim would leave the shift without its required level, the
+        warning goes to the admin: beside the claim when approval is on, and
+        as an alert (and in the issues list) when it went through without
+        approval. Workers never see it.
 FR-187  When approval for claims is switched on and several people request the
         same shift, the admin sees all requesters and picks one. Approving one
         automatically declines the others for that shift. When approval is off,
@@ -540,12 +575,16 @@ FR-190  The requester can cancel a trade at any time until it is approved.
 FR-191  A pending trade expires after 14 days, or when either shift starts,
         whichever comes first. It is also cancelled automatically if the admin
         edits either of the two shifts.
-FR-192  At the moment of approval the app re-validates everything: both people
-        still hold those shifts, required levels are still covered, and nobody
-        ends up double-booked. A trade that no longer makes sense is rejected
-        with an explanation, never applied blindly.
+FR-192  At the moment of approval the app re-validates: both people still hold
+        those shifts and nobody ends up double-booked. A trade that no longer
+        makes sense is rejected with an explanation, never applied blindly. A
+        broken level rule is a warning the approver sees and may override, not
+        a rejection; the same goes for claims. With approval off the trade or
+        claim goes through, the admins get an alert, and the issues list shows
+        "shift missing a required level".
 FR-193  Approval requirements are two independent settings: one for claims, one
-        for trades.
+        for trades. When an admin is one of the two people in a trade, it
+        needs no approval: it applies once the coworker accepts.
 
 6.9 NOTIFICATIONS
 FR-210  Three channels: in-app, push, and email.
@@ -566,9 +605,21 @@ FR-215  Notification events: availability requested; availability reminder;
         a trade awaiting approval (to admins); an offered shift is still
         unclaimed (to admins); a member left or was removed (to admins);
         a new announcement (to all members, bundled per FR-213);
+        a period was cancelled (FR-104);
         availability sent or updated, and an availability note added
         (both to admins, bundled per FR-213, never with the note text);
         (backlog) a new payslip is available (to that employee only).
+        Since 2026-11-18, "someone is giving away a shift" and "a trade
+        request" belong to the Trade tab, not to Alerts: they are still
+        pushed and emailed, and the Trade tab counts its items (open shifts,
+        give-aways, trade requests) until each is opened. Everything else,
+        including claim and trade outcomes for the people in them, stays in
+        Alerts. Each alert has an eye button that marks it read. Tapping an
+        alert opens its page and marks it read for four kinds: "sent their
+        availability" and "added a note" open that person's answer
+        (read-only, FR-104a); "the shift is yours" and "the trade is done"
+        open the Schedule tab with that shift's pop-up (who works it). Other
+        alerts go nowhere when tapped (2026-11-19).
 FR-216  Notification and email text never carries sensitive content: no
         availability comments, no announcement photos, and (backlog) never pay
         amounts or payslip files. Push notifications appear on lock screens.
@@ -724,8 +775,12 @@ BR-030  A shift is either fully covered by one person or not assigned to them.
         supported in v1.
 BR-031  Hours count the full shift length. No unpaid break is deducted.
         Opening = 6 h, closing = 7 h.
-BR-032  Desired hours is a single weekly target per person per workplace, with
-        an optional admin-set maximum. There is no minimum.
+BR-032  Desired hours is one weekly target per person per period, given in the
+        availability form and required to send it. It is prefilled with the
+        person's number from their previous period (empty the first time) and
+        applies to every week of the period. Any number is accepted; if it is
+        above the admin-set maximum, the generator quietly uses the maximum.
+        Admins see it but cannot change it. There is no minimum.
 BR-033  Under/over hours is reported when the total deviates from the target by
         more than 2 hours over the period.
 BR-034  Opening and closing are identified automatically as the first and last
@@ -1876,6 +1931,48 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             period; staff can fill in before the request goes out; the
             deadline is required, prefilled to 18:00 three days before the
             start; reminders 48 and 24 hours before it.  (FR-091)
+
+2026-11-18  Change list from testing (Hoang, claude/quart-changes-2026-11-18.md):
+            hours wanted per period in the availability form (BR-032,
+            FR-037); availability is filled in from Home only, and Send and
+            the back arrow return there (FR-098);
+            the Trade tab gets "My shifts to trade", an unopened-item count,
+            and the give-away and trade-request notifications (FR-215);
+            tapping your own shift on Schedule shows who works it; workers
+            never see levels (FR-141, FR-185, FR-186); a level breach is a
+            warning the approver may override, or an alert when approval is
+            off (FR-192); an admin in a trade skips approval (FR-193); the
+            next-period box sits at the top of Schedule; Building and Editing
+            Schedule pages with Save draft, Clear and "Leave without saving?";
+            availability unlocks on leaving Building Schedule, and a closed
+            app counts as leaving without saving after 2 minutes (FR-100,
+            FR-102); back arrows return to the previous page; the first
+            period now uses the period length from the generator rules (bug).
+            The Trade count includes empty slots, by Hoang's choice.
+            The period length is set only in the generator rules; the
+            open-period box no longer asks for it (FR-090).
+            Also added: an admin can cancel a period (FR-104), including a
+            published one before it starts; its data is deleted, and who
+            sent availability or holds a shift in it is told.
+
+2026-11-19  More changes from testing (Hoang): on Schedule, Cancel period is a
+            red trash icon in the corner of the next-period box, "Edit
+            generator rules" is a pen icon at its bottom right (and on
+            Profile), and "Edit current schedule" is a pen at the end of the
+            My shifts / Whole team row; Whole team stays chosen when switching
+            periods (bug); on Home the availability title keeps to one line
+            and "View shift" opens who works it; managers read one person's
+            availability (FR-104a); alerts get an eye to mark read, and four
+            kinds open their page (FR-215); trades come above open shifts on
+            the Trade tab; a swipe right from the edge goes back on every page
+            with a back arrow, in the app installed on an iPhone (browsers and
+            Android already do it).
+
+2026-11-19  Availability cycle (M4-05) merged with the 2026-11-18 changes: the
+            deadline is set when opening a period, with the length still from
+            the generator rules; the next-period box shows it; automatic steps
+            wait while the admin is on Building Schedule instead of being
+            dropped.  (FR-091)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

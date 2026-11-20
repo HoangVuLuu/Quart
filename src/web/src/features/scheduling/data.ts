@@ -3,6 +3,7 @@ import { api, unwrap, type Schemas } from '../../lib/api/client';
 import { useWorkplace } from '../workplaces/workplace';
 
 export type PeriodSummary = Schemas['PeriodSummary'];
+export type NextPeriod = Schemas['NextPeriod'];
 export type MyAvailability = Schemas['MyAvailability'];
 export type DraftView = Schemas['DraftView'];
 export type DraftShift = Schemas['DraftShift'];
@@ -82,11 +83,11 @@ export function useAvailabilityActions(periodId: string) {
   const path = { workplaceId: id, periodId };
   return {
     send: useMutation({
-      mutationFn: (shiftIds: string[]) =>
+      mutationFn: ({ shiftIds, desiredWeeklyHours }: { shiftIds: string[]; desiredWeeklyHours: number }) =>
         unwrap(
           api.POST('/api/workplaces/{workplaceId}/periods/{periodId}/availability/me/send', {
             params: { path },
-            body: { shiftIds },
+            body: { shiftIds, desiredWeeklyHours },
           }),
         ),
       onSuccess: refresh,
@@ -224,6 +225,18 @@ export function useDraftActions(periodId: string) {
         unwrap(api.POST(`${base}/publish`, { params: { path }, body: { confirmed } })),
       onSuccess: refresh,
     }),
+    // 4.3: Save draft, Clear, and leaving the page. Leaving drops unsaved changes on the server.
+    save: useMutation({
+      mutationFn: () => unwrap(api.POST(`${base}/save`, { params: { path } })),
+      onSuccess: async (draft) => {
+        await refresh();
+        show(draft);
+      },
+    }),
+    clear: useMutation({
+      mutationFn: () => unwrap(api.POST(`${base}/clear`, { params: { path } })),
+      onSuccess: show,
+    }),
   };
 }
 
@@ -264,4 +277,61 @@ export function mondayOnOrAfter(date: string): string {
   const day = new Date(`${date}T00:00:00Z`);
   day.setUTCDate(day.getUTCDate() + ((8 - day.getUTCDay()) % 7));
   return day.toISOString().slice(0, 10);
+}
+
+/**
+ * The open Building or Editing Schedule page's sign of life (4.3). A 409 means the visit already ended
+ * (the page went quiet for over two minutes and someone needed availability), so its unsaved work is gone.
+ */
+export function sendHeartbeat(workplaceId: string, periodId: string) {
+  return api.POST('/api/workplaces/{workplaceId}/periods/{periodId}/draft/heartbeat', {
+    params: { path: { workplaceId, periodId } },
+  });
+}
+
+/**
+ * Leaving Building or Editing Schedule. Sent with keepalive so it still reaches the server when the page
+ * is being closed; if it never arrives, the missing signs of life end the visit the same way.
+ */
+export function leaveBuilding(workplaceId: string, periodId: string) {
+  return api.POST('/api/workplaces/{workplaceId}/periods/{periodId}/draft/leave', {
+    params: { path: { workplaceId, periodId } },
+    keepalive: true,
+  });
+}
+
+/** Cancels a period for good: everything in it is deleted and the people in it are told (2026-11-18). */
+export function useCancelPeriod() {
+  const { id } = useWorkplace();
+  return useMutation({
+    mutationFn: (periodId: string) =>
+      unwrap(
+        api.DELETE('/api/workplaces/{workplaceId}/periods/{periodId}', {
+          params: { path: { workplaceId: id, periodId } },
+        }),
+      ),
+  });
+}
+
+/** A published period can be cancelled only before its first day, in the browser's own calendar. */
+export function hasStarted(period: PeriodSummary): boolean {
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return period.startDate <= today;
+}
+
+/** One person's sent availability, read-only, for a manager (2026-11-18). */
+export function usePersonAvailability(periodId: string, membershipId: string) {
+  const { id } = useWorkplace();
+  return useQuery({
+    queryKey: ['workplace', id, 'availability', periodId, 'person', membershipId],
+    queryFn: ({ signal }) =>
+      unwrap(
+        api.GET('/api/workplaces/{workplaceId}/periods/{periodId}/availability/{membershipId}', {
+          params: { path: { workplaceId: id, periodId, membershipId } },
+          signal,
+        }),
+      ),
+    retry: false,
+  });
 }

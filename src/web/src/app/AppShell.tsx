@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet } from 'react-router';
 import { useWaitingCount } from '../features/alerts/data';
+import { useMarketplace } from '../features/marketplace/data';
 import { MainNav } from './MainNav';
 import { tabs } from './navigation';
 
@@ -10,6 +11,8 @@ import { tabs } from './navigation';
 export function AppShell() {
   const { t } = useTranslation();
   const waiting = useWaitingCount();
+  // 2.4: items on the Trade tab the person has not opened yet.
+  const unseen = useMarketplace().data?.unseen ?? 0;
 
   return (
     <div className="min-h-dvh pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]">
@@ -41,7 +44,15 @@ export function AppShell() {
           </Link>
         </header>
 
-        <MainNav tabs={tabs.map((tab) => (tab.icon === 'alerts' ? { ...tab, count: waiting } : tab))} />
+        <MainNav
+          tabs={tabs.map((tab) =>
+            tab.icon === 'alerts'
+              ? { ...tab, count: waiting }
+              : tab.icon === 'trade'
+                ? { ...tab, count: unseen }
+                : tab,
+          )}
+        />
 
         {/* Phones keep room under the content for the floating tab bar, so it never covers anything. */}
         <main

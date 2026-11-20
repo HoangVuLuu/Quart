@@ -27,7 +27,7 @@ public sealed class AvailabilityCycleTests(PostgresFixture postgres)
     }
 
     private static async Task<JsonNode> OpenAsync(Team team, string start, string dueDate, string dueTime = "18:00") =>
-        await team.Owner.PostAsync($"{team.Base}/periods", new { startDate = start, weeks = 1, dueDate, dueTime });
+        await team.Owner.PostAsync($"{team.Base}/periods", new { startDate = start, dueDate, dueTime });
 
     [Fact]
     public async Task The_request_waits_for_the_day_the_workplace_chose_but_staff_can_send_early()
@@ -91,16 +91,30 @@ public sealed class AvailabilityCycleTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task Nothing_more_is_sent_once_building_has_started()
+    public async Task A_step_waits_while_the_manager_is_building_and_nothing_is_sent_once_published()
     {
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
         await team.OpenPeriodAsync();
+        var zone = DateTimeZoneProviders.Tzdb["America/Toronto"];
+
+        // On Building Schedule when the 48-hour reminder is due: availability is locked, so it waits (FR-100).
+        app.Clock.Advance(new LocalDateTime(2026, 11, 4, 17, 59).InZoneLeniently(zone).ToInstant() - app.Clock.GetCurrentInstant());
         await team.Owner.PostAsync($"{team.Period}/draft/start");
-
-        await TickAtAsync(app, new LocalDateTime(2026, 11, 6, 18, 0));
-
+        await TickAtAsync(app, new LocalDateTime(2026, 11, 4, 18, 0));
         Assert.Equal(0, await CountAsync(team.Staff[2], team, "availability.reminder"));
+
+        // Once the manager leaves, availability unlocks and the reminder goes out on a later tick.
+        await team.Owner.PostAsync($"{team.Period}/draft/leave");
+        await TickAtAsync(app, new LocalDateTime(2026, 11, 4, 18, 6));
+        Assert.Equal(1, await CountAsync(team.Staff[2], team, "availability.reminder"));
+
+        // Published: the rest is not sent.
+        await team.Owner.PostAsync($"{team.Period}/draft/start");
+        await team.Owner.PostAsync($"{team.Period}/draft/generate", new { seed = 1 });
+        await team.Owner.PostAsync($"{team.Period}/draft/publish", new { confirmed = true });
+        await TickAtAsync(app, new LocalDateTime(2026, 11, 6, 18, 0));
+        Assert.Equal(1, await CountAsync(team.Staff[2], team, "availability.reminder"));
         Assert.Equal(0, await CountAsync(team.Owner, team, "availability.due"));
     }
 
@@ -114,7 +128,7 @@ public sealed class AvailabilityCycleTests(PostgresFixture postgres)
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
 
-        var result = await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-09", weeks = 1, dueDate, dueTime });
+        var result = await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-09", dueDate, dueTime });
 
         Assert.Equal((HttpStatusCode.BadRequest, code), result);
     }
@@ -125,8 +139,8 @@ public sealed class AvailabilityCycleTests(PostgresFixture postgres)
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
 
-        // Today is Monday 2 November, the first day.
-        Assert.Equal((HttpStatusCode.BadRequest, "period.due_after_start"), await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-02", weeks = 1, dueDate = "2026-11-09", dueTime = "00:01" }));
+        // Today is Monday 2 November, the first day; the period lasts two weeks (the generator rules).
+        Assert.Equal((HttpStatusCode.BadRequest, "period.due_after_start"), await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-02", dueDate = "2026-11-16", dueTime = "00:01" }));
         await OpenAsync(team, "2026-11-02", "2026-11-03");
     }
 
@@ -139,7 +153,7 @@ public sealed class AvailabilityCycleTests(PostgresFixture postgres)
         setup["requestDaysBefore"] = 7;
         await team.Owner.SendAsync(HttpMethod.Put, $"{team.Base}/generator", setup);
 
-        var result = await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-23", weeks = 1, dueDate = "2026-11-12", dueTime = "18:00" });
+        var result = await team.Owner.TryAsync(HttpMethod.Post, $"{team.Base}/periods", new { startDate = "2026-11-23", dueDate = "2026-11-12", dueTime = "18:00" });
 
         Assert.Equal((HttpStatusCode.BadRequest, "period.due_before_request"), result);
         setup["requestDaysBefore"] = 29;

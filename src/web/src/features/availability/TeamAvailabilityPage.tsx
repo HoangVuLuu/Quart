@@ -4,7 +4,6 @@ import { SubPage } from '../../app/SubPage';
 import { messageKeyFor } from '../../i18n/errors';
 import { formatDateRange, formatDue, formatNumber } from '../../i18n/format';
 import { Button } from '../../ui/Button';
-import { buttonClassName } from '../../ui/button-styles';
 import { Card } from '../../ui/Card';
 import { Skeleton } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
@@ -18,7 +17,7 @@ import { useWorkplace } from '../workplaces/workplace';
 // Opened from the Home card and from Schedule (known conflict 2).
 export function TeamAvailabilityPage() {
   const { t, i18n } = useTranslation();
-  const { can, view } = useWorkplace();
+  const { can } = useWorkplace();
   const periods = useCurrentPeriods();
   const next = periods.data?.next;
   const team = useTeamAvailability(can('ManageSchedule') ? next?.period.id : undefined);
@@ -45,11 +44,6 @@ export function TeamAvailabilityPage() {
           <p className="text-sm font-bold">
             {t('teamAvailability.due', { when: formatDue(data.period.dueAt, i18n.language) })}
           </p>
-        )}
-        {view.me.worksShifts && (
-          <Link to="/availability" className={buttonClassName('dark', 'w-full')}>
-            {t('teamAvailability.mine')}
-          </Link>
         )}
         <div
           role="progressbar"
@@ -99,7 +93,13 @@ function People({ periodId, locked, people }: { periodId: string; locked: boolea
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-bold">
-                    {person.name}{' '}
+                    {/* Opens their answer, read-only (2026-11-18). */}
+                    <Link
+                      to={`/availability/people/${periodId}/${person.membershipId}`}
+                      className="underline decoration-line underline-offset-4"
+                    >
+                      {person.name}
+                    </Link>{' '}
                     <span className="text-xs text-muted">
                       {t('scheduling.levelShort', { level: person.level })}
                     </span>
@@ -108,11 +108,12 @@ function People({ periodId, locked, people }: { periodId: string; locked: boolea
                     {sent
                       ? t('teamAvailability.offers', {
                           offered: formatNumber(person.hoursOffered, i18n.language),
-                          wanted: formatNumber(person.desiredWeeklyHours, i18n.language),
+                          wanted:
+                            person.desiredWeeklyHours == null
+                              ? '–'
+                              : formatNumber(person.desiredWeeklyHours, i18n.language),
                         })
-                      : t('teamAvailability.noAnswer', {
-                          wanted: formatNumber(person.desiredWeeklyHours, i18n.language),
-                        })}
+                      : t('teamAvailability.noAnswer')}
                   </p>
                   {person.notes.map((note) => (
                     <p

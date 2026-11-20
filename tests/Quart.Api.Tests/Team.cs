@@ -40,7 +40,7 @@ public sealed class Team
         var workplaceId = await app.WorkplaceAsync(owner);
         owner.MembershipId = await TestApp.MembershipIdAsync(owner, workplaceId);
         // FR-036: Philippe works shifts too.
-        await owner.SendAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/members/{owner.MembershipId}", new { worksShifts = true, desiredWeeklyHours = 20 });
+        await owner.SendAsync(HttpMethod.Patch, $"/api/workplaces/{workplaceId}/members/{owner.MembershipId}", new { worksShifts = true });
         var staff = new List<TestUser>();
         foreach (var (name, level) in new[] { ("Lea Martin", 3), ("Marc Gagnon", 3), ("Nora Singh", 2), ("Omar Haddad", 2), ("Paul Chen", 1), ("Rita Lopez", 1) })
         {
@@ -50,22 +50,31 @@ public sealed class Team
     }
 
     /// <summary>Opens a period starting on <paramref name="monday"/> (default: Monday 9 November 2026).</summary>
+    /// <summary>Opens a period of <paramref name="weeks"/>: the length lives in the generator rules only (FR-090).</summary>
     public async Task OpenPeriodAsync(int weeks = 1, LocalDate? monday = null)
     {
         var start = monday ?? new LocalDate(2026, 11, 9);
         // FR-091: due at 18:00 three days before the start, or tomorrow for a period that has already started.
         var today = App.Clock.GetCurrentInstant().InZone(DateTimeZoneProviders.Tzdb["America/Toronto"]).Date;
         var due = start.PlusDays(-3) > today ? start.PlusDays(-3) : today.PlusDays(1);
-        var period = await Owner.PostAsync($"{Base}/periods", new { startDate = start.ToString("yyyy-MM-dd", null), weeks, dueDate = due.ToString("yyyy-MM-dd", null), dueTime = "18:00" });
+        // The length lives in the generator rules only (FR-090).
+        var rules = await Owner.GetAsync($"{Base}/generator");
+        if (rules["periodWeeks"]!.GetValue<int>() != weeks)
+        {
+            rules["periodWeeks"] = weeks;
+            await Owner.SendAsync(HttpMethod.Put, $"{Base}/generator", rules);
+        }
+        var period = await Owner.PostAsync($"{Base}/periods", new { startDate = start.ToString("yyyy-MM-dd", null), dueDate = due.ToString("yyyy-MM-dd", null), dueTime = "18:00" });
         PeriodId = Guid.Parse(period["id"]!.GetValue<string>());
     }
 
     /// <summary>The person says they can work every shift for which <paramref name="canWork"/> is true, and sends.</summary>
-    public async Task SendAvailabilityAsync(TestUser person, Func<JsonNode, bool>? canWork = null)
+    /// <param name="hours">Hours per week wanted this period, sent with the availability (BR-032).</param>
+    public async Task SendAvailabilityAsync(TestUser person, Func<JsonNode, bool>? canWork = null, decimal hours = 20)
     {
         var mine = await person.GetAsync($"{Period}/availability/me");
         var shiftIds = mine["shifts"]!.AsArray().Where(x => canWork?.Invoke(x!) ?? true).Select(x => x!["id"]!.GetValue<string>()).ToList();
-        await person.PostAsync($"{Period}/availability/me/send", new { shiftIds });
+        await person.PostAsync($"{Period}/availability/me/send", new { shiftIds, desiredWeeklyHours = hours });
     }
 
     /// <summary>A period where everyone can work everything, generated and published as version 1.</summary>
