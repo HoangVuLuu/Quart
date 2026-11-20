@@ -340,9 +340,9 @@ local folder in Development. Only phase 6 needs the domain and production.
 | 1.2 | M5-05, FR-211 | Notification emails, built and checked in Mailpit. **Done in #166.** | nothing (real provider in 6.1) |
 | 1.3 | M2-07 | Change password while signed in; change email. **Done in #167.** | nothing |
 | 1.4 | M4-05 | Availability request with a deadline and automatic reminders; request N days before (Edit Generator). **Done in #168.** | nothing |
-| 1.5 | M5-11 | Same person in two workplaces | nothing |
-| 1.6 | M2-16 | Delete my account | nothing (D3 answered) |
-| 1.7 | M6-05 | Retention: nightly deletion | nothing (D3 answered) |
+| 1.5 | M5-11 | Same person in two workplaces. **Done in #170.** | nothing |
+| 1.6 | M2-16 | Delete my account. **Done in #170** (step-up waits for 4.1). | nothing (D3 answered) |
+| 1.7 | M6-05 | Retention: nightly deletion. **Done in #170.** | nothing (D3 answered) |
 
 ### Phase 2: phone experience
 
