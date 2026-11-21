@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, api, unwrap, type Schemas } from '../../lib/api/client';
+import { forgetOfflineCopies } from '../../lib/connection';
 
 export type Me = Schemas['Me'];
 
@@ -28,6 +29,7 @@ export function useSignIn() {
     onSuccess: (me) => {
       // Nothing cached for a previous account may leak into this one.
       client.clear();
+      forgetOfflineCopies();
       client.setQueryData(meKey, me);
     },
   });
@@ -40,6 +42,7 @@ export function useSignOut(everywhere = false) {
       unwrap(everywhere ? api.POST('/api/auth/sign-out-everywhere') : api.POST('/api/auth/sign-out')),
     onSuccess: () => {
       client.clear();
+      forgetOfflineCopies();
       client.setQueryData(meKey, null);
     },
   });

@@ -169,6 +169,25 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
     await expect(staff.getByRole('main').getByRole('button', { name: /Closing/ })).toHaveCount(6);
   });
 
+  await test.step('offline, Sophie still sees her shifts (M8-05)', async () => {
+    const staff = sophie.page;
+    // Once the service worker runs, a load passes through it and the shifts are kept on the phone.
+    await staff.evaluate(async () => {
+      await navigator.serviceWorker.ready;
+    });
+    await staff.reload();
+    await expect(staff.getByRole('main').getByRole('button', { name: /Closing/ })).toHaveCount(6);
+
+    await staff.context().setOffline(true);
+    await staff.reload();
+    await expect(staff.getByText('You’re offline')).toBeVisible();
+    await expect(staff.getByRole('main').getByRole('button', { name: /Closing/ })).toHaveCount(6);
+
+    await staff.context().setOffline(false);
+    await staff.reload();
+    await expect(staff.getByText('You’re offline')).toBeHidden();
+  });
+
   await test.step('Sophie gives her first closing away and Kevin claims it', async () => {
     const staff = sophie.page;
     // From the Trade tab now (2.1, 2.2); the Schedule tab only shows who works the shift (2.3).

@@ -1079,11 +1079,14 @@ AD-038  Tailwind for styling with Radix primitives underneath anything
         reader behaviour for free.
 AD-039  react-i18next for translations, with fr and en resource files.
 AD-040  vite-plugin-pwa for the installable app, push notifications and an
-        offline read-only copy of your own shifts. The offline cache is an
-        allowlist: the app shell and the user's own published shifts, nothing
-        else. It never stores files from storage (announcement photos,
-        payslips) or any response marked no-store. This matters on shared and
-        lost phones.
+        offline read-only copy of your shifts. The offline cache is an
+        allowlist: the app shell, who is signed in, the workplace, its periods
+        and its published schedules (the whole schedule, as staff see it
+        online), nothing else. It belongs to one person at a time and is
+        emptied on sign-in, sign-out, account deletion or an ended session.
+        It never stores files from storage (announcement photos, payslips)
+        or any API route off the list (decision 0014). This matters on shared
+        and lost phones.
 AD-041  Frontend folders mirror the backend modules so that a feature lives in
         one obvious place on both sides.
 AD-048  Design tokens are defined once, as Tailwind theme variables in
@@ -2021,6 +2024,10 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             email is sent first and its outbox row is then deleted, so no
             table keeps the address. Accounts that never confirmed their
             email are deleted 7 days after sign-up.  (FR-009, 13)
+2026-11-20  Offline copy (M8-05): the whole published schedule is kept for
+            offline use, coworkers' names included, since staff see it
+            online anyway (Hoang). Copies are used only without a
+            connection and say when they were saved.  (AD-040)
 2026-11-20  Retention (M6-05): "2 months" for schedules and generation runs
             means after the period ends; the cleanup runs at 03:00 Montreal
             time, on staging too (Hoang: staging data is test data); the

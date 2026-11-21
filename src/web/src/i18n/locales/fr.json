@@ -955,6 +955,14 @@
       "delete": "Supprimer ce quart"
     }
   },
+  "offline": {
+    "title": "Tu es hors ligne",
+    "copy": "Voici tes quarts enregistrés ({{time}}). Pour faire un changement, il faut une connexion.",
+    "noCopy": "Certaines choses demandent une connexion. Réessaie quand tu seras de nouveau en ligne.",
+    "needsConnection": "Tu es hors ligne. Donner ou échanger un quart demande une connexion.",
+    "updateReady": "Une nouvelle version de Quart est prête.",
+    "reload": "Recharger"
+  },
   "profile": {
     "title": "Profil",
     "level": "Niveau de barista",

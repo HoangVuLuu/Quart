@@ -8,6 +8,7 @@ import { PageHeader } from '../../ui/PageHeader';
 import { Skeleton } from '../../ui/Skeleton';
 import { useCurrentPeriods } from '../scheduling/data';
 import { useWorkplace } from '../workplaces/workplace';
+import { OfflineBanner } from '../offline/OfflineBanner';
 import { NextPeriodBox } from './NextPeriod';
 import { PublishedSchedule, type ScheduleScope } from './PublishedSchedule';
 import { Pill } from './Pill';
@@ -48,6 +49,8 @@ export function SchedulePage() {
         title={t('schedule.title')}
         subtitle={range ? `${range} · ${t('schedule.state.published')}` : undefined}
       />
+
+      <OfflineBanner />
 
       {manages && <NextPeriodBox next={next} after={live?.endDate} />}
 

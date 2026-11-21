@@ -348,7 +348,7 @@ local folder in Development. Only phase 6 needs the domain and production.
 
 | # | Plan ID | Work | Needs |
 | --- | --- | --- | --- |
-| 2.1 | M8-05 | Service worker: instant opening, offline "My shifts" | nothing (tried on staging) |
+| 2.1 | M8-05 | Service worker: instant opening, offline "My shifts". **Done in #171.** | nothing (tried on staging) |
 | 2.2 | M8-06 | Web push with the iPhone install guide | nothing (tried on staging) |
 | 2.3 | M8-07 | Notification preferences and bundling | nothing |
 

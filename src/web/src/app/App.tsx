@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router';
+import { UpdatePrompt } from '../features/offline/UpdatePrompt';
 import { PullToRefresh } from './PullToRefresh';
 import { router } from './router';
 
@@ -11,6 +12,13 @@ const queryClient = new QueryClient({
       staleTime: 30_000,
       refetchOnWindowFocus: true,
       retry: 1,
+      // Asked even when the phone says it is offline: the service worker may answer with the last copy
+      // (M8-05). The default would wait for a connection and show nothing.
+      networkMode: 'offlineFirst',
+    },
+    mutations: {
+      // Fails at once with "no connection" instead of waiting with a spinner.
+      networkMode: 'always',
     },
   },
 });
@@ -21,6 +29,7 @@ export function App() {
       <PullToRefresh>
         <RouterProvider router={router} />
       </PullToRefresh>
+      <UpdatePrompt />
     </QueryClientProvider>
   );
 }

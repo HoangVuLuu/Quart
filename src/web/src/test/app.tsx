@@ -18,8 +18,8 @@ export interface ApiCall {
 type Answer = unknown | ((call: ApiCall) => unknown);
 
 /** An answer with a status other than 200, such as a problem: `status(409, { code: 'schedule.not_building' })`. */
-export function status(code: number, body?: unknown) {
-  return { __status: code, body };
+export function status(code: number, body?: unknown, headers: Record<string, string> = {}) {
+  return { __status: code, body, headers };
 }
 
 /**
@@ -49,12 +49,16 @@ export function fakeApi(answers: Record<string, Answer>): ApiCall[] {
         });
       }
       const value = typeof answer === 'function' ? (answer as (call: ApiCall) => unknown)(call) : answer;
-      const { __status: code, body } = (value as { __status?: number; body?: unknown } | null)?.__status
-        ? (value as { __status: number; body?: unknown })
+      const {
+        __status: code,
+        body,
+        headers = {},
+      } = (value as { __status?: number; body?: unknown } | null)?.__status
+        ? (value as { __status: number; body?: unknown; headers?: Record<string, string> })
         : { __status: 200, body: value };
       return new Response(body === undefined || code === 204 ? null : JSON.stringify(body), {
         status: code,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...headers },
       });
     }),
   );

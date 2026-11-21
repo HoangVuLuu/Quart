@@ -109,7 +109,8 @@ app.UseRateLimiter();
 // Production only: the React build is copied into wwwroot by the Dockerfile.
 // During development the Vite dev server serves the web app and proxies /api here.
 app.UseDefaultFiles();
-app.UseStaticFiles();
+// Hashed build files kept for a year, the service worker and index.html checked on every load (M8-05).
+app.UseStaticFiles(StaticCaching.Options);
 
 if (app.Environment.IsDevelopment())
 {
@@ -141,7 +142,7 @@ app.MapFallback("/api/{**path}", () => Results.Problem(
     statusCode: StatusCodes.Status404NotFound,
     extensions: new Dictionary<string, object?> { ["code"] = ErrorCodes.NotFound }));
 // Every other unknown route belongs to the web app's client-side router.
-app.MapFallbackToFile("index.html");
+app.MapFallbackToFile("index.html", StaticCaching.Options);
 
 app.Run();
 
