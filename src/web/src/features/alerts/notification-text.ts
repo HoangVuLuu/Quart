@@ -8,7 +8,6 @@ export const notificationTypes = [
   'member.account_deleted',
   'availability.requested',
   'availability.reminder',
-  'availability.reopened',
   'availability.sent',
   'availability.note_added',
   'availability.due',

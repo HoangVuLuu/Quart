@@ -265,7 +265,8 @@ public sealed class MarketplaceTests(PostgresFixture postgres)
         Assert.False(Team.Holds(await ShiftAsync(team, hers), omar));
         var waiting = (await team.Owner.GetAsync($"{team.Base}/marketplace"))["trades"]!.AsArray().Single()!;
         Assert.Equal(("awaiting_approval", "approver"), (waiting["status"]!.GetValue<string>(), waiting["role"]!.GetValue<string>()));
-        Assert.Contains("trade.awaiting_approval", await team.NotificationTypesAsync(team.Owner));
+        // Shown at the top of Alerts with its buttons, so the Recent list leaves it out (2026-11-21).
+        Assert.DoesNotContain("trade.awaiting_approval", await team.NotificationTypesAsync(team.Owner));
         Assert.Equal(HttpStatusCode.Forbidden, (await omar.TryAsync(Post, $"{team.Base}/marketplace/trades/{fine}/approve")).Status);
         await team.Owner.PostAsync($"{team.Base}/marketplace/trades/{fine}/approve");
         Assert.True(Team.Holds(await ShiftAsync(team, hers), omar));

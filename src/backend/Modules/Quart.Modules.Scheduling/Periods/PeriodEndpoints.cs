@@ -29,7 +29,6 @@ internal static class PeriodEndpoints
     public const string DueRequired = "period.due_required";
     public const string DueInPast = "period.due_in_past";
     public const string DueAfterStart = "period.due_after_start";
-    public const string DuePublished = "period.due_published";
 
     private static readonly NodaTime.Text.LocalTimePattern DueTimePattern = NodaTime.Text.LocalTimePattern.CreateWithInvariantCulture("HH:mm");
 
@@ -38,7 +37,6 @@ internal static class PeriodEndpoints
         var group = endpoints.MapGroup("/api/workplaces/{workplaceId:guid}/periods");
         group.MapGet("/current", GetCurrentAsync).AllowAnyMember().WithName("GetCurrentPeriods");
         group.MapPost("/", CreateAsync).RequirePermission(Permission.ManageSchedule).WithName("CreatePeriod");
-        group.MapPatch("/{periodId:guid}/deadline", ChangeDeadlineAsync).RequirePermission(Permission.ManageSchedule).WithName("ChangeDeadline");
         group.MapDelete("/{periodId:guid}", CancelPeriod.RunAsync).RequirePermission(Permission.ManageSchedule).WithName("CancelPeriod");
     }
 
@@ -83,7 +81,7 @@ internal static class PeriodEndpoints
             nextView = new NextPeriod(
                 Support.Summarize(next),
                 mine?.Status ?? Availability.NotSent,
-                member.WorksShifts && (next.LockedAt is null || mine?.ReopenedAt is not null),
+                member.WorksShifts && next.LockedAt is null,
                 sent);
         }
         // Home's "hours this week" target: the number the caller gave with the live period's availability (BR-032).
@@ -186,38 +184,6 @@ internal static class PeriodEndpoints
     }
 
     /// <summary>
-    /// Moves the deadline of a period not published yet (FR-091, 2026-11-20), with the same rules as when it
-    /// was opened. The reminders follow: those still ahead of the new deadline are scheduled again, and a
-    /// reminder already sent for the old one goes out again if its new moment is still to come.
-    /// </summary>
-    private static async Task<Results<Ok<PeriodSummary>, ProblemHttpResult>> ChangeDeadlineAsync(
-        Guid workplaceId, Guid periodId, ChangeDeadlineRequest request, SchedulingDb db, IJobScheduler jobs, IClock clock, CancellationToken cancellationToken)
-    {
-        var period = await db.Periods.FirstOrDefaultAsync(x => x.Id == periodId && x.WorkplaceId == workplaceId, cancellationToken);
-        if (period is null)
-        {
-            return Problems.NotFound();
-        }
-        if (period.Version > 0)
-        {
-            return Problems.Conflict(DuePublished);
-        }
-        var zone = DateTimeZoneProviders.Tzdb[period.TimeZone];
-        var now = clock.GetCurrentInstant();
-        if (CheckDue(request.DueDate, request.DueTime, period.StartDate, period.Weeks, zone, now) is { } invalid)
-        {
-            return invalid;
-        }
-        var due = DueOf(request.DueDate!.Value, request.DueTime!, zone);
-        period.AvailabilityDueAt = due;
-        // A step whose new moment has passed counts as done: it is not sent late.
-        period.StepsDone = AvailabilitySteps.StepsFor(due).Where(step => step.At <= now).Select(step => step.Kind).ToList();
-        await db.SaveChangesAsync(cancellationToken);
-        await AvailabilitySteps.ScheduleAsync(jobs, period, now, cancellationToken);
-        return TypedResults.Ok(Support.Summarize(period));
-    }
-
-    /// <summary>
     /// FR-091: a deadline in the workplace's own clock, in the future and before the first day; for a period
     /// opened after it has started (the first one at a new shop), any time before it ends.
     /// </summary>
@@ -300,10 +266,6 @@ internal sealed record PeriodRules(int? MaxConsecutiveShifts, bool OpeningFairne
 /// <param name="DueTime">The time on that day, "HH:mm". Required.</param>
 public sealed record CreatePeriodRequest(DateOnly StartDate, DateOnly? DueDate, string? DueTime);
 
-/// <param name="DueDate">The new day availability is due, in the workplace's time zone (FR-091).</param>
-/// <param name="DueTime">The time on that day, "HH:mm".</param>
-public sealed record ChangeDeadlineRequest(DateOnly? DueDate, string? DueTime);
-
 /// <param name="Status">"collecting", "building" or "published".</param>
 /// <param name="Version">0 until first published.</param>
 /// <param name="DraftSaved">An unpublished draft was saved: the Schedule page offers "Continue building" (4.3).</param>
@@ -326,6 +288,6 @@ public sealed record PeriodSummary(
 public sealed record CurrentPeriods(PeriodSummary? Live, NextPeriod? Next, IReadOnlyList<PeriodSummary> Upcoming, decimal? MyLiveWeeklyHours);
 
 /// <param name="MyAvailability">"not_sent" or "sent".</param>
-/// <param name="CanEditAvailability">False once building has started, unless an admin reopened it for the caller.</param>
+/// <param name="CanEditAvailability">False while the manager builds and once published (FR-100).</param>
 /// <param name="SentCount">How many people have sent; only for those who manage the schedule.</param>
 public sealed record NextPeriod(PeriodSummary Period, string MyAvailability, bool CanEditAvailability, int? SentCount);

@@ -31,7 +31,6 @@ public static class NotificationTypes
     public const string MemberDeletedAccount = "member.account_deleted";
     public const string AvailabilityRequested = "availability.requested";
     public const string AvailabilityReminder = "availability.reminder";
-    public const string AvailabilityReopened = "availability.reopened";
     public const string AvailabilitySent = "availability.sent";
     public const string AvailabilityNoteAdded = "availability.note_added";
     public const string AvailabilityDue = "availability.due";
@@ -65,6 +64,13 @@ public static class NotificationTypes
     /// </summary>
     public static IReadOnlySet<string> TradeTab { get; } = new HashSet<string>(StringComparer.Ordinal) { ShiftOffered, TradeRequested };
 
+    /// <summary>
+    /// Requests waiting for a manager's decision (2026-11-21). The top of Alerts already shows each one with
+    /// Approve and Decline, so the Recent list and its count leave them out, like <see cref="TradeTab"/>. They
+    /// are still stored, pushed and emailed.
+    /// </summary>
+    public static IReadOnlySet<string> Decisions { get; } = new HashSet<string>(StringComparer.Ordinal) { ClaimRequested, TradeAwaitingApproval };
+
     public static IReadOnlyDictionary<string, IReadOnlyList<string>> AllowedParameters { get; } =
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
         {
@@ -73,7 +79,6 @@ public static class NotificationTypes
             [MemberDeletedAccount] = ["name"],
             [AvailabilityRequested] = ["periodStart", "weeks"],
             [AvailabilityReminder] = ["periodStart"],
-            [AvailabilityReopened] = ["periodStart"],
             [AvailabilitySent] = ["name", "periodStart", "periodId", "membershipId"],
             [AvailabilityNoteAdded] = ["name", "periodStart", "periodId", "membershipId"],
             [AvailabilityDue] = ["periodStart", "sent", "total"],

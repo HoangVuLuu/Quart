@@ -1160,66 +1160,6 @@
         }
       }
     },
-    "/api/workplaces/{workplaceId}/periods/{periodId}/deadline": {
-      "patch": {
-        "tags": [
-          "PeriodEndpoints"
-        ],
-        "operationId": "ChangeDeadline",
-        "parameters": [
-          {
-            "name": "workplaceId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "periodId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangeDeadlineRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PeriodSummary"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Any error, as problem details with a machine-readable code (AD-023).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiProblem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/workplaces/{workplaceId}/periods/{periodId}": {
       "delete": {
         "tags": [
@@ -1636,58 +1576,6 @@
                 }
               }
             }
-          },
-          "default": {
-            "description": "Any error, as problem details with a machine-readable code (AD-023).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiProblem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/workplaces/{workplaceId}/periods/{periodId}/availability/{membershipId}/reopen": {
-      "post": {
-        "tags": [
-          "AvailabilityEndpoints"
-        ],
-        "operationId": "ReopenAvailability",
-        "parameters": [
-          {
-            "name": "workplaceId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "periodId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "membershipId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
           },
           "default": {
             "description": "Any error, as problem details with a machine-readable code (AD-023).",
@@ -3407,28 +3295,6 @@
           "end": {
             "type": "string",
             "format": "date-time"
-          }
-        }
-      },
-      "ChangeDeadlineRequest": {
-        "required": [
-          "dueDate",
-          "dueTime"
-        ],
-        "type": "object",
-        "properties": {
-          "dueDate": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "dueTime": {
-            "type": [
-              "null",
-              "string"
-            ]
           }
         }
       },
@@ -5343,7 +5209,6 @@
           "name",
           "level",
           "status",
-          "reopened",
           "hoursOffered",
           "desiredWeeklyHours",
           "notes"
@@ -5363,9 +5228,6 @@
           },
           "status": {
             "type": "string"
-          },
-          "reopened": {
-            "type": "boolean"
           },
           "hoursOffered": {
             "type": "number",

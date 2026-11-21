@@ -50,7 +50,6 @@ const errorKeys = {
   'marketplace.trade_invalid': 'errors.marketplace.trade_invalid',
   'period.already_started': 'errors.period.already_started',
   'period.due_after_start': 'errors.period.due_after_start',
-  'period.due_published': 'errors.period.due_published',
   'period.due_in_past': 'errors.period.due_in_past',
   'period.due_required': 'errors.period.due_required',
   'period.overlaps': 'errors.period.overlaps',

@@ -70,7 +70,7 @@ function People({ periodId, locked, people }: { periodId: string; locked: boolea
   const { t, i18n } = useTranslation();
   const toast = useToast();
   const actions = useTeamAvailabilityActions(periodId);
-  const error = actions.remind.error ?? actions.reopen.error;
+  const error = actions.remind.error;
   const missing = people.filter((person) => person.status !== 'sent').length;
 
   return (
@@ -124,14 +124,10 @@ function People({ periodId, locked, people }: { periodId: string; locked: boolea
                     </p>
                   ))}
                 </div>
-                {/* Above the row's link, so Remind and Reopen stay their own buttons. */}
+                {/* Above the row's link, so Remind stays its own button. */}
                 <div className="relative z-10 flex flex-col items-end gap-2">
-                  <StatusChip tone={sent ? 'success' : person.reopened ? 'warning' : 'neutral'}>
-                    {sent
-                      ? t('availability.sent')
-                      : person.reopened
-                        ? t('teamAvailability.reopened')
-                        : t('availability.notSent')}
+                  <StatusChip tone={sent ? 'success' : 'neutral'}>
+                    {sent ? t('availability.sent') : t('availability.notSent')}
                   </StatusChip>
                   {!sent && !locked && (
                     <Button
@@ -145,21 +141,6 @@ function People({ periodId, locked, people }: { periodId: string; locked: boolea
                       }
                     >
                       {t('teamAvailability.remind')}
-                    </Button>
-                  )}
-                  {locked && !person.reopened && (
-                    <Button
-                      variant="white"
-                      className="min-h-11 px-4 text-sm"
-                      aria-label={t('teamAvailability.reopenNamed', { name: person.name })}
-                      disabled={actions.reopen.isPending}
-                      onClick={() =>
-                        actions.reopen.mutate(person.membershipId, {
-                          onSuccess: () => toast(t('teamAvailability.reopenedToast', { name: person.name })),
-                        })
-                      }
-                    >
-                      {t('teamAvailability.reopen')}
                     </Button>
                   )}
                 </div>

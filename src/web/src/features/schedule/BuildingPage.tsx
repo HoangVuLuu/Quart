@@ -131,7 +131,9 @@ function BuildingVisit({ periodId, mode }: { periodId: string; mode: 'build' | '
                 {t('building.clear')}
               </Button>
             )}
-            {draft.data && (mode === 'build' || !hasStarted(draft.data.period)) && (
+            {/* Not on Building Schedule (2026-11-21): there, the next-period box cancels. Editing Schedule
+                keeps it until the period starts, since a published period has no other place for it. */}
+            {draft.data && mode === 'edit' && !hasStarted(draft.data.period) && (
               <CancelPeriodButton
                 period={draft.data.period}
                 onCancelling={() => {

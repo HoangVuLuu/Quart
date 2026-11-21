@@ -139,6 +139,10 @@ spec: FR-100, FR-101, FR-102
 **Done when**
 - [ ] The lock-and-reopen flow works on staging with two test accounts.
 
+> **Changed 2026-11-21:** reopening one person was removed (FR-101). The lock lasts only while the
+> manager is on Building Schedule; leaving unlocks everyone. The deadline can no longer be changed after
+> a period is opened (FR-091).
+
 ## M4-08 · Template changes after answers are collected
 labels: type:feature, stack:full, area:template, area:availability, size:M
 depends: M4-07

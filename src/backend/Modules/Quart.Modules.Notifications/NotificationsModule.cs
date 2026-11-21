@@ -53,9 +53,10 @@ public static class NotificationsModule
             {
                 _ = workplaceId;
                 var member = http.Member();
-                // Give-aways and trade requests live in the Trade tab, which counts them itself (2.5, 2026-11-18).
-                var trade = NotificationTypes.TradeTab.ToList();
-                var mine = db.Notifications.AsNoTracking().Where(x => x.MembershipId == member.MembershipId && !trade.Contains(x.Type));
+                // Give-aways and trade requests live in the Trade tab, which counts them itself (2.5, 2026-11-18);
+                // requests waiting for a decision show at the top of Alerts with their buttons (2026-11-21).
+                var elsewhere = NotificationTypes.TradeTab.Concat(NotificationTypes.Decisions).ToList();
+                var mine = db.Notifications.AsNoTracking().Where(x => x.MembershipId == member.MembershipId && !elsewhere.Contains(x.Type));
                 var unread = await mine.CountAsync(x => x.ReadAt == null, cancellationToken);
                 var rows = await mine
                     .OrderByDescending(x => x.CreatedAt)

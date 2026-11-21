@@ -436,22 +436,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/workplaces/{workplaceId}/periods/{periodId}/deadline': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: operations['ChangeDeadline'];
-    trace?: never;
-  };
   '/api/workplaces/{workplaceId}/periods/{periodId}': {
     parameters: {
       query?: never;
@@ -558,22 +542,6 @@ export interface paths {
     get: operations['GetPersonAvailability'];
     put?: never;
     post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/workplaces/{workplaceId}/periods/{periodId}/availability/{membershipId}/reopen': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['ReopenAvailability'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1137,11 +1105,6 @@ export interface components {
       /** Format: date-time */
       end: string;
     };
-    ChangeDeadlineRequest: {
-      /** Format: date */
-      dueDate: null | string;
-      dueTime: null | string;
-    };
     ChangeEmailRequest: {
       email: null | string;
       currentPassword: null | string;
@@ -1648,7 +1611,6 @@ export interface components {
       /** Format: int32 */
       level: number;
       status: string;
-      reopened: boolean;
       /** Format: double */
       hoursOffered: number;
       /** Format: double */
@@ -2682,42 +2644,6 @@ export interface operations {
       };
     };
   };
-  ChangeDeadline: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        workplaceId: string;
-        periodId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ChangeDeadlineRequest'];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PeriodSummary'];
-        };
-      };
-      /** @description Any error, as problem details with a machine-readable code (AD-023). */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['ApiProblem'];
-        };
-      };
-    };
-  };
   CancelPeriod: {
     parameters: {
       query?: never;
@@ -2973,37 +2899,6 @@ export interface operations {
         content: {
           'application/json': components['schemas']['PersonAvailability'];
         };
-      };
-      /** @description Any error, as problem details with a machine-readable code (AD-023). */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['ApiProblem'];
-        };
-      };
-    };
-  };
-  ReopenAvailability: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        workplaceId: string;
-        periodId: string;
-        membershipId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No Content */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
       };
       /** @description Any error, as problem details with a machine-readable code (AD-023). */
       default: {

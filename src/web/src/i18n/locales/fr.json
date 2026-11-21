@@ -54,7 +54,7 @@
       "collected": "Disponibilités reçues",
       "collecting": "Collecte des disponibilités",
       "sent": "{{sent}} sur {{total}} envoyées",
-      "ready": "Prêt à créer l’horaire",
+      "ready": "Prêt à créer",
       "build": "Créer l’horaire",
       "continue": "Ouvrir le brouillon",
       "who": "Qui a envoyé"
@@ -132,8 +132,7 @@
       "start_not_monday": "Une période commence un lundi.",
       "template_empty": "Ajoute d’abord tes quarts dans la page Modifier le générateur.",
       "unfinished_exists": "Publie la période en cours avant d’en ouvrir une autre.",
-      "already_started": "Cette période est déjà commencée, elle ne peut plus être annulée.",
-      "due_published": "Cet horaire est publié : sa date limite ne compte plus."
+      "already_started": "Cette période est déjà commencée, elle ne peut plus être annulée."
     },
     "schedule": {
       "already_on_shift": "Cette personne est déjà sur le quart.",
@@ -237,14 +236,13 @@
       "allSentLabel": "Envoyées",
       "notSent": "Pas encore envoyées",
       "allSent": "Tout le monde a envoyé ses disponibilités",
-      "team": "Voir les disponibilités de l’équipe",
+      "team": "Disponibilités",
       "due": "Date limite : {{when}}."
     },
     "open": {
       "title": "Ouvrir la prochaine période",
       "text": "Tous ceux qui font des quarts reçoivent une demande de disponibilités dès que tu l’ouvres.",
       "start": "Début",
-      "startHint": "Un lundi.",
       "submit": "Ouvrir la période",
       "length_one": "Dure {{count}} semaine, selon les règles du générateur.",
       "length_other": "Dure {{count}} semaines, selon les règles du générateur.",
@@ -732,14 +730,10 @@
     "title": "Disponibilités de l’équipe",
     "offers": "Offre {{offered}} h/sem. · veut {{wanted}} h/sem.",
     "noAnswer": "Pas encore de réponse",
-    "reopened": "Rouvertes",
     "remind": "Rappeler",
     "remindNamed": "Rappeler {{name}}",
     "reminded_one": "{{count}} rappel envoyé",
     "reminded_other": "{{count}} rappels envoyés",
-    "reopen": "Rouvrir",
-    "reopenNamed": "Rouvrir les disponibilités de {{name}}",
-    "reopenedToast": "Rouvertes pour {{name}}",
     "remindAll": "Rappeler tous ceux qui manquent",
     "due": "Date limite : {{when}}"
   },
@@ -856,7 +850,6 @@
       "availability": {
         "requested": "Les disponibilités sont ouvertes pour la période du {{periodStart}}",
         "reminder": "Rappel : envoie tes disponibilités pour la période du {{periodStart}}",
-        "reopened": "Tes disponibilités ont été rouvertes pour la période du {{periodStart}}",
         "sent": "{{name}} a envoyé ses disponibilités",
         "note_added": "{{name}} a ajouté une note à ses disponibilités",
         "due": "Les disponibilités pour la période du {{periodStart}} sont dues : {{sent}} sur {{total}} envoyées"
@@ -1074,12 +1067,5 @@
     "goneTitle": "Rien à afficher",
     "goneText": "Cette période a été annulée, ou cette personne ne fait plus partie de l’équipe.",
     "wanted": "Heures voulues par semaine"
-  },
-  "deadline": {
-    "change": "Changer la date limite",
-    "title": "Date limite des disponibilités",
-    "text": "Les rappels suivent : 48 et 24 heures avant.",
-    "save": "Enregistrer",
-    "changed": "Date limite changée"
   }
 }

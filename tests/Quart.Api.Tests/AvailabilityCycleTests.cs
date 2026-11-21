@@ -132,30 +132,15 @@ public sealed class AvailabilityCycleTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task Changing_the_deadline_moves_the_reminders_with_it()
+    public async Task The_deadline_cannot_be_moved_once_the_period_is_open()
     {
+        // 2026-11-21: the deadline is set when opening the period, and only then (FR-091).
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
         await team.OpenPeriodAsync();
-        var nora = team.Staff[2];
-        var deadline = $"{team.Period}/deadline";
 
-        // Only someone who manages the schedule may move it, and never into the past.
-        Assert.Equal(HttpStatusCode.Forbidden, (await nora.TryAsync(HttpMethod.Patch, deadline, new { dueDate = "2026-11-07", dueTime = "18:00" })).Status);
-        Assert.Equal((HttpStatusCode.BadRequest, "period.due_in_past"), await team.Owner.TryAsync(HttpMethod.Patch, deadline, new { dueDate = "2026-11-01", dueTime = "18:00" }));
+        var status = (await team.Owner.TryAsync(HttpMethod.Patch, $"{team.Period}/deadline", new { dueDate = "2026-11-07", dueTime = "18:00" })).Status;
 
-        // Due Friday 6 at 18:00, moved to Saturday 7 at 18:00: the old 48-hour reminder does nothing.
-        var moved = await team.Owner.SendAsync(HttpMethod.Patch, deadline, new { dueDate = "2026-11-07", dueTime = "18:00" });
-        Assert.StartsWith("2026-11-07T23:00:00", moved["dueAt"]!.GetValue<string>());
-        await TickAtAsync(app, new LocalDateTime(2026, 11, 4, 18, 0));
-        Assert.Equal(0, await CountAsync(nora, team, "availability.reminder"));
-        await TickAtAsync(app, new LocalDateTime(2026, 11, 5, 18, 0));
-        Assert.Equal(1, await CountAsync(nora, team, "availability.reminder"));
-
-        // Moved earlier, to Friday 6 at 12:00: the reminders now past are not sent late; the deadline note is.
-        await team.Owner.SendAsync(HttpMethod.Patch, deadline, new { dueDate = "2026-11-06", dueTime = "12:00" });
-        await TickAtAsync(app, new LocalDateTime(2026, 11, 6, 12, 0));
-        Assert.Equal(1, await CountAsync(nora, team, "availability.reminder"));
-        Assert.Equal(1, await CountAsync(team.Owner, team, "availability.due"));
+        Assert.True(status is HttpStatusCode.NotFound or HttpStatusCode.MethodNotAllowed, status.ToString());
     }
 }

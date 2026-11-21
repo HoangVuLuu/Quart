@@ -130,7 +130,6 @@ export function useTeamAvailability(periodId: string | undefined) {
 
 export function useTeamAvailabilityActions(periodId: string) {
   const { id } = useWorkplace();
-  const refresh = useRefreshWorkplace();
   const path = { workplaceId: id, periodId };
   return {
     remind: useMutation({
@@ -141,15 +140,6 @@ export function useTeamAvailabilityActions(periodId: string) {
             body: { membershipId },
           }),
         ),
-    }),
-    reopen: useMutation({
-      mutationFn: (membershipId: string) =>
-        unwrap(
-          api.POST('/api/workplaces/{workplaceId}/periods/{periodId}/availability/{membershipId}/reopen', {
-            params: { path: { ...path, membershipId } },
-          }),
-        ),
-      onSuccess: refresh,
     }),
   };
 }
@@ -334,21 +324,5 @@ export function usePersonAvailability(periodId: string, membershipId: string) {
         }),
       ),
     retry: false,
-  });
-}
-
-/** Moves the deadline of a period not published yet; the reminders follow (FR-091, 2026-11-20). */
-export function useChangeDeadline(periodId: string) {
-  const { id } = useWorkplace();
-  const refresh = useRefreshWorkplace();
-  return useMutation({
-    mutationFn: (body: Schemas['ChangeDeadlineRequest']) =>
-      unwrap(
-        api.PATCH('/api/workplaces/{workplaceId}/periods/{periodId}/deadline', {
-          params: { path: { workplaceId: id, periodId } },
-          body,
-        }),
-      ),
-    onSuccess: refresh,
   });
 }

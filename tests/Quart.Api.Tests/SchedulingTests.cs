@@ -207,7 +207,7 @@ public sealed class SchedulingTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task Building_locks_availability_but_not_notes_and_one_person_can_be_reopened()
+    public async Task Building_locks_availability_but_not_notes_until_the_manager_leaves()
     {
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
@@ -223,13 +223,10 @@ public sealed class SchedulingTests(PostgresFixture postgres)
         // FR-103: notes stay possible after the lock.
         await marc.PostAsync($"{team.Period}/availability/me/notes", new { body = "Sorry, I forgot to answer." });
 
-        Assert.Equal(HttpStatusCode.Forbidden, (await lea.TryAsync(HttpMethod.Post, $"{team.Period}/availability/{marc.MembershipId}/reopen")).Status);
-        await team.Owner.PostAsync($"{team.Period}/availability/{marc.MembershipId}/reopen");
-        Assert.Contains("availability.reopened", await team.NotificationTypesAsync(marc));
+        // Reopening one person is gone (2026-11-21): the manager leaving Building Schedule unlocks everyone.
+        Assert.Equal(HttpStatusCode.NotFound, (await team.Owner.TryAsync(HttpMethod.Post, $"{team.Period}/availability/{marc.MembershipId}/reopen")).Status);
+        await team.Owner.PostAsync($"{team.Period}/draft/leave");
         await marc.PostAsync($"{team.Period}/availability/me/send", new { desiredWeeklyHours = 20, shiftIds = shifts });
-        // FR-101: the reopening is used up by sending, and nobody else was let back in.
-        Assert.Equal("availability.locked", (await marc.TryAsync(HttpMethod.Post, $"{team.Period}/availability/me/send", new { desiredWeeklyHours = 20, shiftIds = shifts })).Code);
-        Assert.Equal("availability.locked", (await lea.TryAsync(HttpMethod.Post, $"{team.Period}/availability/me/send", new { desiredWeeklyHours = 20, shiftIds = shifts })).Code);
     }
 
     [Fact]

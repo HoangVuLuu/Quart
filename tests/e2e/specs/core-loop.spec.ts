@@ -93,7 +93,8 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
   });
 
   await test.step('the owner opens a one-week period', async () => {
-    await page.getByLabel('Starts on').fill(nextMonday());
+    // Only Mondays are offered (2026-11-21).
+    await page.getByLabel('Starts on').selectOption(nextMonday());
     // The length comes from the generator rules (one week), and is only changed there (FR-090).
     await expect(page.getByText('Lasts 1 week, as set in the generator rules.')).toBeVisible();
     await page.getByRole('button', { name: 'Open period' }).click();

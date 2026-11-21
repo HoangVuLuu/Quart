@@ -17,6 +17,7 @@ import {
   byDay,
   useDraft,
   useDraftActions,
+  usePersonAvailability,
   weekOf,
   type DraftIssue,
   type DraftPerson,
@@ -122,14 +123,6 @@ export function DraftEditor({ periodId, onPublished }: DraftEditorProps) {
         >
           {data.issues.length === 0 ? t('issues.none') : t('issues.count', { count: data.issues.length })}
         </button>
-        <Button
-          className="min-h-11 px-4 text-sm"
-          loading={actions.publish.isPending}
-          disabled={!data.hasUnpublishedChanges}
-          onClick={askToPublish}
-        >
-          {published ? t('draft.update') : t('draft.publish')}
-        </Button>
       </div>
       <p className="text-sm text-muted">
         {t('draft.hint')} {data.seed !== null && t('draft.seed', { seed: data.seed })}{' '}
@@ -155,6 +148,16 @@ export function DraftEditor({ periodId, onPublished }: DraftEditorProps) {
           <DayRow key={day.date} draft={data} date={day.date} shifts={day.shifts} onOpen={setOpenShift} />
         ))}
       </div>
+
+      {/* At the bottom, across the whole width (2026-11-21). */}
+      <Button
+        className="w-full"
+        loading={actions.publish.isPending}
+        disabled={!data.hasUnpublishedChanges}
+        onClick={askToPublish}
+      >
+        {published ? t('draft.update') : t('draft.publish')}
+      </Button>
 
       {selected && (
         <ShiftEditor draft={data} shift={selected} periodId={periodId} onClose={() => setOpenShift(null)} />
@@ -404,6 +407,8 @@ function ShiftEditor({
     (issue) => issue.shiftIds.includes(shift.id) && issue.severity !== 'show',
   );
   const full = shift.people.length >= shift.headcount;
+  // Whose notes are open under their row (2026-11-21).
+  const [reading, setReading] = useState<string | null>(null);
   const error = actions.add.error ?? actions.remove.error ?? actions.keep.error;
   const hours = (person: DraftPerson) =>
     // No target until the person sends availability with their hours (BR-032).
@@ -487,40 +492,77 @@ function ShiftEditor({
       <ul className="flex flex-col">
         {candidates.map((person) => {
           const chip = availabilityChip[status(person)];
+          const open = reading === person.membershipId;
+          const summary = (
+            <>
+              <span className="block font-bold">
+                {person.name}{' '}
+                <span className="text-xs text-muted">
+                  {t('scheduling.levelShort', { level: person.level })}
+                </span>{' '}
+                <span className="text-xs text-muted">{hours(person)}</span>
+              </span>
+              <span className="flex flex-wrap gap-1.5">
+                <StatusChip tone={chip.tone}>{t(`draft.editor.${chip.key}`)}</StatusChip>
+                {person.noteCount > 0 && (
+                  <StatusChip tone="warning">
+                    {t('draft.editor.notes', { count: person.noteCount })}
+                    <span aria-hidden="true">{open ? ' ▴' : ' ▾'}</span>
+                  </StatusChip>
+                )}
+              </span>
+            </>
+          );
           return (
-            <li
-              key={person.membershipId}
-              className="flex items-center gap-3 border-b border-line py-2 last:border-b-0"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="font-bold">
-                  {person.name}{' '}
-                  <span className="text-xs text-muted">
-                    {t('scheduling.levelShort', { level: person.level })}
-                  </span>{' '}
-                  <span className="text-xs text-muted">{hours(person)}</span>
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  <StatusChip tone={chip.tone}>{t(`draft.editor.${chip.key}`)}</StatusChip>
-                  {person.noteCount > 0 && (
-                    <StatusChip tone="warning">
-                      {t('draft.editor.notes', { count: person.noteCount })}
-                    </StatusChip>
-                  )}
-                </div>
+            <li key={person.membershipId} className="border-b border-line py-2 last:border-b-0">
+              <div className="flex items-center gap-3">
+                {/* 2026-11-21: tapping someone with notes opens them under the row; tapping again closes. */}
+                {person.noteCount > 0 ? (
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    className="min-w-0 flex-1 text-left"
+                    onClick={() => setReading(open ? null : person.membershipId)}
+                  >
+                    {summary}
+                  </button>
+                ) : (
+                  <div className="min-w-0 flex-1">{summary}</div>
+                )}
+                <Button
+                  className="min-h-11 px-4 text-sm"
+                  disabled={actions.add.isPending}
+                  aria-label={t('draft.editor.addNamed', { name: person.name })}
+                  onClick={() => actions.add.mutate({ shiftId: shift.id, membershipId: person.membershipId })}
+                >
+                  {t('draft.editor.addButton')}
+                </Button>
               </div>
-              <Button
-                className="min-h-11 px-4 text-sm"
-                disabled={actions.add.isPending}
-                aria-label={t('draft.editor.addNamed', { name: person.name })}
-                onClick={() => actions.add.mutate({ shiftId: shift.id, membershipId: person.membershipId })}
-              >
-                {t('draft.editor.addButton')}
-              </Button>
+              {open && <PersonNotes periodId={periodId} membershipId={person.membershipId} />}
             </li>
           );
         })}
       </ul>
     </Sheet>
+  );
+}
+
+/** A person's availability notes, read under their row in the shift sheet (2026-11-21). */
+function PersonNotes({ periodId, membershipId }: { periodId: string; membershipId: string }) {
+  const { t } = useTranslation();
+  const answer = usePersonAvailability(periodId, membershipId);
+  if (answer.isPending) return <Skeleton className="mt-2 h-10 w-full" />;
+  if (answer.error) return <FormError message={t(messageKeyFor(answer.error))} />;
+  return (
+    <div className="mt-2 flex flex-col gap-2">
+      {answer.data.notes.map((note) => (
+        <p
+          key={note.id}
+          className="rounded-field bg-warning-soft px-3 py-2 text-sm whitespace-pre-wrap text-warning"
+        >
+          {note.body}
+        </p>
+      ))}
+    </div>
   );
 }
