@@ -423,12 +423,26 @@ describe('the schedule tab', () => {
       [`GET ${base}/periods/${periodId}/draft`]: draft,
       [`POST ${base}/periods/${periodId}/draft/start`]: draft,
       [`POST ${base}/periods/${periodId}/draft/assignments`]: { ...draft, issues: [] },
+      [`GET ${base}/periods/${periodId}/availability/${kevin}`]: {
+        period: building,
+        membershipId: kevin,
+        name: 'Kevin T.',
+        status: 'sent',
+        desiredWeeklyHours: 20,
+        shifts: [],
+        notes: [
+          { id: 'note-1', body: 'Exams on Thursday, evenings only', createdAt: '2099-10-01T12:00:00Z' },
+        ],
+      },
     });
     renderApp('/schedule/build');
 
     expect(await screen.findByText('No level 3')).toBeInTheDocument();
     expect(screen.getByText(en.scheduling.grid.kept)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: en.draft.publish }));
+    // 2026-11-21: Publish is at the bottom, across the whole width.
+    const publish = screen.getByRole('button', { name: en.draft.publish });
+    expect(publish).toHaveClass('w-full');
+    await userEvent.click(publish);
 
     const issues = await screen.findByRole('dialog', { name: en.issues.title });
     expect(within(issues).getByText(en.draft.severity.block)).toBeInTheDocument();
@@ -441,6 +455,13 @@ describe('the schedule tab', () => {
     await userEvent.click(within(issues).getByRole('button', { name: /needs 1 at level 3/ }));
     const editor = await screen.findByRole('dialog', { name: /Closing/ });
     expect(within(editor).getByText(en.draft.editor.available)).toBeInTheDocument();
+    // 2026-11-21: tapping someone with a note opens it under their row; tapping again closes it.
+    const row = within(editor).getByRole('button', { name: /Kevin T\..*1 note/ });
+    expect(row).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(row);
+    expect(await within(editor).findByText('Exams on Thursday, evenings only')).toBeInTheDocument();
+    await userEvent.click(row);
+    expect(within(editor).queryByText('Exams on Thursday, evenings only')).not.toBeInTheDocument();
     await userEvent.click(within(editor).getByRole('button', { name: 'Add Kevin T.' }));
 
     expect(calls.find((call) => call.path.endsWith('/draft/assignments'))?.body).toEqual({

@@ -2035,7 +2035,11 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             does; FR-104); staff see no role or level on Profile; requests
             waiting for a manager's decision show only at the top of
             Alerts, not again under Recent; "schedule published" and
-            "schedule changed" alerts open Schedule.  (FR-091, FR-101, FR-104)
+            "schedule changed" alerts open Schedule. On Building and Editing
+            Schedule, Publish (or Update) is a full-width button at the
+            bottom, and in a shift's sheet, tapping someone with notes opens
+            them under their row (tap again to close).  (FR-091, FR-101,
+            FR-104)
 2026-11-20  Offline copy (M8-05): the whole published schedule is kept for
             offline use, coworkers' names included, since staff see it
             online anyway (Hoang). Copies are used only without a
