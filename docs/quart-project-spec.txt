@@ -390,13 +390,13 @@ FR-091  The availability request goes out as soon as the admin opens a
         period, to everyone who works shifts, with a submission deadline.
         Automatic reminders are sent to anyone who has not submitted.
         The deadline is required when a period is opened, prefilled to 48
-        hours before it starts (the Saturday at 00:00). While the period is
-        not published, the admin can change it from the pen beside it in the
-        next-period box on Schedule; the reminders follow the new deadline.
+        hours before it starts (the Saturday at 00:00), and cannot be changed
+        once the period is open. A period starts on a Monday: "Starts on"
+        offers only the next 12 Mondays.
         Reminders go out 48 and 24 hours before the deadline to people who
         have not sent; at the deadline the admins are told how many have
         sent. A step whose moment has already passed when the deadline is
-        set or changed is not sent late. Nothing locks at the deadline
+        set is not sent late. Nothing locks at the deadline
         (FR-100). While the admin is on Building Schedule (availability
         locked), the reminders and the deadline note wait and go out once
         they leave; once published, none go out. A period opened after it
@@ -440,8 +440,9 @@ FR-100  Availability locks while the admin is on Building Schedule, the page
         match, and Generate uses the latest answers. Once published, a period
         stays locked; Editing Schedule unlocks nothing. While locked the grid
         is read-only but people can still add notes (FR-103).
-FR-101  After the lock, an admin can reopen availability for one specific person
-        without reopening it for everyone. That person is notified.
+FR-101  (Removed 2026-11-21.) Reopening availability for one person after the
+        lock: the lock only lasts while the admin is on Building Schedule,
+        and leaving the page unlocks everyone, so it was not needed.
 FR-102  Because availability locks for good once published, there is no "my
         availability changed after publishing" flow. After the lock, the only way out of a shift is to give
         it away (6.7). This is a deliberate simplification of the original idea
@@ -473,8 +474,9 @@ FR-104  An admin can cancel a period for good: one that is not published yet,
         or a published one that has not started. Everything in it is deleted
         (shifts, availability and notes, drafts, published versions), its dates
         are free for a new period, and give-aways, claims and trades on its
-        shifts are cancelled. "Cancel period" is in the next-period box and on
-        Building Schedule, and on Editing Schedule until the period starts,
+        shifts are cancelled. "Cancel period" is in the next-period box, and on
+        Editing Schedule until the period starts (not on Building Schedule,
+        2026-11-21),
         always behind an "Are you sure?". The people who sent availability or
         hold a shift in it are told (FR-215), except the admin who cancelled.
 
@@ -2024,6 +2026,16 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             email is sent first and its outbox row is then deleted, so no
             table keeps the address. Accounts that never confirmed their
             email are deleted 7 days after sign-up.  (FR-009, 13)
+2026-11-21  From testing on staging (Hoang): the deadline is set only when
+            opening a period and cannot be moved after; "Starts on" lists
+            Mondays only; Edit generator is reached only from the
+            open-the-next-period box; the box turns green once everyone
+            sent; "Reopen" for one person is removed (FR-101); Building
+            Schedule no longer has "Cancel period" (the next-period box
+            does; FR-104); staff see no role or level on Profile; requests
+            waiting for a manager's decision show only at the top of
+            Alerts, not again under Recent; "schedule published" and
+            "schedule changed" alerts open Schedule.  (FR-091, FR-101, FR-104)
 2026-11-20  Offline copy (M8-05): the whole published schedule is kept for
             offline use, coworkers' names included, since staff see it
             online anyway (Hoang). Copies are used only without a

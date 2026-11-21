@@ -250,7 +250,7 @@ function PeriodHero() {
             : t('home.period.collecting')
       }
       headingLevel={2}
-      className={complete ? 'bg-opening' : undefined}
+      tone={complete ? 'done' : 'primary'}
     >
       {collecting && total > 0 && (
         <>
@@ -267,8 +267,9 @@ function PeriodHero() {
           </div>
         </>
       )}
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Link to="/schedule" className={buttonClassName('dark')}>
+      {/* One line for both buttons (2026-11-21). */}
+      <div className={collecting ? 'mt-4 grid grid-cols-2 gap-2' : 'mt-4 flex'}>
+        <Link to="/schedule" className={buttonClassName('dark', 'min-w-0 px-3 text-center')}>
           {collecting
             ? complete
               ? t('home.period.ready')
@@ -276,7 +277,7 @@ function PeriodHero() {
             : t('home.period.continue')}
         </Link>
         {collecting && (
-          <Link to="/availability/team" className={buttonClassName('white')}>
+          <Link to="/availability/team" className={buttonClassName('white', 'min-w-0 px-3 text-center')}>
             {t('home.period.who')}
           </Link>
         )}

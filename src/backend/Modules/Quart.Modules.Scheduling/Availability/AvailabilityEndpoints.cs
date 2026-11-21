@@ -19,7 +19,7 @@ using Period = Persistence.Period;
 
 /// <summary>
 /// Availability (M4): people tap the shifts they can work and send; admins watch progress, read the notes,
-/// and reopen one latecomer after the lock.
+/// (reopening one person after the lock was removed on 2026-11-21: leaving Building Schedule unlocks everyone).
 /// </summary>
 internal static class AvailabilityEndpoints
 {
@@ -45,7 +45,6 @@ internal static class AvailabilityEndpoints
         group.MapGet("/me/previous", GetPreviousAsync).AllowAnyMember().WithName("GetPreviousAvailability");
         group.MapGet("/", GetTeamAsync).RequirePermission(Permission.ManageSchedule).WithName("GetTeamAvailability");
         group.MapGet("/{membershipId:guid}", GetPersonAsync).RequirePermission(Permission.ManageSchedule).WithName("GetPersonAvailability");
-        group.MapPost("/{membershipId:guid}/reopen", ReopenAsync).RequirePermission(Permission.ManageSchedule).WithName("ReopenAvailability");
         group.MapPost("/remind", RemindAsync).RequirePermission(Permission.ManageSchedule).WithName("RemindAvailability");
     }
 
@@ -91,8 +90,8 @@ internal static class AvailabilityEndpoints
 
         await SettleVisitAsync(db, period, clock, cancellationToken);
         var availability = await GetOrAddAsync(db, periodId, member.MembershipId, cancellationToken);
-        // FR-100: read-only while the manager builds, except for the one person an admin reopened (FR-101).
-        if (period.LockedAt is not null && availability.ReopenedAt is null)
+        // FR-100: read-only while the manager builds, and for good once published.
+        if (period.LockedAt is not null)
         {
             return Problems.Conflict(Locked);
         }
@@ -125,8 +124,6 @@ internal static class AvailabilityEndpoints
         {
             availability.Status = Availability.Sent;
             availability.SubmittedAt = clock.GetCurrentInstant();
-            // A reopened person can send once; after that the lock applies to them again.
-            availability.ReopenedAt = null;
         }
         await db.SaveChangesAsync(cancellationToken);
 
@@ -244,7 +241,6 @@ internal static class AvailabilityEndpoints
                     person.DisplayName,
                     person.Level,
                     sent ? Availability.Sent : Availability.NotSent,
-                    answer?.ReopenedAt is not null,
                     sent ? answer!.Blocks.Sum(block => shifts.TryGetValue(block.ShiftId, out var shift) ? shift.Hours : 0) / period.Weeks : 0,
                     sent ? answer!.DesiredWeeklyHours : null,
                     mayReadNotes
@@ -254,27 +250,6 @@ internal static class AvailabilityEndpoints
             .OrderBy(x => x.Status == Availability.Sent).ThenBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
         return TypedResults.Ok(new TeamAvailability(Support.Summarize(period), rows.Count(x => x.Status == Availability.Sent), rows.Count, rows));
-    }
-
-    private static async Task<Results<NoContent, ProblemHttpResult>> ReopenAsync(
-        Guid workplaceId, Guid periodId, Guid membershipId, SchedulingDb db, IWorkplaceDirectory directory, INotifier notifier, IClock clock, CancellationToken cancellationToken)
-    {
-        if (await FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
-        {
-            return Problems.NotFound();
-        }
-        var person = (await directory.GetMembersAsync(workplaceId, cancellationToken)).SingleOrDefault(x => x.MembershipId == membershipId && x.WorksShifts);
-        if (person is null)
-        {
-            return Problems.NotFound();
-        }
-        var availability = await GetOrAddAsync(db, periodId, membershipId, cancellationToken);
-        availability.ReopenedAt = clock.GetCurrentInstant();
-        await db.SaveChangesAsync(cancellationToken);
-        await notifier.NotifyAsync(
-            [new NotificationRequest(workplaceId, person.MembershipId, person.UserId, NotificationTypes.AvailabilityReopened, PeriodParameters(period))],
-            cancellationToken);
-        return TypedResults.NoContent();
     }
 
     /// <summary>Reminds one person, or everyone who has not sent. Never someone who already has (M4-05).</summary>
@@ -387,7 +362,7 @@ internal static class AvailabilityEndpoints
         return new MyAvailability(
             Support.Summarize(period),
             availability?.Status ?? Availability.NotSent,
-            period.LockedAt is null || availability?.ReopenedAt is not null,
+            period.LockedAt is null,
             hasPrevious,
             hours,
             shifts.OrderBy(x => x.Date).ThenBy(x => x.StartTime)
@@ -434,7 +409,7 @@ public sealed record RemindResult(int Reminded);
 public sealed record SuggestedAvailability(IReadOnlyList<Guid> ShiftIds);
 
 /// <param name="Status">"not_sent" or "sent".</param>
-/// <param name="CanEdit">False once building has started, unless an admin reopened it for this person. Notes stay possible.</param>
+/// <param name="CanEdit">False while the manager builds and once published (FR-100). Notes stay possible.</param>
 /// <param name="HasPrevious">Whether "Same as last period" has anything to offer (FR-095).</param>
 /// <param name="DesiredWeeklyHours">This period's number, or, until there is one, the person's number from their last period; null the first time (BR-032).</param>
 public sealed record MyAvailability(
@@ -476,7 +451,6 @@ public sealed record TeamAvailabilityRow(
     string Name,
     int Level,
     string Status,
-    bool Reopened,
     decimal HoursOffered,
     decimal? DesiredWeeklyHours,
     IReadOnlyList<AvailabilityNoteView> Notes);

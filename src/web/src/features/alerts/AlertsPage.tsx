@@ -118,8 +118,11 @@ function destinationOf(item: NotificationItem): string | null {
     // 2026-11-20: asked or reminded to fill in availability opens the form; back returns here.
     case 'availability.requested':
     case 'availability.reminder':
-    case 'availability.reopened':
       return '/availability';
+    // 2026-11-21: a published or changed schedule opens the Schedule tab.
+    case 'schedule.published':
+    case 'schedule.changed':
+      return '/schedule';
     case 'availability.sent':
     case 'availability.note_added':
       return periodId && membershipId ? `/availability/people/${periodId}/${membershipId}` : null;

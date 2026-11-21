@@ -142,15 +142,23 @@ describe('availability', () => {
     });
     renderApp('/schedule');
 
+    // 2026-11-21: "Starts on" offers only Mondays, so no other day can be picked.
     const start = await screen.findByLabelText(en.schedule.open.start);
-    await userEvent.clear(start);
-    await userEvent.type(start, '2099-10-05');
+    const mondays = within(start)
+      .getAllByRole('option')
+      .map((option) => (option as HTMLOptionElement).value);
+    expect(mondays).toHaveLength(12);
+    expect(mondays.every((day) => new Date(`${day}T00:00:00Z`).getUTCDay() === 1)).toBe(true);
+    await userEvent.selectOptions(start, mondays[1]!);
     await userEvent.click(screen.getByRole('button', { name: en.schedule.open.submit }));
 
     const opened = calls.find((call) => call.method === 'POST' && call.path === `${base}/periods`);
+    const saturday = new Date(Date.parse(`${mondays[1]}T00:00:00Z`) - 2 * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
     expect(opened?.body).toEqual({
-      startDate: '2099-10-05',
-      dueDate: '2099-10-03',
+      startDate: mondays[1],
+      dueDate: saturday,
       dueTime: '00:00',
     });
   });
@@ -277,7 +285,6 @@ describe('the schedule tab', () => {
           name: 'Sophie L.',
           level: 2,
           status: 'sent',
-          reopened: false,
           hoursOffered: 13,
           desiredWeeklyHours: 14,
           notes: [],
@@ -287,7 +294,6 @@ describe('the schedule tab', () => {
           name: 'Kevin T.',
           level: 3,
           status: 'not_sent',
-          reopened: false,
           hoursOffered: 0,
           desiredWeeklyHours: 20,
           notes: [],
@@ -307,10 +313,8 @@ describe('the schedule tab', () => {
       'href',
       '/schedule/build',
     );
-    expect(screen.getByRole('link', { name: en.schedule.editGenerator })).toHaveAttribute(
-      'href',
-      '/generator',
-    );
+    // 2026-11-21: the generator rules are changed only before a period is opened.
+    expect(screen.queryByRole('link', { name: en.schedule.editGenerator })).not.toBeInTheDocument();
   });
 
   it('enters Building Schedule, saves the draft, and asks before leaving with unsaved changes (4.3)', async () => {
@@ -660,7 +664,7 @@ describe('changes of 2026-11-19', () => {
     await i18n.changeLanguage('en');
   });
 
-  it('puts the trash and pen icons in the next-period box, and the edit pen on the My shifts row (1, 2, 3)', async () => {
+  it('puts the trash icon in the next-period box, and the edit pen on the My shifts row (1, 2, 3)', async () => {
     signedIn('owner', {
       [`GET ${base}/periods/current`]: { live: published, next: { ...next, sentCount: 0 }, upcoming: [] },
       [`GET ${base}/periods/${periodId}/schedule`]: schedule,
@@ -669,10 +673,7 @@ describe('changes of 2026-11-19', () => {
 
     const box = (await screen.findByRole('heading', { name: en.schedule.box.open })).parentElement!;
     expect(within(box).getByRole('button', { name: en.cancelPeriod.button })).toBeInTheDocument();
-    expect(within(box).getByRole('link', { name: en.schedule.editGenerator })).toHaveAttribute(
-      'href',
-      '/generator',
-    );
+    expect(within(box).queryByRole('link', { name: en.schedule.editGenerator })).not.toBeInTheDocument();
     const row = (await screen.findByRole('button', { name: en.schedule.mine })).parentElement!;
     expect(within(row).getByRole('link', { name: en.schedule.edit })).toHaveAttribute(
       'href',
@@ -881,7 +882,6 @@ describe('changes of 2026-11-20', () => {
           name: 'Kevin T.',
           level: 3,
           status: 'not_sent',
-          reopened: false,
           hoursOffered: 0,
           desiredWeeklyHours: null,
           notes: [],
@@ -933,38 +933,35 @@ describe('changes of 2026-11-20', () => {
   });
 });
 
-describe('changing the deadline', () => {
+describe('the next-period box once open (2026-11-21)', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en');
   });
 
-  it('moves the deadline from the pen beside it in the next-period box', async () => {
+  it('shows the deadline without a way to move it, no generator pen, and turns green when everyone sent', async () => {
     const dueAt = new Date(2099, 9, 3, 0, 0).toISOString();
-    const calls = signedIn('owner', {
+    signedIn('owner', {
       [`GET ${base}/periods/current`]: {
         live: null,
-        next: { ...next, period: { ...period, dueAt }, sentCount: 0 },
+        next: { ...next, period: { ...period, dueAt }, sentCount: 2 },
         upcoming: [],
       },
-      [`PATCH ${base}/periods/${periodId}/deadline`]: { ...period, dueAt },
+      [`GET ${base}/periods/${periodId}/availability`]: {
+        period: { ...period, dueAt },
+        sentCount: 2,
+        total: 2,
+        people: [],
+      },
     });
     renderApp('/schedule');
 
-    await userEvent.click(await screen.findByRole('button', { name: en.deadline.change }));
-    const sheet = within(await screen.findByRole('dialog', { name: en.deadline.title }));
-    // It starts from the current deadline.
-    expect(sheet.getByLabelText(en.schedule.open.dueDate)).toHaveValue('2099-10-03');
-    expect(sheet.getByLabelText(en.schedule.open.dueTime)).toHaveValue('00:00');
-    await userEvent.clear(sheet.getByLabelText(en.schedule.open.dueDate));
-    await userEvent.type(sheet.getByLabelText(en.schedule.open.dueDate), '2099-10-04');
-    await userEvent.click(sheet.getByRole('button', { name: en.deadline.save }));
-
-    await waitFor(() =>
-      expect(calls.find((call) => call.method === 'PATCH')?.body).toEqual({
-        dueDate: '2099-10-04',
-        dueTime: '00:00',
-      }),
+    const box = (await screen.findByRole('heading', { name: en.schedule.box.open })).parentElement!;
+    expect(await within(box).findByText(/Deadline:/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /deadline/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: en.schedule.editGenerator })).not.toBeInTheDocument();
+    expect(within(box).getByRole('link', { name: en.schedule.ready.team })).toHaveTextContent(
+      'Availabilities',
     );
-    expect(await screen.findByText(en.deadline.changed)).toBeInTheDocument();
+    await waitFor(() => expect(box).toHaveClass('bg-done'));
   });
 });

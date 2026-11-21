@@ -32,6 +32,9 @@
 
   /* Brand */
   --color-primary: #7f9ff2; /* hero cards, selected pills, the logo blob */
+  /* A hero card whose step is done, such as everyone having sent their availability (2026-11-21). Dark
+     on-primary text stays readable on it in both themes (11:1). */
+  --color-done: #8fdcab;
   --color-accent: #f48da0; /* badges and counts, never large areas */
   /* Text on primary or accent is always this, in both themes: those two colours stay pale in dark
      mode, so --color-ink (which flips to near-white there) would drop to 2.2:1 on them. */
@@ -183,6 +186,19 @@
   summary {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+  }
+
+  /* iPhone draws date and time fields wider than their box and centres the value: keep them in their
+     column and line the value up like the other fields (2026-11-21). */
+  input[type='date'],
+  input[type='time'] {
+    min-width: 0;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input::-webkit-date-and-time-value {
+    text-align: start;
   }
 
   html {

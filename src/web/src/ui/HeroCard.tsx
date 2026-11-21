@@ -13,6 +13,8 @@ type HeroCardProps = {
   corner?: ReactNode;
   // Let the content use the whole width, for a row of buttons with an icon at its far end.
   wide?: boolean;
+  // 'done' turns the card green once its step is complete (2026-11-21).
+  tone?: 'primary' | 'done';
   className?: string;
 };
 
@@ -26,12 +28,19 @@ export function HeroCard({
   decoration,
   corner,
   wide,
+  tone = 'primary',
   className,
 }: HeroCardProps) {
   const Heading = headingLevel === 1 ? 'h1' : 'h2';
 
   return (
-    <div className={cx('relative overflow-hidden rounded-hero bg-primary p-6 text-on-primary', className)}>
+    <div
+      className={cx(
+        'relative overflow-hidden rounded-hero p-6 text-on-primary',
+        tone === 'done' ? 'bg-done' : 'bg-primary',
+        className,
+      )}
+    >
       <div aria-hidden="true" className="absolute -top-12 -right-10 size-48 rounded-full bg-glow" />
       {decoration}
       {corner && <div className="absolute top-4 right-4">{corner}</div>}

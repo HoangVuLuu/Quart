@@ -238,7 +238,11 @@ internal sealed class Availability
 
     public Instant? SubmittedAt { get; set; }
 
-    /// <summary>Set when an admin reopens this person after the lock; cleared when they send again (FR-101).</summary>
+    /// <summary>
+    /// No longer used: reopening one person (FR-101) was removed on 2026-11-21. Still mapped so this release
+    /// needs no migration while the previous one serves; drop the column in a later release (expand, migrate,
+    /// contract: docs/runbooks/migrations.md).
+    /// </summary>
     public Instant? ReopenedAt { get; set; }
 
     /// <summary>

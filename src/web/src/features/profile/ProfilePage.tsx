@@ -116,11 +116,12 @@ export function ProfilePage() {
         </span>
         <div className="min-w-0">
           <p className="truncate text-xl font-bold">{me.fullName}</p>
-          <p className="text-sm font-bold">
-            {view.me.role === 'employee'
-              ? t('team.barista', { level: view.me.level })
-              : `${t(`roles.${view.me.role as 'owner' | 'admin'}`)} · ${t('scheduling.level', { level: view.me.level })}`}
-          </p>
+          {/* Staff see no role or level here (2026-11-21); levels are for managers only (3.1). */}
+          {view.me.role !== 'employee' && (
+            <p className="text-sm font-bold">
+              {`${t(`roles.${view.me.role as 'owner' | 'admin'}`)} · ${t('scheduling.level', { level: view.me.level })}`}
+            </p>
+          )}
           <p className="text-sm">{view.name}</p>
         </div>
       </div>
