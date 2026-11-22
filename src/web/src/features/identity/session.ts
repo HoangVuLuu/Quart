@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, api, unwrap, type Schemas } from '../../lib/api/client';
 import { forgetOfflineCopies } from '../../lib/connection';
+import { forgetPushHere } from '../push/push';
 
 export type Me = Schemas['Me'];
 
@@ -38,8 +39,11 @@ export function useSignIn() {
 export function useSignOut(everywhere = false) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: () =>
-      unwrap(everywhere ? api.POST('/api/auth/sign-out-everywhere') : api.POST('/api/auth/sign-out')),
+    mutationFn: async () => {
+      // Before the session ends: this browser stops showing the person's alerts (M8-06).
+      await forgetPushHere();
+      return unwrap(everywhere ? api.POST('/api/auth/sign-out-everywhere') : api.POST('/api/auth/sign-out'));
+    },
     onSuccess: () => {
       client.clear();
       forgetOfflineCopies();

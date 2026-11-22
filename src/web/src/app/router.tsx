@@ -22,6 +22,7 @@ import { ProfilePage } from '../features/profile/ProfilePage';
 import { BuildingPage } from '../features/schedule/BuildingPage';
 import { SchedulePage } from '../features/schedule/SchedulePage';
 import { TeamPage } from '../features/team/TeamPage';
+import { OpenFromPush } from '../features/push/OpenFromPush';
 import { WorkplaceGate } from '../features/workplaces/WorkplaceGate';
 import { OwnerInvitationPage, WorkplacesPage } from '../features/workplaces/WorkplacesPage';
 import { AppShell } from './AppShell';
@@ -85,6 +86,8 @@ export const routes: RouteObject[] = [
         element: <RequireSession />,
         children: [
           { path: 'workplaces', element: <WorkplacesPage /> },
+          // A tapped push: switch workplace, mark it read, go where it leads (M8-06).
+          { path: 'open', element: <OpenFromPush /> },
           { path: 'join/:code', element: <WorkplacesPage /> },
           { path: 'owner-invitation', element: <OwnerInvitationPage /> },
           {

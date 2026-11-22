@@ -95,8 +95,9 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
   await test.step('the owner opens a one-week period', async () => {
     // Only Mondays are offered (2026-11-21).
     await page.getByLabel('Starts on').selectOption(nextMonday());
-    // The length comes from the generator rules (one week), and is only changed there (FR-090).
-    await expect(page.getByText('Lasts 1 week, as set in the generator rules.')).toBeVisible();
+    // The length comes from the generator rules (one week), changed only there (FR-090); the box shows
+    // just the fields and the reminders line (2026-11-22).
+    await expect(page.getByText('Reminders sent 48hrs and 24hrs before due date')).toBeVisible();
     await page.getByRole('button', { name: 'Open period' }).click();
     await expect(page.getByRole('heading', { name: 'Next period is open' })).toBeVisible();
   });
@@ -218,7 +219,7 @@ test('the core loop, from an empty workplace to an updated schedule', async ({ b
     const sophieChanges = await sophie.page.getByText(/^Your schedule changed/).count();
 
     await page.goto('/schedule');
-    await page.getByRole('link', { name: 'Edit current schedule' }).click();
+    await page.getByRole('link', { name: 'Edit current period' }).click();
     await expect(page.getByRole('heading', { name: 'Editing Schedule' })).toBeVisible();
     await page
       .getByRole('main')

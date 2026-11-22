@@ -7,13 +7,8 @@ import { cx } from '../../ui/cx';
 import { Icon, iconButtonClassName } from '../../ui/Icon';
 import { PageHeader } from '../../ui/PageHeader';
 import { MarketplaceSections } from '../marketplace/MarketplaceSections';
-import {
-  useDecisionCount,
-  useMarkAllRead,
-  useMarkRead,
-  useNotifications,
-  type NotificationItem,
-} from './data';
+import { useDecisionCount, useMarkAllRead, useMarkRead, useNotifications } from './data';
+import { destinationOf } from './destination';
 import { notificationText } from './notification-text';
 
 // Mockups 1f (staff) and 1n (admins): what managers must decide first, then everything that happened.
@@ -60,7 +55,7 @@ export function AlertsPage() {
         <ul className="flex flex-col gap-2">
           {items.map((item) => {
             const text = notificationText(item, t, i18n.language);
-            const to = destinationOf(item);
+            const to = destinationOf(item.type, item.parameters);
             const content = (
               <>
                 <p className="text-[15px] font-bold">{text}</p>
@@ -104,32 +99,4 @@ export function AlertsPage() {
       </section>
     </section>
   );
-}
-
-/**
- * Where an alert leads, when it leads anywhere (2026-11-18/20): the form for "availability is open" and its
- * reminders; someone's answer for "sent their availability"
- * and "added a note", and the shift on the Schedule tab for "the shift is yours" and "the trade is done".
- * Alerts from before these carried no ids, so they stay where they are.
- */
-function destinationOf(item: NotificationItem): string | null {
-  const { periodId, membershipId, shiftId } = item.parameters;
-  switch (item.type) {
-    // 2026-11-20: asked or reminded to fill in availability opens the form; back returns here.
-    case 'availability.requested':
-    case 'availability.reminder':
-      return '/availability';
-    // 2026-11-21: a published or changed schedule opens the Schedule tab.
-    case 'schedule.published':
-    case 'schedule.changed':
-      return '/schedule';
-    case 'availability.sent':
-    case 'availability.note_added':
-      return periodId && membershipId ? `/availability/people/${periodId}/${membershipId}` : null;
-    case 'claim.approved':
-    case 'trade.applied':
-      return periodId && shiftId ? `/schedule?period=${periodId}&shift=${shiftId}` : null;
-    default:
-      return null;
-  }
 }

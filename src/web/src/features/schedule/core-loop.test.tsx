@@ -685,7 +685,7 @@ describe('changes of 2026-11-19', () => {
     await i18n.changeLanguage('en');
   });
 
-  it('puts the trash icon in the next-period box, and the edit pen on the My shifts row (1, 2, 3)', async () => {
+  it('puts the trash icon in the next-period box, and "Edit current period" under the shifts (1, 2, 3)', async () => {
     signedIn('owner', {
       [`GET ${base}/periods/current`]: { live: published, next: { ...next, sentCount: 0 }, upcoming: [] },
       [`GET ${base}/periods/${periodId}/schedule`]: schedule,
@@ -695,11 +695,13 @@ describe('changes of 2026-11-19', () => {
     const box = (await screen.findByRole('heading', { name: en.schedule.box.open })).parentElement!;
     expect(within(box).getByRole('button', { name: en.cancelPeriod.button })).toBeInTheDocument();
     expect(within(box).queryByRole('link', { name: en.schedule.editGenerator })).not.toBeInTheDocument();
-    const row = (await screen.findByRole('button', { name: en.schedule.mine })).parentElement!;
-    expect(within(row).getByRole('link', { name: en.schedule.edit })).toHaveAttribute(
-      'href',
-      `/schedule/edit?period=${periodId}`,
-    );
+    // A full-width button after the last shift, in both views (2026-11-22).
+    const edit = await screen.findByRole('link', { name: en.schedule.edit });
+    expect(edit).toHaveAttribute('href', `/schedule/edit?period=${periodId}`);
+    const last = screen.getAllByRole('heading').at(-1)!;
+    expect(last.compareDocumentPosition(edit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: en.schedule.team }));
+    expect(await screen.findByRole('link', { name: en.schedule.edit })).toBeInTheDocument();
   });
 
   it('opens who works the next shift from Home, without leaving Home (5)', async () => {
@@ -984,5 +986,96 @@ describe('the next-period box once open (2026-11-21)', () => {
       'Availabilities',
     );
     await waitFor(() => expect(box).toHaveClass('bg-done'));
+  });
+});
+
+describe('changes of 2026-11-22', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  const building = { ...period, status: 'building', locked: true, draftSaved: true };
+  const draft: Schemas['DraftView'] = {
+    period: building,
+    seed: null,
+    score: 0,
+    openSlots: 0,
+    hasUnpublishedChanges: true,
+    hasUnsavedChanges: true,
+    shifts: [],
+    people: [],
+    issues: [],
+  };
+
+  it('on Home, "You\'re working next" opens the shift on Schedule, and the box goes straight to building (5, 7)', async () => {
+    const nextId = '77777777-7777-4777-8777-777777777777';
+    signedIn('owner', {
+      [`GET ${base}/periods/current`]: {
+        live: published,
+        next: { ...next, period: { ...building, id: nextId } },
+        upcoming: [],
+      },
+      [`GET ${base}/periods/${periodId}/schedule`]: schedule,
+    });
+    renderApp('/');
+
+    expect(await screen.findByRole('link', { name: new RegExp(en.home.workingNext) })).toHaveAttribute(
+      'href',
+      `/schedule?period=${periodId}&shift=mon-close`,
+    );
+    expect(screen.getByRole('link', { name: 'Open draft' })).toHaveAttribute('href', '/schedule/build');
+  });
+
+  it('on Building Schedule: Save draft at the top, Generate and Clear on one row, the issues under them (6)', async () => {
+    signedIn('owner', {
+      [`GET ${base}/periods/current`]: { live: null, next: { ...next, period: building }, upcoming: [] },
+      [`POST ${base}/periods/${periodId}/draft/start`]: draft,
+      [`GET ${base}/periods/${periodId}/draft`]: draft,
+      [`POST ${base}/periods/${periodId}/draft/leave`]: status(204),
+    });
+    renderApp('/schedule/build');
+
+    const save = await screen.findByRole('button', { name: en.building.save });
+    const title = screen.getByRole('heading', { name: en.building.title });
+    expect(title.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    const generate = screen.getByRole('button', { name: en.draft.generate });
+    expect(generate.parentElement).toContainElement(screen.getByRole('button', { name: en.building.clear }));
+    const issues = screen.getByRole('button', { name: en.issues.none });
+    expect(generate.parentElement).not.toContainElement(issues);
+  });
+
+  it('on Editing Schedule: no Clear, and Cancel period at the bottom under Update (6)', async () => {
+    const editing = { ...draft, period: published, hasUnpublishedChanges: false, hasUnsavedChanges: false };
+    signedIn('owner', {
+      [`GET ${base}/periods/current`]: { live: published, next: null, upcoming: [] },
+      [`POST ${base}/periods/${periodId}/draft/start`]: editing,
+      [`GET ${base}/periods/${periodId}/draft`]: editing,
+      [`POST ${base}/periods/${periodId}/draft/leave`]: status(204),
+    });
+    renderApp(`/schedule/edit?period=${periodId}`);
+
+    const update = await screen.findByRole('button', { name: en.draft.update });
+    expect(screen.queryByRole('button', { name: en.building.clear })).not.toBeInTheDocument();
+    const cancel = screen.getByRole('button', { name: en.cancelPeriod.button });
+    expect(update.compareDocumentPosition(cancel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('switches My shifts and Whole team from one row (3)', async () => {
+    signedIn('employee', {
+      [`GET ${base}/periods/current`]: { live: published, next: null, upcoming: [] },
+      [`GET ${base}/periods/${periodId}/schedule`]: schedule,
+    });
+    renderApp('/schedule');
+
+    const views = await screen.findByRole('group', { name: en.schedule.view });
+    expect(within(views).getByRole('button', { name: en.schedule.mine })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await userEvent.click(within(views).getByRole('button', { name: en.schedule.team }));
+    expect(within(views).getByRole('button', { name: en.schedule.team })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 });

@@ -1,10 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { messageKeyFor } from '../../i18n/errors';
 import { formatDateRange, formatDue } from '../../i18n/format';
-import { api, unwrap } from '../../lib/api/client';
 import { Button } from '../../ui/Button';
 import { buttonClassName } from '../../ui/button-styles';
 import { HeroCard } from '../../ui/HeroCard';
@@ -86,21 +84,13 @@ const mondaysOffered = 12;
 
 /**
  * Opens the next period on a Monday, with when availability is due (FR-091). Its length is the one set in
- * Edit generator rules, shown here but only changed there (FR-090). Everyone who works shifts is asked, now
+ * Edit generator rules, changed only there (FR-090). Everyone who works shifts is asked, now
  * or on the day set in Edit generator rules. "Starts on" lists only Mondays, since a period cannot start
  * on another day and the iPhone's date picker ignores that rule (2026-11-21).
  */
 function OpenPeriodBox({ after }: { after?: string }) {
   const { t, i18n } = useTranslation();
   const create = useCreatePeriod();
-  const { id } = useWorkplace();
-  const rules = useQuery({
-    queryKey: ['workplace', id, 'generator'],
-    queryFn: ({ signal }) =>
-      unwrap(
-        api.GET('/api/workplaces/{workplaceId}/generator', { params: { path: { workplaceId: id } }, signal }),
-      ),
-  }).data;
   const today = new Date().toISOString().slice(0, 10);
   const earliest = after
     ? new Date(Date.parse(`${after}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10)
@@ -120,10 +110,11 @@ function OpenPeriodBox({ after }: { after?: string }) {
   const [chosenDue, setChosenDue] = useState<string | null>(null);
   const dueDate = chosenDue ?? suggestedDueDate(startDate, today);
   const [dueTime, setDueTime] = useState('00:00');
+  const remindersId = useId();
 
   return (
-    <HeroCard eyebrow={t('home.period.none')} title={t('schedule.open.title')} headingLevel={2} wide>
-      <p className="text-sm">{t('schedule.open.text')}</p>
+    // Only the title, the fields and one line about reminders (2026-11-22).
+    <HeroCard title={t('schedule.open.title')} headingLevel={2} wide>
       <div className="mt-4 flex flex-col gap-3">
         <Select
           label={t('schedule.open.start')}
@@ -136,11 +127,10 @@ function OpenPeriodBox({ after }: { after?: string }) {
             </option>
           ))}
         </Select>
-        {rules && <p className="text-sm">{t('schedule.open.length', { count: rules.periodWeeks })}</p>}
         <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-3">
           <TextField
             label={t('schedule.open.dueDate')}
-            hint={t('schedule.open.dueDateHint')}
+            aria-describedby={remindersId}
             type="date"
             required
             value={dueDate}
@@ -155,6 +145,10 @@ function OpenPeriodBox({ after }: { after?: string }) {
             onChange={(event) => setDueTime(event.target.value)}
           />
         </div>
+        {/* On one line under both fields, rather than wrapped under the date (2026-11-22). */}
+        <p id={remindersId} className="-mt-1 text-xs text-muted">
+          {t('schedule.open.reminders')}
+        </p>
         <FormError message={create.error ? t(messageKeyFor(create.error)) : undefined} />
         <div className="flex items-end gap-2">
           <Button loading={create.isPending} onClick={() => create.mutate({ startDate, dueDate, dueTime })}>

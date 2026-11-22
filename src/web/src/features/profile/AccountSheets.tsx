@@ -9,6 +9,7 @@ import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
 import { forgetOfflineCopies } from '../../lib/connection';
 import { meKey } from '../identity/session';
+import { forgetPushHere } from '../push/push';
 import { fieldErrors } from '../identity/fieldErrors';
 import { minPasswordLength } from '../identity/SignUpPage';
 
@@ -192,6 +193,7 @@ export function DeleteAccountSheet({
     onSuccess: () => {
       client.clear();
       forgetOfflineCopies();
+      void forgetPushHere();
       client.setQueryData(meKey, null);
       onDeleted();
     },

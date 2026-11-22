@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useSwipe } from '../../lib/gestures';
 import { useTranslation } from 'react-i18next';
 import { messageKeyFor } from '../../i18n/errors';
@@ -49,12 +49,14 @@ function useIssueText(draft: DraftView) {
 
 type DraftEditorProps = {
   periodId: string;
+  /** Shares Generate's row, on its right quarter: Clear on Building Schedule (2026-11-22). */
+  besideGenerate?: ReactNode;
   /** Called once the schedule is published or updated: Building and Editing Schedule then go back (4.3). */
   onPublished?: () => void;
 };
 
 // Mockup 1l, with the shift editor (1p) and the issues list (1q). Only admins come here (AD-012).
-export function DraftEditor({ periodId, onPublished }: DraftEditorProps) {
+export function DraftEditor({ periodId, besideGenerate, onPublished }: DraftEditorProps) {
   const { t } = useTranslation();
   const toast = useToast();
   const draft = useDraft(periodId);
@@ -100,30 +102,25 @@ export function DraftEditor({ periodId, onPublished }: DraftEditorProps) {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Generate, green, on three quarters of a row with Clear; the issues on their own row (2026-11-22). */}
+      <div className="grid grid-cols-4 gap-2">
         <Button
-          variant="white"
-          className="min-h-11 px-4 text-sm"
+          variant="green"
+          className={besideGenerate ? 'col-span-3' : 'col-span-4'}
           loading={actions.generate.isPending}
           onClick={() => actions.generate.mutate(null)}
         >
           {data.seed === null ? t('draft.generate') : t('draft.generateAgain')}
         </Button>
-        <button
-          type="button"
-          onClick={() => setShowIssues(true)}
-          className={cx(
-            'min-h-11 rounded-pill px-4 text-sm font-bold shadow-press',
-            blocking.length > 0
-              ? 'bg-danger-soft text-danger'
-              : asking.length > 0
-                ? 'bg-warning-soft text-warning'
-                : 'bg-surface text-ink',
-          )}
-        >
-          {data.issues.length === 0 ? t('issues.none') : t('issues.count', { count: data.issues.length })}
-        </button>
+        {besideGenerate}
       </div>
+      <Button
+        variant={blocking.length > 0 ? 'danger' : asking.length > 0 ? 'warning' : 'white'}
+        className="w-full"
+        onClick={() => setShowIssues(true)}
+      >
+        {data.issues.length === 0 ? t('issues.none') : t('issues.count', { count: data.issues.length })}
+      </Button>
       <p className="text-sm text-muted">
         {t('draft.hint')} {data.seed !== null && t('draft.seed', { seed: data.seed })}{' '}
         {data.openSlots > 0 && t('draft.openSlots', { count: data.openSlots })}
@@ -462,6 +459,7 @@ function ShiftEditor({
                 className="min-h-11 px-4 text-sm"
                 aria-pressed={assignment.locked}
                 aria-label={t('scheduling.grid.keep', { name })}
+                disabled={actions.keep.isPending || actions.remove.isPending}
                 onClick={() =>
                   actions.keep.mutate({
                     shiftId: shift.id,
@@ -476,6 +474,7 @@ function ShiftEditor({
                 variant="white"
                 className="min-h-11 px-4 text-sm"
                 aria-label={t('draft.editor.removeNamed', { name })}
+                disabled={actions.keep.isPending || actions.remove.isPending}
                 onClick={() =>
                   actions.remove.mutate({ shiftId: shift.id, membershipId: assignment.membershipId })
                 }
