@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using NodaTime;
 using Npgsql;
 using Quart.Modules.Notifications.Email;
+using Quart.Modules.Notifications.Push;
 using Quart.Modules.Notifications.Persistence;
 using Quart.SharedKernel;
 using Quart.SharedKernel.Access;
@@ -20,7 +21,7 @@ namespace Quart.Modules.Notifications;
 
 /// <summary>
 /// Entry point of the Notifications module: the only things the API host calls.
-/// The in-app inbox (M2-14), the email outbox (M2-03, AD-030) and notification emails (FR-211). Push arrives in M8.
+/// The in-app inbox (M2-14), the email outbox (M2-03, AD-030), notification emails (FR-211) and web push (M8-06).
 /// Other modules notify through <see cref="INotifier"/> and <see cref="IEmailOutbox"/>.
 /// </summary>
 public static class NotificationsModule
@@ -40,11 +41,21 @@ public static class NotificationsModule
         services.AddSingleton(new NightlyJob(NotificationRetention.JobType));
         services.AddScoped<INotifier, Notifier>();
         services.AddScoped<IAccountDeletedHandler, ForgetNotificationsOnAccountDeleted>();
+
+        // Web push (M8-06, decision 0015). Off until both VAPID keys are set.
+        services.AddOptions<PushOptions>().BindConfiguration(PushOptions.Section);
+        services.AddHttpClient(WebPushSender.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(15))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        services.TryAddScoped<IPushSender, WebPushSender>();
+        services.AddScoped<IJobHandler, SendPushHandler>();
+        services.AddScoped<ISessionsEndedHandler, ForgetPushOnSessionsEnded>();
         return services;
     }
 
     public static IEndpointRouteBuilder MapNotificationsModule(this IEndpointRouteBuilder endpoints)
     {
+        PushEndpoints.Map(endpoints);
+
         var group = endpoints.MapGroup("/api/workplaces/{workplaceId:guid}/notifications");
 
         // A member only ever sees their own notifications (M2-14).
@@ -135,6 +146,7 @@ internal sealed class Notifier(NotificationsDbContext db, IUserDirectory users, 
     public async Task NotifyAsync(IReadOnlyCollection<NotificationRequest> notifications, CancellationToken cancellationToken)
     {
         var now = clock.GetCurrentInstant();
+        var stored = new List<Notification>();
         foreach (var request in notifications)
         {
             // FR-216 in one place: a type carries only the parameter names it declared.
@@ -148,7 +160,7 @@ internal sealed class Notifier(NotificationsDbContext db, IUserDirectory users, 
                 throw new ArgumentException($"Notification type '{request.Type}' may not carry '{refused}'.", nameof(notifications));
             }
 
-            db.Notifications.Add(new Notification
+            var notification = new Notification
             {
                 Id = Guid.NewGuid(),
                 WorkplaceId = request.WorkplaceId,
@@ -157,11 +169,36 @@ internal sealed class Notifier(NotificationsDbContext db, IUserDirectory users, 
                 Type = request.Type,
                 Parameters = JsonSerializer.Serialize(parameters),
                 CreatedAt = now,
-            });
+            };
+            db.Notifications.Add(notification);
+            stored.Add(notification);
         }
 
-        var emails = await EmailsForAsync(notifications, now, cancellationToken);
+        // FR-211: email is the fallback for people who have not turned push on.
+        var pushed = notifications.Select(x => x.UserId).Distinct().ToList();
+        var subscriptions = await db.PushSubscriptions.AsNoTracking()
+            .Where(x => pushed.Contains(x.UserId))
+            .Select(x => new { x.Id, x.UserId })
+            .ToListAsync(cancellationToken);
+        var withPush = subscriptions.Select(x => x.UserId).ToHashSet();
+        var emails = await EmailsForAsync(notifications.Where(x => !withPush.Contains(x.UserId)).ToList(), now, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+
+        // One job per notification and browser (M8-06), on the next tick like emails, so the request that caused
+        // them never waits on a push service.
+        foreach (var notification in stored.Where(x => !NotificationTypes.NotPushed.Contains(x.Type)))
+        {
+            foreach (var subscription in subscriptions.Where(x => x.UserId == notification.UserId))
+            {
+                await jobs.ScheduleAsync(
+                    new JobRequest(SendPushHandler.JobType, now)
+                    {
+                        Payload = new SendPushPayload(notification.Id, subscription.Id),
+                        DedupeKey = $"push:{notification.Id}:{subscription.Id}",
+                    },
+                    cancellationToken);
+            }
+        }
         foreach (var email in emails)
         {
             await jobs.ScheduleAsync(
@@ -220,10 +257,22 @@ internal sealed class ForgetNotificationsOnAccountDeleted(NotificationsDbContext
     public async Task HandleAsync(Guid userId, CancellationToken cancellationToken)
     {
         await db.Notifications.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+        await db.PushSubscriptions.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
         if ((await users.GetAsync([userId], cancellationToken)).GetValueOrDefault(userId) is { } user)
         {
             var address = user.Email.ToUpperInvariant();
             await db.OutboxMessages.Where(x => x.Recipient.ToUpper() == address).ExecuteDeleteAsync(cancellationToken);
         }
     }
+}
+
+/// <summary>
+/// Signing out everywhere, or changing or resetting the password or email, forgets every browser that had push on
+/// (M8-06): a lost phone stops showing the person's alerts. The browser still in use subscribes again by itself
+/// the next time the app opens.
+/// </summary>
+internal sealed class ForgetPushOnSessionsEnded(NotificationsDbContext db) : ISessionsEndedHandler
+{
+    public Task HandleAsync(Guid userId, CancellationToken cancellationToken) =>
+        db.PushSubscriptions.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
 }

@@ -94,6 +94,22 @@ step fails, open its replay: `cd tests/e2e && npx playwright show-trace test-res
 The same test runs on every pull request ("Browser tests" in CI; a failed run keeps the traces as an
 artifact named `playwright-traces`).
 
+## Push notifications (optional)
+
+Push is off locally until the app has VAPID keys. Make a pair and keep it in .NET's user secrets (never in a
+file in the repository):
+
+```bash
+dotnet run --project src/backend/Quart.Api -- push-keys   # prints Push__PublicKey=… and Push__PrivateKey=…
+cd src/backend/Quart.Api
+dotnet user-secrets set "Push:PublicKey" "<the public key>"
+dotnet user-secrets set "Push:PrivateKey" "<the private key>"
+```
+
+Browsers allow push only on https or on `localhost`, so try it on the computer itself, not on a phone over
+Wi-Fi; phones are tried on staging. Pushes leave with the background tick: run it with
+`curl -X POST http://localhost:5080/internal/tick` ([background-jobs.md](background-jobs.md#try-it-locally)).
+
 ## If something does not work
 
 | What you see | What to do |
