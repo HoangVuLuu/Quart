@@ -980,6 +980,54 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/push/key': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetPushKey'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/push/subscriptions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['SubscribeToPush'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/push/subscriptions/{subscriptionId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations['UnsubscribeFromPush'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/workplaces/{workplaceId}/notifications': {
     parameters: {
       query?: never;
@@ -1521,6 +1569,22 @@ export interface components {
     };
     PublishRequest: {
       confirmed: boolean;
+    };
+    PushKey: {
+      publicKey: string;
+    };
+    PushSubscribed: {
+      /** Format: uuid */
+      id: string;
+    };
+    PushSubscriptionKeys: {
+      p256dh: null | string;
+      auth: null | string;
+    };
+    PushSubscriptionRequest: {
+      endpoint: null | string;
+      keys: null | components['schemas']['PushSubscriptionKeys'];
+      label: null | string;
     };
     RemindRequest: {
       /** Format: uuid */
@@ -3759,6 +3823,97 @@ export interface operations {
       path: {
         workplaceId: string;
         tradeId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetPushKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PushKey'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  SubscribeToPush: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PushSubscriptionRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PushSubscribed'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  UnsubscribeFromPush: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        subscriptionId: string;
       };
       cookie?: never;
     };

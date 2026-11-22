@@ -600,6 +600,13 @@ FR-211  Email is used for account essentials only: email verification and
         items (a new or changed schedule, a trade waiting on you) for people who
         have not enabled push. Deliberately quiet by default.
 FR-212  Push notifications are delivered through the installed PWA. See NFR-012.
+        A push shows the same sentence as the alert in the app, in the
+        recipient's language. Every alert is pushed except the managers'
+        "just so you know" ones (someone joined, sent availability, added a
+        note). A browser belongs to whoever turned push on there last;
+        signing out everywhere, or changing or resetting the password or
+        email, turns push off on every browser of that person (decision
+        0015).
 FR-213  Notifications generated close together are bundled. Five edits in ten
         minutes produce one notification, not five.
 FR-214  Philippe receives one email per month containing the final schedule for
@@ -2026,6 +2033,13 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             email is sent first and its outbox row is then deleted, so no
             table keeps the address. Accounts that never confirmed their
             email are deleted 7 days after sign-up.  (FR-009, 13)
+2026-11-22  Web push (M8-06): the lock screen shows the full alert, the
+            same sentence as in the app (Hoang, over a generic text); the
+            managers' "just so you know" alerts (joined, sent availability,
+            added a note) are not pushed (Hoang); email stops for people
+            with push on (FR-211; the Email switch of M8-07 can keep it).
+            Pushes leave with the tick, up to 5 minutes later.  (FR-211,
+            FR-212, FR-216)
 2026-11-21  From testing on staging (Hoang): the deadline is set only when
             opening a period and cannot be moved after; "Starts on" lists
             Mondays only; Edit generator is reached only from the

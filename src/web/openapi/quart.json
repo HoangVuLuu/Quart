@@ -2900,6 +2900,110 @@
         }
       }
     },
+    "/api/push/key": {
+      "get": {
+        "tags": [
+          "PushEndpoints"
+        ],
+        "operationId": "GetPushKey",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushKey"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/push/subscriptions": {
+      "post": {
+        "tags": [
+          "PushEndpoints"
+        ],
+        "operationId": "SubscribeToPush",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushSubscribed"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/push/subscriptions/{subscriptionId}": {
+      "delete": {
+        "tags": [
+          "PushEndpoints"
+        ],
+        "operationId": "UnsubscribeFromPush",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/workplaces/{workplaceId}/notifications": {
       "get": {
         "tags": [
@@ -4890,6 +4994,82 @@
           }
         }
       },
+      "PushKey": {
+        "required": [
+          "publicKey"
+        ],
+        "type": "object",
+        "properties": {
+          "publicKey": {
+            "type": "string"
+          }
+        }
+      },
+      "PushSubscribed": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "PushSubscriptionKeys": {
+        "required": [
+          "p256dh",
+          "auth"
+        ],
+        "type": "object",
+        "properties": {
+          "p256dh": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "auth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PushSubscriptionRequest": {
+        "required": [
+          "endpoint",
+          "keys",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "keys": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PushSubscriptionKeys"
+              }
+            ]
+          },
+          "label": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "RemindRequest": {
         "required": [
           "membershipId"
@@ -5487,6 +5667,9 @@
     },
     {
       "name": "MarketplaceEndpoints"
+    },
+    {
+      "name": "PushEndpoints"
     }
   ]
 }

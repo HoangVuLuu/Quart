@@ -24,11 +24,12 @@ public sealed partial class TestApp : IAsyncDisposable
 
     private int people;
 
-    private TestApp(QuartApiFactory factory, FakeClock clock, CapturedEmails emails)
+    private TestApp(QuartApiFactory factory, FakeClock clock, CapturedEmails emails, CapturedPushes pushes)
     {
         Factory = factory;
         Clock = clock;
         Emails = emails;
+        Pushes = pushes;
     }
 
     public QuartApiFactory Factory { get; }
@@ -37,6 +38,9 @@ public sealed partial class TestApp : IAsyncDisposable
 
     public CapturedEmails Emails { get; }
 
+    /// <summary>Web pushes the app sent; push is set up with a test VAPID key pair (M8-06).</summary>
+    public CapturedPushes Pushes { get; }
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     /// <param name="now">Defaults to Monday 2 November 2026, 09:00 in Montreal.</param>
@@ -44,8 +48,11 @@ public sealed partial class TestApp : IAsyncDisposable
     {
         var clock = new FakeClock(now ?? Instant.FromUtc(2026, 11, 2, 14, 0));
         var emails = new CapturedEmails();
+        var pushes = new CapturedPushes();
         var all = new Dictionary<string, string?>
         {
+            ["Push:PublicKey"] = CapturedPushes.Vapid.PublicKey,
+            ["Push:PrivateKey"] = CapturedPushes.Vapid.PrivateKey,
             // Tests create many accounts from one address; the limits have their own tests.
             ["Auth:RequestsPerMinute"] = "100000",
             ["Workplaces:JoinsPerMinute"] = "100000",
@@ -62,12 +69,13 @@ public sealed partial class TestApp : IAsyncDisposable
             {
                 services.AddSingleton<IClock>(clock);
                 services.AddSingleton<IEmailTransport>(emails);
+                services.AddSingleton<IPushSender>(pushes);
                 services.ConfigureAll<HttpClientFactoryOptions>(options =>
                     options.HttpMessageHandlerBuilderActions.Add(builder => builder.PrimaryHandler = new PwnedPasswordsStub()));
             },
             settings: all);
         await factory.Services.MigrateAllModulesAsync(Cancellation);
-        return new TestApp(factory, clock, emails);
+        return new TestApp(factory, clock, emails, pushes);
     }
 
     public ValueTask DisposeAsync() => Factory.DisposeAsync();
@@ -273,4 +281,60 @@ public sealed class PwnedPasswordsStub : HttpMessageHandler
             : "0000000000000000000000000000000000A:0\r\n";
         return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) });
     }
+}
+
+/// <summary>Stands in for the push services: keeps what was sent, and answers what a test tells it to (M8-06).</summary>
+public sealed class CapturedPushes : IPushSender
+{
+    private readonly List<(PushTarget Target, JsonNode Body)> sent = [];
+
+    /// <summary>A VAPID key pair made for the tests, as an environment's secrets would hold.</summary>
+    public static (string PublicKey, string PrivateKey) Vapid { get; } = NewVapidKeys();
+
+    /// <summary>What the push service answers, by endpoint. Delivered when not set.</summary>
+    public Dictionary<string, PushResult> Answers { get; } = [];
+
+    public IReadOnlyList<(PushTarget Target, JsonNode Body)> Sent
+    {
+        get
+        {
+            lock (sent)
+            {
+                return sent.ToList();
+            }
+        }
+    }
+
+    public IReadOnlyList<JsonNode> To(string endpoint) => Sent.Where(x => x.Target.Endpoint == endpoint).Select(x => x.Body).ToList();
+
+    public Task<PushResult> SendAsync(PushTarget target, string payload, CancellationToken cancellationToken)
+    {
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(payload) < 3000, "A push message must stay well under the 4 KB push services accept.");
+        var answer = Answers.GetValueOrDefault(target.Endpoint, PushResult.Delivered);
+        if (answer == PushResult.Delivered)
+        {
+            lock (sent)
+            {
+                sent.Add((target, JsonNode.Parse(payload)!));
+            }
+        }
+        return Task.FromResult(answer);
+    }
+
+    /// <summary>A browser's subscription keys: a P-256 public point and a 16-byte secret, base64url.</summary>
+    public static (string P256dh, string Auth) BrowserKeys()
+    {
+        using var key = System.Security.Cryptography.ECDiffieHellman.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
+        var point = key.ExportParameters(false).Q;
+        return (Base64Url([0x04, .. point.X!, .. point.Y!]), Base64Url(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)));
+    }
+
+    private static (string, string) NewVapidKeys()
+    {
+        using var key = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
+        var parameters = key.ExportParameters(true);
+        return (Base64Url([0x04, .. parameters.Q.X!, .. parameters.Q.Y!]), Base64Url(parameters.D!));
+    }
+
+    private static string Base64Url(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }

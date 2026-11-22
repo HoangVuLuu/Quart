@@ -250,10 +250,12 @@ internal static class AccountEndpoints
         return TypedResults.NoContent();
     }
 
-    private static async Task<NoContent> SignOutEverywhereAsync(HttpContext http, IdentityDb db, CancellationToken cancellationToken)
+    private static async Task<NoContent> SignOutEverywhereAsync(
+        HttpContext http, IdentityDb db, IEnumerable<ISessionsEndedHandler> ended, CancellationToken cancellationToken)
     {
         var userId = http.CurrentUserId();
         await db.Sessions.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+        await TellSessionsEndedAsync(ended, userId, cancellationToken);
         await http.SignOutAsync(IdentityConstants.ApplicationScheme);
         return TypedResults.NoContent();
     }
@@ -272,6 +274,7 @@ internal static class AccountEndpoints
     /// <summary>A successful reset ends every session of the account (FR-005) and proves the email address.</summary>
     private static async Task<Results<NoContent, ProblemHttpResult>> ResetPasswordAsync(
         ResetPasswordRequest request,
+        HttpContext http,
         UserManager<QuartUser> users,
         IBreachedPasswordCheck breaches,
         IdentityDb db,
@@ -309,6 +312,7 @@ internal static class AccountEndpoints
         // Any other reset link still in a mailbox dies with this one.
         await RetireLinksAsync(db, user.Id, AccountLink.ResetPassword, now, cancellationToken);
         await db.Sessions.Where(x => x.UserId == user.Id).ExecuteDeleteAsync(cancellationToken);
+        await TellSessionsEndedAsync(http.RequestServices.GetServices<ISessionsEndedHandler>(), user.Id, cancellationToken);
         return TypedResults.NoContent();
     }
 
@@ -585,6 +589,15 @@ internal static class AccountEndpoints
         }
         // A session from before its row ID was remembered cannot be told apart: it ends too, and the person signs in again.
         await db.Sessions.Where(x => x.UserId == user.Id && x.Id != current).ExecuteDeleteAsync(cancellationToken);
+        await TellSessionsEndedAsync(http.RequestServices.GetServices<ISessionsEndedHandler>(), user.Id, cancellationToken);
+    }
+
+    private static async Task TellSessionsEndedAsync(IEnumerable<ISessionsEndedHandler> handlers, Guid userId, CancellationToken cancellationToken)
+    {
+        foreach (var handler in handlers)
+        {
+            await handler.HandleAsync(userId, cancellationToken);
+        }
     }
 
     private static Me ToMe(QuartUser user) =>

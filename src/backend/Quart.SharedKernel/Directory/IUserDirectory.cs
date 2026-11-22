@@ -16,3 +16,13 @@ public interface IUserDirectory
 /// <param name="Language">"fr" or "en" (FR-261).</param>
 /// <param name="EmailConfirmed">Only a confirmed address receives anything but the verification email.</param>
 public sealed record UserSummary(Guid Id, string FullName, string DisplayName, string Email, string Language, bool EmailConfirmed);
+
+/// <summary>
+/// Told when a person's other sign-ins end: signing out everywhere, or changing or resetting the password or the
+/// email (M2-07). Push subscriptions go with them, so a lost or shared phone stops showing that person's alerts;
+/// the browser still in use registers itself again the next time the app opens (M8-06).
+/// </summary>
+public interface ISessionsEndedHandler
+{
+    Task HandleAsync(Guid userId, CancellationToken cancellationToken);
+}

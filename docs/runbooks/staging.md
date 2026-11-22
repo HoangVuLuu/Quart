@@ -101,6 +101,22 @@ GitHub, open your profile → **Packages** → `quart` → **Package settings** 
 **Public**. Then re-run the failed deploy (**Re-run failed jobs**). The repository is public
 (AD-060), so the image holds nothing that is not already published.
 
+## 5. Push notifications (once)
+
+Push is off until staging has a VAPID key pair: the keys that prove a notification really comes from Quart
+(M8-06, decision 0015). From the repository root, signed in with `az login`:
+
+```bash
+./scripts/azure/set-push-keys-staging.sh
+```
+
+It asks for a contact email (push services may write to it), makes the keys with
+`dotnet Quart.Api.dll push-keys`, and stores them as secrets `push-public-key` and `push-private-key` on the
+app and on the tick job, which sends the pushes. The private key is never printed. Running it again makes
+new keys, and every phone then has to turn push on again.
+
+Pushes leave with the tick, so they arrive up to 5 minutes after the alert, like emails.
+
 ## Changing things later
 
 - **New database password:** reset it in Supabase, then run the script again; it updates the secret.

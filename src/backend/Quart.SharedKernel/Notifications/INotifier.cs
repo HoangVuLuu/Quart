@@ -71,6 +71,12 @@ public static class NotificationTypes
     /// </summary>
     public static IReadOnlySet<string> Decisions { get; } = new HashSet<string>(StringComparer.Ordinal) { ClaimRequested, TradeAwaitingApproval };
 
+    /// <summary>
+    /// "Just so you know" updates for managers (Hoang, 2026-11-22): shown in Alerts, never pushed to a phone.
+    /// Every other type is pushed to the browsers that turned push on (M8-06).
+    /// </summary>
+    public static IReadOnlySet<string> NotPushed { get; } = new HashSet<string>(StringComparer.Ordinal) { MemberJoined, AvailabilitySent, AvailabilityNoteAdded };
+
     public static IReadOnlyDictionary<string, IReadOnlyList<string>> AllowedParameters { get; } =
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
         {

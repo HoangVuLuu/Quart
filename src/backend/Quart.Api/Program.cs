@@ -18,8 +18,17 @@ using Quart.SharedKernel;
 
 // `dotnet Quart.Api.dll migrate` applies database migrations and exits; `tick` runs the background jobs
 // that are due and exits (decision 0009); `grant-platform-admin <email>` makes one verified account the
-// platform admin and exits (M2-09). No argument starts the web server.
+// platform admin and exits (M2-09); `push-keys` prints a new VAPID key pair for an environment's secrets and
+// exits (M8-06, docs/runbooks/staging.md). No argument starts the web server.
 const string GrantPlatformAdmin = "grant-platform-admin";
+if (args is ["push-keys"])
+{
+    var (publicKey, privateKey) = Quart.Modules.Notifications.VapidKeys.Create();
+    Console.WriteLine($"Push__PublicKey={publicKey}");
+    Console.WriteLine($"Push__PrivateKey={privateKey}");
+    return;
+}
+
 var command = args switch
 {
     [var only and (DatabaseMigrations.Command or TickCommand.Command)] => only,
