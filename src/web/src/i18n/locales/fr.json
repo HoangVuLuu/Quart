@@ -844,6 +844,43 @@
     "empty": "Rien pour l’instant.",
     "unread": "Non lue",
     "unknown": "Quelque chose a changé.",
+    "bundles": {
+      "member": {
+        "left": "{{count}} personnes ont quitté l’équipe",
+        "account_deleted": "{{count}} personnes ont supprimé leur compte"
+      },
+      "availability": {
+        "requested": "Les disponibilités sont ouvertes pour {{count}} périodes",
+        "reminder": "{{count}} rappels pour envoyer tes disponibilités",
+        "due": "Les disponibilités sont dues pour {{count}} périodes"
+      },
+      "schedule": {
+        "published": "{{count}} horaires ont été publiés",
+        "changed": "Ton horaire a changé {{count}} fois"
+      },
+      "shift": {
+        "offered": "{{count}} quarts sont offerts",
+        "claimed": "{{count}} quarts ont été pris",
+        "missing_level": "{{count}} quarts n’ont plus le niveau requis"
+      },
+      "claim": {
+        "requested": "{{count}} demandes de quart attendent",
+        "approved": "{{count}} quarts sont à toi",
+        "declined": "{{count}} de tes demandes de quart ont été refusées"
+      },
+      "trade": {
+        "requested": "Tu as {{count}} demandes d’échange",
+        "accepted": "{{count}} échanges ont été acceptés. En attente du gérant.",
+        "declined": "{{count}} échanges ont été refusés ou annulés",
+        "awaiting_approval": "{{count}} échanges attendent ton approbation",
+        "applied": "{{count}} échanges sont faits",
+        "rejected": "{{count}} échanges n’ont pas été appliqués",
+        "expired": "{{count}} échanges ont expiré"
+      },
+      "period": {
+        "cancelled": "{{count}} périodes ont été annulées"
+      }
+    },
     "types": {
       "member": {
         "joined": "{{name}} a rejoint l’équipe",
@@ -958,6 +995,12 @@
     "needsConnection": "Tu es hors ligne. Donner ou échanger un quart demande une connexion.",
     "updateReady": "Une nouvelle version de Quart est prête.",
     "reload": "Recharger"
+  },
+  "notificationSettings": {
+    "email": "Courriel",
+    "emailDescription": "Horaire publié, demandes",
+    "emailOn": "Les courriels sont activés pour ce lieu de travail",
+    "emailOff": "Les courriels sont désactivés pour ce lieu de travail"
   },
   "push": {
     "label": "Notifications push sur ce téléphone",

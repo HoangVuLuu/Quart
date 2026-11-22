@@ -844,6 +844,43 @@
     "empty": "Nothing yet.",
     "unread": "Unread",
     "unknown": "Something changed.",
+    "bundles": {
+      "member": {
+        "left": "{{count}} people left the team",
+        "account_deleted": "{{count}} people deleted their account"
+      },
+      "availability": {
+        "requested": "Availability is open for {{count}} periods",
+        "reminder": "{{count}} reminders to send your availability",
+        "due": "Availability is due for {{count}} periods"
+      },
+      "schedule": {
+        "published": "{{count}} schedules were published",
+        "changed": "Your schedule changed {{count}} times"
+      },
+      "shift": {
+        "offered": "{{count}} shifts are up for grabs",
+        "claimed": "{{count}} shifts were taken",
+        "missing_level": "{{count}} shifts are missing their required level"
+      },
+      "claim": {
+        "requested": "{{count}} shift requests are waiting",
+        "approved": "{{count}} shifts are yours",
+        "declined": "{{count}} of your shift requests were declined"
+      },
+      "trade": {
+        "requested": "You have {{count}} trade requests",
+        "accepted": "{{count}} trades were accepted. Waiting for a manager.",
+        "declined": "{{count}} trades were declined or cancelled",
+        "awaiting_approval": "{{count}} trades wait for your approval",
+        "applied": "{{count}} trades are done",
+        "rejected": "{{count}} trades were not applied",
+        "expired": "{{count}} trades expired"
+      },
+      "period": {
+        "cancelled": "{{count}} periods were cancelled"
+      }
+    },
     "types": {
       "member": {
         "joined": "{{name}} joined the team",
@@ -958,6 +995,12 @@
     "needsConnection": "You’re offline. Giving away or trading a shift needs a connection.",
     "updateReady": "A new version of Quart is ready.",
     "reload": "Reload"
+  },
+  "notificationSettings": {
+    "email": "Email",
+    "emailDescription": "Schedule published, requests",
+    "emailOn": "Emails are on for this workplace",
+    "emailOff": "Emails are off for this workplace"
   },
   "push": {
     "label": "Push on this phone",

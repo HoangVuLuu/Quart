@@ -8,7 +8,8 @@ using Quart.SharedKernel.Jobs;
 namespace Quart.Modules.Notifications.Push;
 
 /// <summary>Which notification, to which browser. IDs only (decision 0012).</summary>
-internal sealed record SendPushPayload(Guid NotificationId, Guid SubscriptionId);
+/// <param name="Count">How many alerts of its kind it stands for (M8-07); the latest one is named.</param>
+internal sealed record SendPushPayload(Guid NotificationId, Guid SubscriptionId, int Count = 1);
 
 /// <summary>
 /// Sends one notification to one browser (M8-06). The message carries the alert's type and parameters and the
@@ -30,8 +31,8 @@ internal sealed class SendPushHandler(NotificationsDbContext db, IPushSender sen
         var payload = job.ReadPayload<SendPushPayload>();
         var subscription = await db.PushSubscriptions.SingleOrDefaultAsync(x => x.Id == payload.SubscriptionId, cancellationToken);
         var notification = await db.Notifications.AsNoTracking().SingleOrDefaultAsync(x => x.Id == payload.NotificationId, cancellationToken);
-        // Gone, read already, or the browser now belongs to someone else on a shared phone: nothing to send.
-        if (subscription is null || notification is null || notification.ReadAt is not null || subscription.UserId != notification.UserId)
+        // Gone, read already (a single alert), or the browser now belongs to someone else on a shared phone.
+        if (subscription is null || notification is null || (payload.Count == 1 && notification.ReadAt is not null) || subscription.UserId != notification.UserId)
         {
             return JobOutcome.Done;
         }
@@ -46,7 +47,8 @@ internal sealed class SendPushHandler(NotificationsDbContext db, IPushSender sen
             notification.WorkplaceId,
             notification.Type,
             JsonSerializer.Deserialize<Dictionary<string, string>>(notification.Parameters) ?? [],
-            language);
+            language,
+            Math.Max(1, payload.Count));
         var message = JsonSerializer.Serialize(body, Json);
         var result = await sender.SendAsync(new PushTarget(subscription.Endpoint, subscription.P256dh, subscription.Auth), message, cancellationToken);
         switch (result)
@@ -73,7 +75,8 @@ internal sealed class SendPushHandler(NotificationsDbContext db, IPushSender sen
 /// <param name="Type">As in the Alerts tab, such as <c>schedule.published</c>.</param>
 /// <param name="Parameters">The same whitelisted values as in the Alerts tab (FR-216).</param>
 /// <param name="Language">The recipient's, so the text matches their app.</param>
-public sealed record PushMessageBody(Guid Id, Guid WorkplaceId, string Type, IReadOnlyDictionary<string, string> Parameters, string Language);
+/// <param name="Count">More than one: a bundle (M8-07, FR-213), shown as "3 shifts are up for grabs".</param>
+public sealed record PushMessageBody(Guid Id, Guid WorkplaceId, string Type, IReadOnlyDictionary<string, string> Parameters, string Language, int Count = 1);
 
 /// <summary>The push service did not take the message this time; the job runner tries again later.</summary>
 internal sealed class PushNotDeliveredException() : Exception("The push service did not take the message.");

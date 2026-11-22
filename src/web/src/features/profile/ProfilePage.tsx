@@ -21,6 +21,7 @@ import { useRefreshWorkplace } from '../scheduling/data';
 import { ChangeEmailSheet, ChangePasswordSheet, DeleteAccountSheet } from './AccountSheets';
 import { rememberWorkplace, useWorkplace } from '../workplaces/workplace';
 import { PushRow } from '../push/PushRow';
+import { EmailRow } from './EmailRow';
 
 function GroupLabel({ children }: { children: string }) {
   return <h2 className="mt-2 px-1 text-xs font-bold tracking-[0.06em] text-muted uppercase">{children}</h2>;
@@ -216,9 +217,10 @@ export function ProfilePage() {
         </>
       )}
 
-      {/* Mockup 1g. The Email switch comes with M8-07. */}
+      {/* Mockup 1g: Email (M8-07), then push on this phone (M8-06). Alerts in the app are always on. */}
       <GroupLabel>{t('profile.notifications')}</GroupLabel>
-      <Card className="p-3">
+      <Card className="flex flex-col gap-3 p-3">
+        <EmailRow />
         <PushRow userId={me.id} />
       </Card>
 

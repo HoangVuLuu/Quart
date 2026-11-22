@@ -70,7 +70,7 @@ public sealed class PushTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task Alerts_reach_every_browser_of_the_person_and_the_email_stops_for_them()
+    public async Task Alerts_reach_every_browser_of_the_person_and_their_email_too()
     {
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
@@ -92,8 +92,8 @@ public sealed class PushTests(PostgresFixture postgres)
             Assert.Equal(team.Base.Split('/')[3], published["workplaceId"]!.GetValue<string>());
             Assert.NotNull(published["id"]);
         }
-        // FR-211: email is the fallback for people without push.
-        Assert.Equal(leaEmails, app.Emails.To(lea.Email).Count);
+        // FR-211 (M8-07, Hoang 2026-11-22): email stays on with push, until the person turns it off.
+        Assert.True(app.Emails.To(lea.Email).Count > leaEmails);
         Assert.True(app.Emails.To(paul.Email).Count > paulEmails);
     }
 

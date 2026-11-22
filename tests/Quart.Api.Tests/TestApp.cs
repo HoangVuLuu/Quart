@@ -57,6 +57,8 @@ public sealed partial class TestApp : IAsyncDisposable
             ["Auth:RequestsPerMinute"] = "100000",
             ["Workplaces:JoinsPerMinute"] = "100000",
             ["Email:PublicUrl"] = "https://quart.test",
+            // Every alert on its own, on the next tick; bundling tests ask for the real wait (M8-07).
+            ["Notifications:BundleMinutes"] = "0",
         };
         foreach (var (key, value) in settings ?? new Dictionary<string, string?>())
         {
