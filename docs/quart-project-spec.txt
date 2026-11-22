@@ -2038,8 +2038,11 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             managers' "just so you know" alerts (joined, sent availability,
             added a note) are not pushed (Hoang); email stops for people
             with push on (FR-211; the Email switch of M8-07 can keep it).
-            Pushes leave with the tick, up to 5 minutes later.  (FR-211,
-            FR-212, FR-216)
+            Pushes leave with the tick, up to 5 minutes later. Tapping a
+            push opens the alert's workplace and place and marks it read.
+            A browser pushes only for the person who turned push on there:
+            signing out turns it off, and the next person must turn it on
+            again.  (FR-211, FR-212, FR-216)
 2026-11-21  From testing on staging (Hoang): the deadline is set only when
             opening a period and cannot be moved after; "Starts on" lists
             Mondays only; Edit generator is reached only from the

@@ -8,6 +8,7 @@
     "types": [],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
@@ -19,5 +20,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/sw.ts", "src/sw/rules.ts", "src/sw/api-cache.ts"]
+  "include": ["src/sw.ts", "src/sw/rules.ts", "src/sw/api-cache.ts", "src/sw/push-message.ts"]
 }

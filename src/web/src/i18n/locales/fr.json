@@ -66,6 +66,11 @@
     "back": "Retour à l'accueil"
   },
   "errors": {
+    "push": {
+      "endpoint_invalid": "Ce navigateur a donné une adresse que Quart ne peut pas utiliser pour les notifications.",
+      "keys_invalid": "Les clés de ce navigateur semblent incorrectes. Désactive puis réactive les notifications.",
+      "off": "Les notifications push ne sont pas encore configurées sur ce serveur."
+    },
     "common": {
       "not_found": "Nous n'avons pas trouvé ce que tu cherches.",
       "validation": "Des informations manquent ou ne sont pas valides.",
@@ -956,7 +961,18 @@
     "updateReady": "Une nouvelle version de Quart est prête.",
     "reload": "Recharger"
   },
+  "push": {
+    "label": "Notifications push sur ce téléphone",
+    "description": "Alertes sur l’écran verrouillé. Sur iPhone, seulement dans l’app installée.",
+    "installFirst": "Sur iPhone, les notifications push fonctionnent dans l’app sur ton écran d’accueil. Ajoute-la d’abord, puis ouvre Quart depuis son icône et reviens ici :",
+    "denied": "Les notifications sont bloquées pour Quart. Pour les permettre : sur iPhone, Réglages → Notifications → Quart; sur Android ou un ordinateur, les réglages du site dans ton navigateur. Puis reviens ici.",
+    "unsupported": "Ce navigateur ne peut pas afficher de notifications push.",
+    "onToast": "Les notifications push sont activées",
+    "offToast": "Les notifications push sont désactivées",
+    "failed": "Impossible d’activer les notifications push. Réessaie."
+  },
   "profile": {
+    "notifications": "Notifications",
     "title": "Profil",
     "level": "Niveau de barista",
     "levelHint": "Défini par ton gérant",

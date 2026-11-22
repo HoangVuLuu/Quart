@@ -20,6 +20,7 @@ import { initialsOf, useMe, useSignOut, useUpdateMe } from '../identity/session'
 import { useRefreshWorkplace } from '../scheduling/data';
 import { ChangeEmailSheet, ChangePasswordSheet, DeleteAccountSheet } from './AccountSheets';
 import { rememberWorkplace, useWorkplace } from '../workplaces/workplace';
+import { PushRow } from '../push/PushRow';
 
 function GroupLabel({ children }: { children: string }) {
   return <h2 className="mt-2 px-1 text-xs font-bold tracking-[0.06em] text-muted uppercase">{children}</h2>;
@@ -214,6 +215,12 @@ export function ProfilePage() {
           </Card>
         </>
       )}
+
+      {/* Mockup 1g. The Email switch comes with M8-07. */}
+      <GroupLabel>{t('profile.notifications')}</GroupLabel>
+      <Card className="p-3">
+        <PushRow userId={me.id} />
+      </Card>
 
       <GroupLabel>{t('profile.preferences')}</GroupLabel>
       <Card className="flex flex-col gap-3">

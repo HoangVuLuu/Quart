@@ -66,6 +66,11 @@
     "back": "Back to home"
   },
   "errors": {
+    "push": {
+      "endpoint_invalid": "This browser gave an address Quart can’t use for push.",
+      "keys_invalid": "This browser’s push keys look wrong. Turn push off and on again.",
+      "off": "Push isn’t set up on this server yet."
+    },
     "common": {
       "not_found": "We could not find what you asked for.",
       "validation": "Some information is missing or not valid.",
@@ -956,7 +961,18 @@
     "updateReady": "A new version of Quart is ready.",
     "reload": "Reload"
   },
+  "push": {
+    "label": "Push on this phone",
+    "description": "Alerts on the lock screen. Installed app only on iPhone.",
+    "installFirst": "On iPhone, push works in the app on your Home Screen. Add it first, then open Quart from its icon and come back here:",
+    "denied": "Notifications are blocked for Quart. To allow them: on iPhone, Settings → Notifications → Quart; on Android or a computer, the site settings of your browser. Then come back here.",
+    "unsupported": "This browser can’t show push notifications.",
+    "onToast": "Push notifications are on",
+    "offToast": "Push notifications are off",
+    "failed": "Push could not be turned on. Try again."
+  },
   "profile": {
+    "notifications": "Notifications",
     "title": "Profile",
     "level": "Barista level",
     "levelHint": "Set by your manager",
