@@ -10,6 +10,8 @@ type SubPageProps = {
   context?: string;
   /** Overrides going back, for a page that must ask before leaving (mockup 1k6). */
   onBack?: () => void;
+  /** Top right, across from the back arrow, such as "Save draft" on Building Schedule (2026-11-22). */
+  action?: ReactNode;
   children: ReactNode;
 };
 
@@ -17,7 +19,7 @@ const backClassName =
   'flex size-12 items-center justify-center rounded-full bg-surface text-xl font-bold shadow-press';
 
 // A full-screen page opened from a tab: a back arrow, a title, and no tab bar (mockups 1e, 1w, 1k3).
-export function SubPage({ backTo, title, context, onBack, children }: SubPageProps) {
+export function SubPage({ backTo, title, context, onBack, action, children }: SubPageProps) {
   const { t } = useTranslation();
   const goBack = useGoBack(backTo);
   // Swiping right from the edge does what the arrow does, including a "Leave without saving?" prompt.
@@ -27,9 +29,17 @@ export function SubPage({ backTo, title, context, onBack, children }: SubPagePro
       {...swipeBack}
       className="mx-auto min-h-dvh max-w-xl px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))]"
     >
-      <button type="button" onClick={onBack ?? goBack} aria-label={t('shell.back')} className={backClassName}>
-        <span aria-hidden="true">‹</span>
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={onBack ?? goBack}
+          aria-label={t('shell.back')}
+          className={backClassName}
+        >
+          <span aria-hidden="true">‹</span>
+        </button>
+        {action}
+      </div>
       <main id="main" className="mt-4">
         <header className="mb-4">
           <h1 className="text-[32px] leading-[1.1]">{title}</h1>

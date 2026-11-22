@@ -128,7 +128,7 @@ describe('changes of 2026-11-18', () => {
     expect(router.state.location.pathname).toBe('/alerts');
   });
 
-  it('opens the next period with the length from the generator rules, which only shows here (7, FR-090)', async () => {
+  it('opens the next period with the length from the generator rules, without asking for it (7, FR-090)', async () => {
     const calls = signedIn('owner', {
       [`GET ${base}/periods/current`]: { live: null, next: null, upcoming: [] },
       [`GET ${base}/generator`]: { periodWeeks: 3 },
@@ -136,7 +136,11 @@ describe('changes of 2026-11-18', () => {
     });
     renderApp('/schedule');
 
-    expect(await screen.findByText('Lasts 3 weeks, as set in the generator rules.')).toBeInTheDocument();
+    // Only the title, the fields and the reminders line (2026-11-22).
+    expect(await screen.findByText(en.schedule.open.reminders)).toBeInTheDocument();
+    expect(screen.getByLabelText(en.schedule.open.dueDate)).toHaveAccessibleDescription(
+      en.schedule.open.reminders,
+    );
     expect(screen.queryByRole('group', { name: /weeks/i })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: en.schedule.open.submit }));
 

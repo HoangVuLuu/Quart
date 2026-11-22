@@ -2033,6 +2033,18 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             email is sent first and its outbox row is then deleted, so no
             table keeps the address. Accounts that never confirmed their
             email are deleted 7 days after sign-up.  (FR-009, 13)
+2026-11-22  From testing on staging (Hoang): on Schedule, the period buttons
+            share their row equally; My shifts / Whole team is one pill
+            across the row; "Edit current period" is a full-width button
+            after the last shift. The open-the-next-period box keeps only its
+            title, the fields and one reminders line. On Home, "You're
+            working next" opens that shift on Schedule, and the period box
+            goes straight to Building Schedule ("Open draft"). Building and
+            Editing Schedule: "Save draft" is underlined text at the top
+            right; Generate (green, three quarters) shares a row with Clear;
+            the issues take the next row; Editing Schedule's "Cancel period"
+            sits under Update. Main buttons shrink a little when pressed and
+            are at least 48 px tall; no haptics (Hoang).  (FR-091, NFR-003)
 2026-11-22  Web push (M8-06): the lock screen shows the full alert, the
             same sentence as in the app (Hoang, over a generic text); the
             managers' "just so you know" alerts (joined, sent availability,

@@ -3,7 +3,8 @@ import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { formatDateRange, formatDue, formatNumber, formatShortDate } from '../../i18n/format';
-import { buttonClassName } from '../../ui/button-styles';
+import { buttonClassName, pressClassName } from '../../ui/button-styles';
+import { cx } from '../../ui/cx';
 import { Card } from '../../ui/Card';
 import { Cup } from '../../ui/Cup';
 import { HeroCard } from '../../ui/HeroCard';
@@ -55,6 +56,9 @@ export function HomePage() {
     shift.people.some((person) => person.isMe),
   );
   const next = mine.find((shift) => new Date(shift.startsAt) > now);
+  // Which period the next shift is in, so tapping it can open it on the Schedule tab (2026-11-22).
+  const nextPeriodId =
+    next && schedule?.shifts.includes(next) ? periods?.live?.id : periods?.upcoming?.[0]?.id;
   const monday = mondayOf(now);
   const sunday = isoDate(new Date(Date.parse(`${monday}T00:00:00Z`) + 6 * 86_400_000));
   const hours = mine
@@ -106,16 +110,23 @@ export function HomePage() {
 
       {manages && <WaitingCard />}
 
+      {/* Tapping it opens the shift on the Schedule tab, with who works it (2026-11-22). */}
       {next && manages && (
-        <Card className="flex items-center gap-3">
+        <Link
+          to={`/schedule?period=${nextPeriodId ?? ''}&shift=${next.id}`}
+          className={cx('flex items-center gap-3 rounded-card bg-surface p-5 shadow-card', pressClassName)}
+        >
           <Cup flavour={flavourOf(next.part)} className="w-9 shrink-0" />
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-sm text-muted">{t('home.workingNext')}</p>
             <p className="font-bold">
               {dayLabel(next, now, t, language)} · {shiftName(next.part)} {next.start}–{next.end}
             </p>
           </div>
-        </Card>
+          <span aria-hidden="true" className="text-xl text-muted">
+            ›
+          </span>
+        </Link>
       )}
 
       {view.me.worksShifts && (
@@ -269,7 +280,8 @@ function PeriodHero() {
       )}
       {/* One line for both buttons (2026-11-21). */}
       <div className={collecting ? 'mt-4 grid grid-cols-2 gap-2' : 'mt-4 flex'}>
-        <Link to="/schedule" className={buttonClassName('dark', 'min-w-0 px-3 text-center')}>
+        {/* Straight to Building Schedule, not the Schedule tab (2026-11-22). */}
+        <Link to="/schedule/build" className={buttonClassName('dark', 'min-w-0 px-3 text-center')}>
           {collecting
             ? complete
               ? t('home.period.ready')

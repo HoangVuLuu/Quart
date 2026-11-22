@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { formatDateRange } from '../../i18n/format';
 import { EmptyState } from '../../ui/EmptyState';
-import { Icon, iconButtonClassName } from '../../ui/Icon';
+import { buttonClassName } from '../../ui/button-styles';
 import { PageHeader } from '../../ui/PageHeader';
 import { Skeleton } from '../../ui/Skeleton';
 import { useCurrentPeriods } from '../scheduling/data';
@@ -55,9 +55,15 @@ export function SchedulePage() {
       {manages && <NextPeriodBox next={next} after={live?.endDate} />}
 
       {published.length > 1 && (
-        <div role="group" aria-label={t('schedule.which')} className="flex flex-wrap gap-2">
+        // The periods share the row equally: one takes it all, two take half each (2026-11-22).
+        <div role="group" aria-label={t('schedule.which')} className="flex gap-2">
           {published.map((option) => (
-            <Pill key={option.id} selected={shown?.id === option.id} onClick={() => setChosen(option.id)}>
+            <Pill
+              key={option.id}
+              className="min-w-0 flex-1 px-2"
+              selected={shown?.id === option.id}
+              onClick={() => setChosen(option.id)}
+            >
               {formatDateRange(option.startDate, option.endDate, i18n.language)}
             </Pill>
           ))}
@@ -65,24 +71,21 @@ export function SchedulePage() {
       )}
 
       {shown ? (
-        <PublishedSchedule
-          key={shown.id}
-          periodId={shown.id}
-          view={scheduleView}
-          onViewChange={setScheduleView}
-          initialShift={shown.id === params.get('period') ? params.get('shift') : null}
-          action={
-            manages && (
-              <Link
-                to={`/schedule/edit?period=${shown.id}`}
-                aria-label={t('schedule.edit')}
-                className={`${iconButtonClassName} text-ink`}
-              >
-                <Icon name="pen" />
-              </Link>
-            )
-          }
-        />
+        <>
+          <PublishedSchedule
+            key={shown.id}
+            periodId={shown.id}
+            view={scheduleView}
+            onViewChange={setScheduleView}
+            initialShift={shown.id === params.get('period') ? params.get('shift') : null}
+          />
+          {/* After the last shift, across the whole width, in both views (2026-11-22). */}
+          {manages && (
+            <Link to={`/schedule/edit?period=${shown.id}`} className={buttonClassName('dark', 'w-full')}>
+              {t('schedule.edit')}
+            </Link>
+          )}
+        </>
       ) : (
         <EmptyState title={t('schedule.emptyTitle')} mood="sleepy">
           {next && view.me.worksShifts ? t('schedule.emptyCollecting') : t('schedule.emptyText')}

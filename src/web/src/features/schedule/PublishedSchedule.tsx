@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { useOffline } from '../../lib/connection';
 import { useSwipe } from '../../lib/gestures';
 import { useTranslation } from 'react-i18next';
@@ -6,6 +6,7 @@ import { messageKeyFor } from '../../i18n/errors';
 import { formatDayHeading, formatDayShort, formatNumber, formatShortDate } from '../../i18n/format';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
+import { SegmentedControl } from '../../ui/SegmentedControl';
 import { Cup } from '../../ui/Cup';
 import { cx } from '../../ui/cx';
 import { EmptyState } from '../../ui/EmptyState';
@@ -24,14 +25,11 @@ import {
   type ScheduleView,
 } from '../scheduling/data';
 import { flavourOf, useShiftName } from '../scheduling/ShiftName';
-import { Pill } from './Pill';
 
 export type ScheduleScope = 'mine' | 'team';
 
 type PublishedScheduleProps = {
   periodId: string;
-  /** Buttons at the end of the My shifts / Whole team row, such as the edit pen (NFR-003). */
-  action?: ReactNode;
   /** Kept by the page, so switching periods keeps "Whole team" (2026-11-18). */
   view?: ScheduleScope;
   onViewChange?: (view: ScheduleScope) => void;
@@ -43,7 +41,6 @@ type PublishedScheduleProps = {
 // 2026-11-18); giving away and trading start from the Trade tab instead (1h, 1i).
 export function PublishedSchedule({
   periodId,
-  action,
   view: shownView,
   onViewChange,
   initialShift,
@@ -62,17 +59,17 @@ export function PublishedSchedule({
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2">
-        <Pill selected={view === 'mine'} onClick={() => setView('mine')}>
-          {t('schedule.mine')}
-        </Pill>
-        <Pill selected={view === 'team'} onClick={() => setView('team')}>
-          {t('schedule.team')}
-        </Pill>
-        <div className="flex-1" />
-        {action}
-      </div>
-      {/* Swipe left for the whole team, right to come back to my shifts: the same as the two pills. */}
+      {/* One pill across the row, like a switch between the two (2026-11-22). */}
+      <SegmentedControl
+        label={t('schedule.view')}
+        segments={[
+          { value: 'mine', label: t('schedule.mine') },
+          { value: 'team', label: t('schedule.team') },
+        ]}
+        value={view}
+        onChange={setView}
+      />
+      {/* Swipe left for the whole team, right to come back to my shifts: the same as the two choices. */}
       <div className="flex flex-col gap-4" {...swipeViews}>
         {view === 'mine' ? (
           <MyShifts schedule={schedule.data} onOpen={setOpenShift} />
@@ -333,12 +330,8 @@ export function ShiftTradeSheet({
             {t('schedule.sheet.giveAway')}
           </Button>
         )}
-        <Button
-          variant="white"
-          className="bg-primary text-on-primary"
-          disabled={offline}
-          onClick={() => setTrading(true)}
-        >
+        {/* Its own variant: "white" with a periwinkle class on top lost its text in dark mode (2026-11-22). */}
+        <Button variant="primary" disabled={offline} onClick={() => setTrading(true)}>
           {t('schedule.sheet.trade')}
         </Button>
       </div>

@@ -56,7 +56,7 @@
       "sent": "{{sent}} of {{total}} sent",
       "ready": "Ready to build",
       "build": "Build schedule",
-      "continue": "Open the draft",
+      "continue": "Open draft",
       "who": "Who has sent"
     },
     "availabilityDueBy": "Due {{when}}"
@@ -205,7 +205,8 @@
     "which": "Which schedule",
     "published": "Published",
     "next": "Next period",
-    "edit": "Edit current schedule",
+    "edit": "Edit current period",
+    "view": "Which shifts",
     "emptyTitle": "No schedule yet",
     "emptyText": "Your shifts will show here once a schedule is published.",
     "emptyCollecting": "Your manager is collecting availability for the next schedule.",
@@ -246,13 +247,10 @@
     },
     "open": {
       "title": "Open the next period",
-      "text": "Everyone who works shifts is asked for their availability as soon as you open it.",
       "start": "Starts on",
       "submit": "Open period",
-      "length_one": "Lasts {{count}} week, as set in the generator rules.",
-      "length_other": "Lasts {{count}} weeks, as set in the generator rules.",
       "dueDate": "Availability due",
-      "dueDateHint": "Reminders go out 48 and 24 hours before.",
+      "reminders": "Reminders sent 48hrs and 24hrs before due date",
       "dueTime": "At"
     },
     "box": {

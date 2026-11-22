@@ -8,6 +8,8 @@ import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
 import { Skeleton } from '../../ui/Skeleton';
 import { useToast } from '../../ui/toast-context';
+import { cx } from '../../ui/cx';
+import { pressClassName } from '../../ui/button-styles';
 import { FormError } from '../identity/FormError';
 import {
   hasStarted,
@@ -111,40 +113,40 @@ function BuildingVisit({ periodId, mode }: { periodId: string; mode: 'build' | '
       backTo="/schedule"
       title={mode === 'build' ? t('building.title') : t('building.editTitle')}
       context={range}
+      action={
+        // Underlined text at the top right (2026-11-22); greyed out while there is nothing to save.
+        actions.start.isSuccess && (
+          <button
+            type="button"
+            disabled={!unsaved || actions.save.isPending}
+            aria-busy={actions.save.isPending || undefined}
+            onClick={() => actions.save.mutate(undefined, { onSuccess: () => toast(t('building.saved')) })}
+            className={cx(
+              'min-h-12 px-2 text-[15px] font-bold text-ink underline decoration-2 underline-offset-4 select-none',
+              'disabled:cursor-not-allowed disabled:text-muted disabled:no-underline',
+              pressClassName,
+            )}
+          >
+            {t('building.save')}
+          </button>
+        )
+      }
     >
       {!actions.start.isSuccess && !actions.start.isError ? (
         <Skeleton className="h-48" />
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="white"
-              className="min-h-11 px-4 text-sm"
-              loading={actions.save.isPending}
-              disabled={!unsaved}
-              onClick={() => actions.save.mutate(undefined, { onSuccess: () => toast(t('building.saved')) })}
-            >
-              {t('building.save')}
-            </Button>
-            {mode === 'build' && (
-              <Button variant="white" className="min-h-11 px-4 text-sm" onClick={() => setClearing(true)}>
-                {t('building.clear')}
-              </Button>
-            )}
-            {/* Not on Building Schedule (2026-11-21): there, the next-period box cancels. Editing Schedule
-                keeps it until the period starts, since a published period has no other place for it. */}
-            {draft.data && mode === 'edit' && !hasStarted(draft.data.period) && (
-              <CancelPeriodButton
-                period={draft.data.period}
-                onCancelling={() => {
-                  unsavedNow.current = false;
-                }}
-              />
-            )}
-          </div>
           <FormError message={error ? t(messageKeyFor(error)) : undefined} />
           <DraftEditor
             periodId={periodId}
+            besideGenerate={
+              // Clear takes the last quarter of Generate's row; Editing Schedule has none (2026-11-22).
+              mode === 'build' && (
+                <Button variant="white" className="min-w-0 px-2" onClick={() => setClearing(true)}>
+                  {t('building.clear')}
+                </Button>
+              )
+            }
             onPublished={() => {
               // Publishing ends the visit on the server; nothing is left unsaved (4.3: back to Schedule).
               setPublishedNow(true);
@@ -152,6 +154,17 @@ function BuildingVisit({ periodId, mode }: { periodId: string; mode: 'build' | '
               void navigate('/schedule', { replace: true });
             }}
           />
+          {/* Not on Building Schedule (2026-11-21): there, the next-period box cancels. Editing Schedule
+              keeps it until the period starts, at the bottom under Update (2026-11-22). */}
+          {draft.data && mode === 'edit' && !hasStarted(draft.data.period) && (
+            <CancelPeriodButton
+              period={draft.data.period}
+              className="w-full"
+              onCancelling={() => {
+                unsavedNow.current = false;
+              }}
+            />
+          )}
         </div>
       )}
 

@@ -205,7 +205,8 @@
     "which": "Quel horaire",
     "published": "Publié",
     "next": "Prochaine période",
-    "edit": "Modifier l’horaire actuel",
+    "edit": "Modifier la période en cours",
+    "view": "Quels quarts",
     "emptyTitle": "Pas encore d’horaire",
     "emptyText": "Tes quarts s’afficheront ici dès qu’un horaire sera publié.",
     "emptyCollecting": "Ton gérant recueille les disponibilités pour le prochain horaire.",
@@ -246,13 +247,10 @@
     },
     "open": {
       "title": "Ouvrir la prochaine période",
-      "text": "Tous ceux qui font des quarts reçoivent une demande de disponibilités dès que tu l’ouvres.",
       "start": "Début",
       "submit": "Ouvrir la période",
-      "length_one": "Dure {{count}} semaine, selon les règles du générateur.",
-      "length_other": "Dure {{count}} semaines, selon les règles du générateur.",
       "dueDate": "Disponibilités dues le",
-      "dueDateHint": "Des rappels partent 48 et 24 heures avant.",
+      "reminders": "Rappels envoyés 48 h et 24 h avant l’échéance",
       "dueTime": "À"
     },
     "box": {
