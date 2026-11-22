@@ -24,6 +24,6 @@
     <!-- Web push: VAPID signing and aes128gcm encryption (M8-06, decision 0015). -->
     <PackageVersion Include="Lib.Net.Http.WebPush" Version="3.3.1" />
     <!-- Property tests for the generator's hard rules (M1-03, AD-005). -->
-    <PackageVersion Include="CsCheck" Version="4.9.1" />
+    <PackageVersion Include="CsCheck" Version="5.0.1" />
   </ItemGroup>
 </Project>
