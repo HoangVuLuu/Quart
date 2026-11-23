@@ -159,7 +159,8 @@
       "unknown_member": "Cette personne ne fait plus de quarts ici.",
       "unknown_shift": "Ce quart n’existe plus.",
       "visit_ended": "Tu as quitté la page un moment, alors les changements non enregistrés ont été retirés.",
-      "note_too_long": "Une note sur un quart peut faire 100 caractères au plus."
+      "note_too_long": "Une note sur un quart peut faire 100 caractères au plus.",
+      "reuse_unknown": "Cet horaire ne peut pas être réutilisé ici."
     },
     "settings": {
       "max_consecutive_invalid": "Choisis de 1 à 4 quarts de suite, ou sans limite.",
@@ -748,6 +749,15 @@
       "available": "Disponible",
       "unavailable": "Pas disponible",
       "noAnswer": "Pas de réponse"
+    },
+    "reuse": {
+      "button": "Réutiliser un horaire passé",
+      "title": "Réutiliser un horaire passé",
+      "text": "Copie qui a travaillé chaque quart sur la même semaine, le même jour et le même quart ici. Les personnes gardées restent. Celles qui sont parties sont ignorées.",
+      "none": "Aucun horaire n’a été publié avant celui-ci.",
+      "done": "Copié. Les problèmes montrent qui n’est pas disponible cette fois.",
+      "weeks_one": "{{count}} semaine",
+      "weeks_other": "{{count}} semaines"
     }
   },
   "teamAvailability": {

@@ -708,6 +708,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/reuse': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetReuseSources'];
+    put?: never;
+    post: operations['ReuseSchedule'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/workplaces/{workplaceId}/periods/{periodId}/draft/assignments': {
     parameters: {
       query?: never;
@@ -1644,6 +1660,16 @@ export interface components {
       requested: boolean;
       seen: boolean;
     };
+    PastPeriod: {
+      /** Format: uuid */
+      id: string;
+      /** Format: date */
+      startDate: string;
+      /** Format: date */
+      endDate: string;
+      /** Format: int32 */
+      weeks: number;
+    };
     PeriodShift: {
       /** Format: uuid */
       id: string;
@@ -1744,6 +1770,10 @@ export interface components {
     ResetPasswordRequest: {
       token: null | string;
       password: null | string;
+    };
+    ReuseRequest: {
+      /** Format: uuid */
+      sourcePeriodId: string;
     };
     RulesShift: {
       /** Format: date */
@@ -3522,6 +3552,74 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['GenerateRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DraftView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetReuseSources: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PastPeriod'][];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ReuseSchedule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReuseRequest'];
       };
     };
     responses: {

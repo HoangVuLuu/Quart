@@ -29,6 +29,7 @@ internal static class DraftEndpoints
 {
     public const string NotBuilding = "schedule.not_building";
     public const string UnknownShift = "schedule.unknown_shift";
+    public const string ReuseUnknown = "schedule.reuse_unknown";
     public const string NoteTooLong = "schedule.note_too_long";
     public const string UnknownMember = "schedule.unknown_member";
     public const string AlreadyOnShift = "schedule.already_on_shift";
@@ -57,6 +58,8 @@ internal static class DraftEndpoints
         group.MapPost("/leave", LeaveAsync).WithName("LeaveBuilding");
         group.MapPost("/clear", ClearAsync).WithName("ClearDraft");
         group.MapPost("/generate", GenerateAsync).WithName("GenerateDraft");
+        group.MapGet("/reuse", ReuseSourcesAsync).WithName("GetReuseSources");
+        group.MapPost("/reuse", ReuseAsync).WithName("ReuseSchedule");
         group.MapPost("/assignments", AddAsync).WithName("AddDraftAssignment");
         group.MapDelete("/assignments/{shiftId:guid}/{membershipId:guid}", RemoveAsync).WithName("RemoveDraftAssignment");
         group.MapPut("/assignments/{shiftId:guid}/{membershipId:guid}/lock", SetLockAsync).WithName("LockDraftAssignment");
@@ -220,6 +223,78 @@ internal static class DraftEndpoints
         });
         await db.SaveChangesAsync(cancellationToken);
         return TypedResults.Ok(await ViewAsync(db, builder, period, member, cancellationToken));
+    }
+
+    /// <summary>"Reuse a past schedule" (FR-124, M5-08): the published periods before this one, newest first.</summary>
+    private static async Task<Results<Ok<List<PastPeriod>>, ProblemHttpResult>> ReuseSourcesAsync(
+        Guid workplaceId, Guid periodId, SchedulingDb db, CancellationToken cancellationToken)
+    {
+        if (await AvailabilityEndpoints.FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
+        {
+            return Problems.NotFound();
+        }
+        var past = await db.Periods.AsNoTracking()
+            .Where(x => x.WorkplaceId == workplaceId && x.Version > 0 && x.StartDate < period.StartDate)
+            .OrderByDescending(x => x.StartDate)
+            .Select(x => new { x.Id, x.StartDate, x.EndDate, x.Weeks })
+            .ToListAsync(cancellationToken);
+        return TypedResults.Ok(past.Select(x => new PastPeriod(x.Id, x.StartDate.ToDateOnly(), x.EndDate.ToDateOnly(), x.Weeks)).ToList());
+    }
+
+    /// <summary>
+    /// "Reuse a past schedule" (FR-124, M5-08): who worked each shift of a past period goes on the shift of this one
+    /// with the same week (counted round the past period's weeks), weekday and generator shift, the mapping "Same as
+    /// last period" uses. Like Generate, it replaces the draft except the people kept and the shifts that started.
+    /// Nothing is checked here: the evaluator then shows who is not available, as for any draft made by hand.
+    /// </summary>
+    private static async Task<Results<Ok<DraftView>, ProblemHttpResult>> ReuseAsync(
+        Guid workplaceId, Guid periodId, ReuseRequest request, HttpContext http, SchedulingDb db, DraftBuilder builder,
+        IWorkplaceDirectory directory, IClock clock, CancellationToken cancellationToken)
+    {
+        if (await AvailabilityEndpoints.FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
+        {
+            return Problems.NotFound();
+        }
+        var source = await db.Periods.AsNoTracking().SingleOrDefaultAsync(
+            x => x.Id == request.SourcePeriodId && x.WorkplaceId == workplaceId && x.Version > 0 && x.StartDate < period.StartDate, cancellationToken);
+        if (source is null)
+        {
+            return Problems.Validation(new FieldError(ReuseUnknown, "sourcePeriodId"));
+        }
+        Lock(period, clock);
+        await RefreshRulesAsync(db, directory, period, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var data = await builder.LoadAsync(period, cancellationToken);
+        var draft = await builder.AssignmentsAsync(period.Id, draft: true, cancellationToken);
+        var now = clock.GetCurrentInstant();
+        bool Started(Instant startsAt) => period.Version > 0 && startsAt <= now;
+        var kept = draft.Where(x => x.IsLocked || Started(x.StartsAt)).ToList();
+        var keptKeys = kept.Select(x => (x.ShiftId, x.MembershipId)).ToHashSet();
+
+        (int Week, IsoDayOfWeek Day, Guid Block) KeyOf(LocalDate start, LocalDate date, Guid block, int weeks) =>
+            ((NodaTime.Period.DaysBetween(start, date) / 7) % weeks, date.DayOfWeek, block);
+        var worked = (await db.Assignments.AsNoTracking()
+                .Where(x => x.PeriodId == source.Id && !x.IsDraft)
+                .Join(db.Shifts.AsNoTracking(), a => a.ShiftId, s => s.Id, (a, s) => new { a.MembershipId, s.Date, s.SourceBlockId })
+                .ToListAsync(cancellationToken))
+            .ToLookup(x => KeyOf(source.StartDate, x.Date, x.SourceBlockId, source.Weeks), x => x.MembershipId);
+        // Only people who still work shifts here: those who left are skipped.
+        var members = data.Members.ToDictionary(x => x.MembershipId);
+
+        db.Assignments.RemoveRange(draft.Except(kept));
+        foreach (var shift in data.Shifts.Where(x => !Started(x.StartsAt)))
+        {
+            foreach (var membershipId in worked[KeyOf(period.StartDate, shift.Date, shift.SourceBlockId, source.Weeks)].Distinct())
+            {
+                if (members.TryGetValue(membershipId, out var person) && !keptKeys.Contains((shift.Id, membershipId)))
+                {
+                    db.Assignments.Add(NewDraft(period, shift, person, Assignment.Manual));
+                }
+            }
+        }
+        await db.SaveChangesAsync(cancellationToken);
+        return TypedResults.Ok(await ViewAsync(db, builder, period, http.Member(), cancellationToken));
     }
 
     /// <summary>
@@ -668,6 +743,11 @@ public sealed record DraftShift(
     string? ManagerNote,
     string? Name,
     bool AddedByHand = false);
+
+/// <summary>A published period that "Reuse a past schedule" can copy (FR-124).</summary>
+public sealed record PastPeriod(Guid Id, DateOnly StartDate, DateOnly EndDate, int Weeks);
+
+public sealed record ReuseRequest(Guid SourcePeriodId);
 
 /// <param name="Note">Plain text, 100 characters at most; empty removes the note (FR-145).</param>
 public sealed record ShiftNoteChange(string? Note);
