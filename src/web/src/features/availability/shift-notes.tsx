@@ -12,9 +12,6 @@ import { maxShiftNoteLength } from './shift-note-rules';
 // 21:00". It lives on a shift the person can work, as a strip on the right of its pill. It is sent with the
 // availability, and locks with it.
 
-/** The quick picks of the note sheet, which fill the field. */
-const quickPicks = ['startLater', 'leaveEarly', 'preferNot'] as const;
-
 /**
  * The strip on the right of a chosen shift: pale with no note, solid yellow with one. A button that opens the
  * note sheet when the person can still change their availability; only a mark once it is locked.
@@ -119,21 +116,6 @@ export function ShiftNoteSheet({
           error={error ? t('shiftNote.selectFirst') : undefined}
           onChange={(event) => setText(event.target.value)}
         />
-        <div role="group" aria-label={t('shiftNote.quickPicks')} className="flex flex-wrap gap-2">
-          {quickPicks.map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setText(t(`shiftNote.pick.${key}`))}
-              className={cx(
-                'min-h-11 rounded-pill bg-warning-soft px-4 text-sm font-bold text-warning',
-                pressClassName,
-              )}
-            >
-              {t(`shiftNote.pick.${key}`)}
-            </button>
-          ))}
-        </div>
         <div className="grid grid-cols-2 gap-2">
           <Button
             variant="white"

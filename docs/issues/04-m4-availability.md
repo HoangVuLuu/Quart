@@ -175,7 +175,7 @@ Decided by Hoang on 2026-11-23: unchoosing a shift deletes its note without aski
 - [x] The person's own view and the managers' read-only view return the note; Building Schedule returns each shift's notes from people who sent and can work it, only to those who may read notes.
 
 **Frontend**
-- [x] A strip on the right of a chosen shift (pale without a note, solid yellow with one) opens the note sheet: 60-character field with a counter, quick picks, Remove note, Save note. The note shows under the day. Locked, it only shows.
+- [x] A strip on the right of a chosen shift (pale without a note, solid yellow with one) opens the note sheet: 60-character field with a counter, Remove note, Save note (no quick picks: Hoang, 2026-11-23). The note shows under the day. Locked, it only shows.
 - [x] Building Schedule: a yellow mark on cards with notes; the shift panel shows the shift's note under each person; a closed "Week notes" section.
 
 **Tests**

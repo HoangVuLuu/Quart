@@ -1011,12 +1011,6 @@
     "counter": "{{count}}/{{max}}",
     "placeholder": "Can only stay until 21:00",
     "selectFirst": "Select this shift first",
-    "quickPicks": "Quick picks",
-    "pick": {
-      "startLater": "Can start later",
-      "leaveEarly": "Must leave early",
-      "preferNot": "Prefer not"
-    },
     "remove": "Remove note",
     "save": "Save note",
     "add": "Add a note for {{day}} · {{shift}}",

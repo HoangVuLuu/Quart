@@ -83,9 +83,6 @@ describe('a note on one shift (FR-103a)', () => {
     expect(within(sheet).getByText(en.shiftNote.hint)).toBeInTheDocument();
     const field = within(sheet).getByLabelText(en.shiftNote.label);
     expect(field).toHaveAttribute('maxLength', '60');
-    await user.click(within(sheet).getByRole('button', { name: en.shiftNote.pick.leaveEarly }));
-    expect(field).toHaveValue(en.shiftNote.pick.leaveEarly);
-    await user.clear(field);
     await user.type(field, 'Until 21:00 only');
     expect(within(sheet).getByText('16/60')).toBeInTheDocument();
     await user.click(within(sheet).getByRole('button', { name: en.shiftNote.save }));

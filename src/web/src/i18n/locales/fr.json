@@ -1011,12 +1011,6 @@
     "counter": "{{count}}/{{max}}",
     "placeholder": "Je peux rester jusqu’à 21 h seulement",
     "selectFirst": "Choisis d’abord ce quart",
-    "quickPicks": "Choix rapides",
-    "pick": {
-      "startLater": "Je peux commencer plus tard",
-      "leaveEarly": "Je dois partir plus tôt",
-      "preferNot": "Je préfère éviter"
-    },
     "remove": "Retirer la note",
     "save": "Enregistrer la note",
     "add": "Ajouter une note pour {{day}} · {{shift}}",
