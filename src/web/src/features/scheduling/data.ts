@@ -47,6 +47,28 @@ export function useCreatePeriod() {
   });
 }
 
+/**
+ * "Clear them and open period" (M4-01, 2026-11-23): drops the day changes saved before <since>, the ones the last
+ * period used, and keeps any saved since.
+ */
+export function useClearOldDayChanges() {
+  const { id } = useWorkplace();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (since: string) => {
+      const path = { params: { path: { workplaceId: id } } };
+      const saved = await unwrap(api.GET('/api/workplaces/{workplaceId}/generator/days', path));
+      const kept = (saved.changes ?? []).filter(
+        (change) => !change.savedAt || Date.parse(change.savedAt) >= Date.parse(since),
+      );
+      await unwrap(
+        api.PUT('/api/workplaces/{workplaceId}/generator/days', { ...path, body: { changes: kept } }),
+      );
+    },
+    onSuccess: () => client.invalidateQueries({ queryKey: ['workplace', id, 'generator', 'days'] }),
+  });
+}
+
 export function usePublishedSchedule(periodId: string | undefined) {
   const { id } = useWorkplace();
   return useQuery({

@@ -15,14 +15,23 @@ export class ApiError extends Error {
   readonly traceId: string | undefined;
   /** For a validation problem, each thing wrong: a stable code and where, such as `members[3].level`. */
   readonly errors: { code: string; path: string }[];
+  /** The whole problem, for the few that carry more, such as the days behind period.old_day_changes. */
+  readonly problem: Record<string, unknown>;
 
-  constructor(status: number, code: string, traceId?: string, errors: { code: string; path: string }[] = []) {
+  constructor(
+    status: number,
+    code: string,
+    traceId?: string,
+    errors: { code: string; path: string }[] = [],
+    problem: Record<string, unknown> = {},
+  ) {
     super(code);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.traceId = traceId;
     this.errors = errors;
+    this.problem = problem;
   }
 }
 
@@ -85,6 +94,7 @@ function toApiError(status: number, body: unknown): ApiError {
       problem.code,
       problem.traceId,
       Array.isArray(problem.errors) ? problem.errors : [],
+      problem as Record<string, unknown>,
     );
   }
   return new ApiError(status, status === 404 ? 'common.not_found' : 'common.unexpected');

@@ -139,7 +139,8 @@
       "start_not_monday": "Une période commence un lundi.",
       "template_empty": "Ajoute d’abord tes quarts dans la page Modifier le générateur.",
       "unfinished_exists": "Publie la période en cours avant d’en ouvrir une autre.",
-      "already_started": "Cette période est déjà commencée, elle ne peut plus être annulée."
+      "already_started": "Cette période est déjà commencée, elle ne peut plus être annulée.",
+      "old_day_changes": "Cette période utiliserait des modifications de jours de la période précédente."
     },
     "schedule": {
       "already_on_shift": "Cette personne est déjà sur le quart.",
@@ -171,7 +172,11 @@
       "requirement_invalid": "Une règle de niveau exige un niveau de 1 à 3 et au moins 1 personne.",
       "time_invalid": "Entre les heures en heures et minutes.",
       "too_many_blocks": "C’est plus de quarts qu’un modèle peut en contenir.",
-      "name_too_long": "Le nom d’un quart fait au plus 24 caractères."
+      "name_too_long": "Le nom d’un quart fait au plus 24 caractères.",
+      "day_invalid": "Ce jour n’est pas dans une période.",
+      "day_block_unknown": "Ce quart n’a plus lieu ce jour-là. Rechargez la page.",
+      "day_duplicate": "Un quart a été modifié deux fois le même jour.",
+      "too_many_day_changes": "C’est plus de modifications de jours que le générateur peut en contenir."
     },
     "workplace": {
       "already_member": "Tu fais déjà partie de ce lieu de travail.",
@@ -261,6 +266,13 @@
       "open": "La prochaine période est ouverte",
       "build": "Construire",
       "continue": "Continuer la construction"
+    },
+    "oldChanges": {
+      "title": "Garder les modifications de jours?",
+      "text": "Vous allez créer une période qui a des modifications de jours précis de la période précédente. Voulez-vous vraiment les garder?",
+      "keep": "Oui, les garder",
+      "clear": "Les effacer et ouvrir la période",
+      "back": "Retour"
     }
   },
   "availability": {
@@ -295,7 +307,8 @@
     "decrease": "Diminuer",
     "increase": "Augmenter",
     "notification": "Notifications",
-    "refreshing": "Actualisation…"
+    "refreshing": "Actualisation…",
+    "cancel": "Annuler"
   },
   "gallery": {
     "context": "Pour l’équipe de dev",
@@ -1153,5 +1166,35 @@
     "goneTitle": "Rien à afficher",
     "goneText": "Cette période a été annulée, ou cette personne ne fait plus partie de l’équipe.",
     "wanted": "Heures voulues par semaine"
+  },
+  "dayEditor": {
+    "open": "Modifier un jour précis",
+    "title": "Modifier les quarts",
+    "templateContext": "Change un jour de la semaine, pour chaque période que vous ouvrez à partir de maintenant.",
+    "weeks": "Semaines",
+    "week": "Semaine {{week}}",
+    "changed": "Modifié",
+    "closed": "Fermé",
+    "editDay": "Modifier {{day}}",
+    "clearAll": "Tout effacer",
+    "clearTitle": "Tout effacer?",
+    "clearText": "Vous allez retirer toutes les modifications faites sur des jours précis. Êtes-vous sûr?",
+    "clearNote": "Chaque jour reprend les quarts de l’onglet Quarts. Rien ne change avant d’appuyer sur Enregistrer.",
+    "save": "Enregistrer",
+    "saved": "Enregistré",
+    "dayTitle": "Modifier {{day}}",
+    "dayHint": "Glissez sur un espace vide pour ajouter un quart, ou touchez +. Touchez un quart pour changer ses heures ou le supprimer.",
+    "add": "Ajouter un quart",
+    "shiftLabel": "{{name}}, de {{start}} à {{end}}",
+    "people_one": "{{count}} personne",
+    "people_other": "{{count}} personnes",
+    "hoursHint": "Les heures avancent par 15 minutes. Chevaucher un autre quart, c’est correct.",
+    "delete": "Supprimer ce quart",
+    "newTitle": "Nouveau quart",
+    "name": "Nom",
+    "days": "Jours",
+    "daysHint": "Choisissez d’autres jours pour leur ajouter le même quart d’un coup.",
+    "noDays": "Choisissez au moins un jour.",
+    "weekShort": "S{{week}}"
   }
 }

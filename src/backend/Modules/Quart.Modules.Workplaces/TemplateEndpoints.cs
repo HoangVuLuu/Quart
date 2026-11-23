@@ -35,7 +35,7 @@ internal static class TemplateEndpoints
     public const int MaxBlocks = 20;
     public const int MaxHeadcount = 20;
 
-    private static readonly LocalTimePattern TimePattern = LocalTimePattern.CreateWithInvariantCulture("HH:mm");
+    internal static readonly LocalTimePattern TimePattern = LocalTimePattern.CreateWithInvariantCulture("HH:mm");
 
     public static void MapTemplate(this IEndpointRouteBuilder endpoints)
     {
@@ -153,64 +153,81 @@ internal static class TemplateEndpoints
 
         for (var i = 0; i < blocks.Count; i++)
         {
-            var block = blocks[i];
-            var path = $"blocks[{i}]";
-            var start = TimePattern.Parse(block.Start ?? string.Empty);
-            var end = TimePattern.Parse(block.End ?? string.Empty);
-            if (!start.Success || !end.Success)
+            if (ValidateBlock(blocks[i], $"blocks[{i}]", memberIds, errors) is { } times)
             {
-                errors.Add(new FieldError(TimeInvalid, path));
-                continue;
+                parsed.Add((blocks[i], times.Start, times.End));
             }
-            // FR-061: times snap to 15 minutes.
-            if (start.Value.Minute % 15 != 0 || end.Value.Minute % 15 != 0)
-            {
-                errors.Add(new FieldError(OffGrid, path));
-            }
-            // FR-062: a shift ends after it starts, on the same day. 23:00 to 00:30 is refused.
-            if (end.Value <= start.Value)
-            {
-                errors.Add(new FieldError(CrossesMidnight, path));
-            }
-            if (block.Days is null || block.Days.Count == 0 || block.Days.Any(day => day is < 1 or > 7))
-            {
-                errors.Add(new FieldError(NoDays, $"{path}.days"));
-            }
-            if (block.Headcount is < 1 or > MaxHeadcount)
-            {
-                errors.Add(new FieldError(HeadcountInvalid, $"{path}.headcount"));
-            }
-
-            if (CleanName(block.Name)?.Length > ShiftBlock.NameMaxLength)
-            {
-                errors.Add(new FieldError(NameTooLong, $"{path}.name"));
-            }
-
-            var requirements = block.Requirements ?? [];
-            if (requirements.Any(x => x.Level is < 1 or > 3 || x.MinCount < 1) || requirements.Select(x => x.Level).Distinct().Count() != requirements.Count)
-            {
-                errors.Add(new FieldError(RequirementInvalid, $"{path}.requirements"));
-            }
-            // FR-065: requirements count inside the headcount. Levels are a ladder (FR-066), so the highest
-            // levels are counted first: "1 level 3 and 2 level 2" needs two people, not three.
-            else if (SeatsNeeded(requirements) > block.Headcount)
-            {
-                errors.Add(new FieldError(RequirementExceedsHeadcount, $"{path}.requirements"));
-            }
-
-            var conflicts = (block.Conflicts ?? []).Select(Ordered).ToList();
-            if (conflicts.Any(x => x.MembershipA == x.MembershipB || !memberIds.Contains(x.MembershipA) || !memberIds.Contains(x.MembershipB)))
-            {
-                errors.Add(new FieldError(ConflictInvalid, $"{path}.conflicts"));
-            }
-            else if (conflicts.Distinct().Count() != conflicts.Count)
-            {
-                errors.Add(new FieldError(ConflictDuplicate, $"{path}.conflicts"));
-            }
-
-            parsed.Add((block, start.Value, end.Value));
         }
         return (errors, parsed);
+    }
+
+    /// <summary>
+    /// The checks of one shift: its times, days, name, headcount, level rules and pairs. Returns its times unless
+    /// they cannot be read. Shared by the weekly template and "Edit a specific day" (M4-01).
+    /// </summary>
+    internal static (LocalTime Start, LocalTime End)? ValidateBlock(BlockSetup block, string path, IReadOnlySet<Guid> memberIds, List<FieldError> errors)
+    {
+        if (ValidateTimes(block.Start, block.End, path, errors) is not { } times)
+        {
+            return null;
+        }
+        if (block.Days is null || block.Days.Count == 0 || block.Days.Any(day => day is < 1 or > 7))
+        {
+            errors.Add(new FieldError(NoDays, $"{path}.days"));
+        }
+        if (CleanName(block.Name)?.Length > ShiftBlock.NameMaxLength)
+        {
+            errors.Add(new FieldError(NameTooLong, $"{path}.name"));
+        }
+        if (block.Headcount is < 1 or > MaxHeadcount)
+        {
+            errors.Add(new FieldError(HeadcountInvalid, $"{path}.headcount"));
+        }
+
+        var requirements = block.Requirements ?? [];
+        if (requirements.Any(x => x.Level is < 1 or > 3 || x.MinCount < 1) || requirements.Select(x => x.Level).Distinct().Count() != requirements.Count)
+        {
+            errors.Add(new FieldError(RequirementInvalid, $"{path}.requirements"));
+        }
+        // FR-065: requirements count inside the headcount. Levels are a ladder (FR-066), so the highest
+        // levels are counted first: "1 level 3 and 2 level 2" needs two people, not three.
+        else if (SeatsNeeded(requirements) > block.Headcount)
+        {
+            errors.Add(new FieldError(RequirementExceedsHeadcount, $"{path}.requirements"));
+        }
+
+        var conflicts = (block.Conflicts ?? []).Select(Ordered).ToList();
+        if (conflicts.Any(x => x.MembershipA == x.MembershipB || !memberIds.Contains(x.MembershipA) || !memberIds.Contains(x.MembershipB)))
+        {
+            errors.Add(new FieldError(ConflictInvalid, $"{path}.conflicts"));
+        }
+        else if (conflicts.Distinct().Count() != conflicts.Count)
+        {
+            errors.Add(new FieldError(ConflictDuplicate, $"{path}.conflicts"));
+        }
+        return times;
+    }
+
+    /// <summary>FR-061, FR-062: "HH:mm" on a 15-minute grid, ending after it starts on the same day.</summary>
+    internal static (LocalTime Start, LocalTime End)? ValidateTimes(string? startText, string? endText, string path, List<FieldError> errors)
+    {
+        var start = TimePattern.Parse(startText ?? string.Empty);
+        var end = TimePattern.Parse(endText ?? string.Empty);
+        if (!start.Success || !end.Success)
+        {
+            errors.Add(new FieldError(TimeInvalid, path));
+            return null;
+        }
+        if (start.Value.Minute % 15 != 0 || end.Value.Minute % 15 != 0)
+        {
+            errors.Add(new FieldError(OffGrid, path));
+        }
+        // 23:00 to 00:30 is refused.
+        if (end.Value <= start.Value)
+        {
+            errors.Add(new FieldError(CrossesMidnight, path));
+        }
+        return (start.Value, end.Value);
     }
 
     /// <summary>The fewest people who can satisfy every "at least N of level L or above" rule at once.</summary>
@@ -227,7 +244,7 @@ internal static class TemplateEndpoints
     /// <summary>Trimmed; blank means no custom name (M3-04).</summary>
     internal static string? CleanName(string? name) => string.IsNullOrWhiteSpace(name) ? null : name.Trim();
 
-    private static ConflictSetup Ordered(ConflictSetup pair) =>
+    internal static ConflictSetup Ordered(ConflictSetup pair) =>
         pair.MembershipA.CompareTo(pair.MembershipB) <= 0 ? pair : new ConflictSetup(pair.MembershipB, pair.MembershipA);
 }
 

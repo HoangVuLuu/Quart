@@ -404,6 +404,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/workplaces/{workplaceId}/generator/days': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetDayChanges'];
+    put: operations['SaveDayChanges'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/workplaces/{workplaceId}/periods/current': {
     parameters: {
       query?: never;
@@ -1238,6 +1254,7 @@ export interface components {
       /** Format: date */
       dueDate: null | string;
       dueTime: null | string;
+      keepOldDayChanges?: null | boolean;
     };
     CreateWorkplaceRequest: {
       name: null | string;
@@ -1250,6 +1267,29 @@ export interface components {
       upcoming: components['schemas']['PeriodSummary'][];
       /** Format: double */
       myLiveWeeklyHours: null | number;
+    };
+    DayChanges: {
+      changes: null | components['schemas']['DayChangeSetup'][];
+    };
+    DayChangeSetup: {
+      /** Format: uuid */
+      id: null | string;
+      /** Format: int32 */
+      week: number;
+      /** Format: int32 */
+      day: number;
+      kind: string;
+      /** Format: uuid */
+      blockId: null | string;
+      start: null | string;
+      end: null | string;
+      name: null | string;
+      /** Format: int32 */
+      headcount: null | number;
+      requirements: null | components['schemas']['RequirementSetup'][];
+      conflicts: null | components['schemas']['ConflictSetup'][];
+      /** Format: date-time */
+      savedAt?: null | string;
     };
     DeleteAccountRequest: {
       email: null | string;
@@ -2678,6 +2718,70 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['GeneratorSetup'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetDayChanges: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DayChanges'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  SaveDayChanges: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DayChanges'];
       };
     };
     responses: {

@@ -51,6 +51,7 @@ public static class WorkplacesModule
     {
         endpoints.MapWorkplaces();
         endpoints.MapTemplate();
+        endpoints.MapDayChanges();
         return endpoints;
     }
 
@@ -113,6 +114,7 @@ internal sealed class WorkplaceReader(WorkplacesDb db, IUserDirectory users) : I
             .Where(x => x.WorkplaceId == workplaceId)
             .OrderBy(x => x.StartTime).ThenBy(x => x.EndTime)
             .ToListAsync(cancellationToken);
+        var changes = await db.DayChanges.AsNoTracking().Where(x => x.WorkplaceId == workplaceId).ToListAsync(cancellationToken);
         return new WorkplaceTemplate(
             workplace.Name,
             DateTimeZoneProviders.Tzdb[workplace.TimeZone],
@@ -132,7 +134,21 @@ internal sealed class WorkplaceReader(WorkplacesDb db, IUserDirectory users) : I
                 block.Headcount,
                 block.Requirements.OrderBy(x => x.Level).Select(x => new TemplateRequirement(x.Level, x.MinCount)).ToList(),
                 block.Name)).ToList(),
-            blocks.SelectMany(block => block.Conflicts.Select(x => new TemplateConflict(block.Id, x.MembershipA, x.MembershipB))).ToList());
+            blocks.SelectMany(block => block.Conflicts.Select(x => new TemplateConflict(block.Id, x.MembershipA, x.MembershipB)))
+                .Concat(changes.SelectMany(change => DayChangeEndpoints.ConflictsOf(change).Select(x => new TemplateConflict(change.Id, x.MembershipA, x.MembershipB))))
+                .ToList(),
+            changes.Select(change => new TemplateDayChange(
+                change.Id,
+                change.Week,
+                (IsoDayOfWeek)change.Day,
+                change.Kind,
+                change.BlockId,
+                change.StartTime,
+                change.EndTime,
+                change.Name,
+                change.Headcount,
+                DayChangeEndpoints.RequirementsOf(change).Select(x => new TemplateRequirement(x.Level, x.MinCount)).ToList(),
+                change.SavedAt)).ToList());
     }
 
     public async Task<IReadOnlyList<AccountMembership>> GetMembershipsOfAsync(Guid userId, CancellationToken cancellationToken) =>

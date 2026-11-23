@@ -404,6 +404,14 @@ FR-091  The availability request goes out as soon as the admin opens a
 FR-092  Starting a period copies the template into real, dated shifts. From that
         point the period has its own shifts, which the admin may edit for that
         period only (a holiday closure, extended December hours).
+        "Edit a specific day" (Edit Generator, 2026-11-23): the admin can also
+        change the shifts of one day of the week in one week of the period
+        (Wednesday of week 1, say): move a shift's hours, remove it, or add a
+        shift for that day only, with its own name, people needed, level rule
+        and "cannot work together" pairs. Every period opened afterwards uses
+        these changes until they are cleared ("Clear all"). Opening a period
+        whose changes a previous period already used asks first: keep them,
+        clear them and open, or return.
 FR-093  An employee sets availability by tapping the shift blocks they can work,
         for each date in the period. There is no free-form time painting: the
         unit of availability is the shift the shop actually runs.
