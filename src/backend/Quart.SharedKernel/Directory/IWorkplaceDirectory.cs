@@ -40,12 +40,39 @@ public sealed record WorkplaceMember(
 }
 
 /// <summary>The weekly grid and the rules a period is built from (AD-010).</summary>
+/// <param name="Conflicts">Pairs per template shift, and per added day shift under the change's ID.</param>
+/// <param name="DayChanges">"Edit a specific day" changes (M4-01); null for none.</param>
 public sealed record WorkplaceTemplate(
     string Name,
     DateTimeZone TimeZone,
     WorkplaceRules Rules,
     IReadOnlyList<TemplateBlock> Blocks,
-    IReadOnlyList<TemplateConflict> Conflicts);
+    IReadOnlyList<TemplateConflict> Conflicts,
+    IReadOnlyList<TemplateDayChange>? DayChanges = null);
+
+/// <summary>
+/// One change to one day of the week in week <see cref="Week"/> of a period (M4-01): a template shift's hours
+/// that day ("changed"), the shift not running that day ("removed"), or a shift of that day only ("added").
+/// </summary>
+/// <param name="Id">For an added shift, the ID its dated shifts point back to, like a block's.</param>
+/// <param name="SavedAt">When it was saved as it is: before the last period opened means that period used it.</param>
+public sealed record TemplateDayChange(
+    Guid Id,
+    int Week,
+    IsoDayOfWeek Day,
+    string Kind,
+    Guid? BlockId,
+    LocalTime? Start,
+    LocalTime? End,
+    string? Name,
+    int Headcount,
+    IReadOnlyList<TemplateRequirement> Requirements,
+    Instant SavedAt)
+{
+    public const string Changed = "changed";
+    public const string Removed = "removed";
+    public const string Added = "added";
+}
 
 /// <param name="MaxConsecutiveShifts">1 to 4, or null for no limit (BR-005).</param>
 /// <param name="PublishChecks">Per issue code: "block", "confirm" or "show" (FR-144).</param>

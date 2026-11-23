@@ -25,6 +25,8 @@ internal sealed class WorkplacesDb(DbContextOptions<WorkplacesDb> options) : DbC
 
     public DbSet<ShiftBlockConflict> ShiftBlockConflicts => Set<ShiftBlockConflict>();
 
+    public DbSet<DayChange> DayChanges => Set<DayChange>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
@@ -77,6 +79,21 @@ internal sealed class WorkplacesDb(DbContextOptions<WorkplacesDb> options) : DbC
             // An unordered pair is stored smaller ID first, so the same pair cannot be added twice (M3-03).
             conflict.ToTable(table => table.HasCheckConstraint("ck_shift_block_conflict_ordered", "membership_a < membership_b"));
             conflict.HasIndex(x => new { x.ShiftBlockId, x.MembershipA, x.MembershipB }).IsUnique();
+        });
+
+        modelBuilder.Entity<DayChange>(change =>
+        {
+            change.HasKey(x => x.Id);
+            change.HasIndex(x => x.WorkplaceId);
+            change.Property(x => x.Kind).HasMaxLength(10);
+            change.Property(x => x.Name).HasMaxLength(ShiftBlock.NameMaxLength);
+            // A change to a template shift goes with that shift.
+            change.HasOne<ShiftBlock>().WithMany().HasForeignKey(x => x.BlockId).OnDelete(DeleteBehavior.Cascade);
+            change.ToTable(table =>
+            {
+                table.HasCheckConstraint("ck_day_change_week", "week between 1 and 4");
+                table.HasCheckConstraint("ck_day_change_day", "day between 1 and 7");
+            });
         });
 
         modelBuilder.UseSnakeCaseNames();
@@ -182,6 +199,52 @@ internal sealed class ShiftBlock
     public List<ShiftBlockRequirement> Requirements { get; set; } = [];
 
     public List<ShiftBlockConflict> Conflicts { get; set; } = [];
+}
+
+/// <summary>
+/// "Edit a specific day" (M4-01, 2026-11-23): one change to the shifts of one day of the week, in week 1 to 4 of
+/// any period opened afterwards. <see cref="Changed"/> moves a template shift's hours that day, <see cref="Removed"/>
+/// takes it out that day, and <see cref="Added"/> is a shift of that day only, with its own rules.
+/// </summary>
+internal sealed class DayChange
+{
+    public const string Changed = "changed";
+    public const string Removed = "removed";
+    public const string Added = "added";
+
+    public Guid Id { get; set; }
+
+    public Guid WorkplaceId { get; set; }
+
+    /// <summary>Week of the period, 1 to 4.</summary>
+    public int Week { get; set; }
+
+    /// <summary>ISO weekday, 1 for Monday to 7 for Sunday.</summary>
+    public int Day { get; set; }
+
+    public required string Kind { get; set; }
+
+    /// <summary>The template shift changed or removed; null for an added shift.</summary>
+    public Guid? BlockId { get; set; }
+
+    /// <summary>The hours that day; null for a removed shift.</summary>
+    public LocalTime? StartTime { get; set; }
+
+    public LocalTime? EndTime { get; set; }
+
+    /// <summary>An added shift's own name, headcount and rules; unused for the other kinds.</summary>
+    public string? Name { get; set; }
+
+    public int Headcount { get; set; }
+
+    /// <summary>A serialized list of <c>RequirementSetup</c>.</summary>
+    public string Requirements { get; set; } = "[]";
+
+    /// <summary>A serialized list of <c>ConflictSetup</c>.</summary>
+    public string Conflicts { get; set; } = "[]";
+
+    /// <summary>When this change was last saved: one saved before the last period opened was used by it already.</summary>
+    public Instant SavedAt { get; set; }
 }
 
 /// <summary>"At least <see cref="MinCount"/> people of <see cref="Level"/> or above", counted inside the headcount (FR-065).</summary>

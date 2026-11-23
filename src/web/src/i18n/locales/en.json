@@ -139,7 +139,8 @@
       "start_not_monday": "A period starts on a Monday.",
       "template_empty": "Add your shifts in the Edit Generator page first.",
       "unfinished_exists": "Publish the period you are working on before opening another.",
-      "already_started": "This period has already started, so it can't be cancelled."
+      "already_started": "This period has already started, so it can't be cancelled.",
+      "old_day_changes": "This period would use day changes from the previous period."
     },
     "schedule": {
       "already_on_shift": "This person is already on the shift.",
@@ -171,7 +172,11 @@
       "requirement_invalid": "A level rule needs a level from 1 to 3 and at least 1 person.",
       "time_invalid": "Enter the times as hours and minutes.",
       "too_many_blocks": "That is more shifts than a template can hold.",
-      "name_too_long": "A shift name is 24 characters at most."
+      "name_too_long": "A shift name is 24 characters at most.",
+      "day_invalid": "That day is not in a period.",
+      "day_block_unknown": "That shift does not run on that day any more. Reload the page.",
+      "day_duplicate": "A shift was changed twice on the same day.",
+      "too_many_day_changes": "That is more day changes than the generator can hold."
     },
     "workplace": {
       "already_member": "You are already in this workplace.",
@@ -261,6 +266,13 @@
       "open": "Next period is open",
       "build": "Build",
       "continue": "Continue building"
+    },
+    "oldChanges": {
+      "title": "Keep the day changes?",
+      "text": "You are about to create a period which has specific day changes from the previous period. Are you sure you want them?",
+      "keep": "Yes, keep them",
+      "clear": "Clear them and open period",
+      "back": "Return"
     }
   },
   "availability": {
@@ -295,7 +307,8 @@
     "decrease": "Decrease",
     "increase": "Increase",
     "notification": "Notifications",
-    "refreshing": "Refreshing…"
+    "refreshing": "Refreshing…",
+    "cancel": "Cancel"
   },
   "gallery": {
     "context": "For developers",
@@ -1153,5 +1166,35 @@
     "goneTitle": "Nothing to show",
     "goneText": "This period was cancelled, or this person is no longer on the team.",
     "wanted": "Hours wanted per week"
+  },
+  "dayEditor": {
+    "open": "Edit a specific day",
+    "title": "Editing Shift",
+    "templateContext": "Changes one day of the week, for every period you open from now on.",
+    "weeks": "Weeks",
+    "week": "Week {{week}}",
+    "changed": "Changed",
+    "closed": "Closed",
+    "editDay": "Edit {{day}}",
+    "clearAll": "Clear all",
+    "clearTitle": "Clear all?",
+    "clearText": "You are about to remove all the edits you have made on specific days. Are you sure?",
+    "clearNote": "Every day goes back to the shifts on the Shifts tab. Nothing changes until you press Save.",
+    "save": "Save",
+    "saved": "Saved",
+    "dayTitle": "Editing {{day}}",
+    "dayHint": "Drag on an empty space to add a shift, or tap +. Tap a shift to change its hours or delete it.",
+    "add": "Add a shift",
+    "shiftLabel": "{{name}}, {{start}} to {{end}}",
+    "people_one": "{{count}} person",
+    "people_other": "{{count}} people",
+    "hoursHint": "Times move in 15-minute steps. Overlapping another shift is fine.",
+    "delete": "Delete this shift",
+    "newTitle": "New shift",
+    "name": "Name",
+    "days": "Days",
+    "daysHint": "Pick more days to add the same shift to them in one go.",
+    "noDays": "Pick at least one day.",
+    "weekShort": "W{{week}}"
   }
 }

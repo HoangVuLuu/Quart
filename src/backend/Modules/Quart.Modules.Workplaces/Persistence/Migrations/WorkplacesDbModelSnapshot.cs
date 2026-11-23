@@ -24,6 +24,83 @@ namespace Quart.Modules.Workplaces.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Quart.Modules.Workplaces.Persistence.DayChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("BlockId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("block_id");
+
+                    b.Property<string>("Conflicts")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("conflicts");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("integer")
+                        .HasColumnName("day");
+
+                    b.Property<LocalTime?>("EndTime")
+                        .HasColumnType("time")
+                        .HasColumnName("end_time");
+
+                    b.Property<int>("Headcount")
+                        .HasColumnType("integer")
+                        .HasColumnName("headcount");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Requirements")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("requirements");
+
+                    b.Property<Instant>("SavedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("saved_at");
+
+                    b.Property<LocalTime?>("StartTime")
+                        .HasColumnType("time")
+                        .HasColumnName("start_time");
+
+                    b.Property<int>("Week")
+                        .HasColumnType("integer")
+                        .HasColumnName("week");
+
+                    b.Property<Guid>("WorkplaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workplace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_day_change");
+
+                    b.HasIndex("BlockId")
+                        .HasDatabaseName("ix_day_change_block_id");
+
+                    b.HasIndex("WorkplaceId")
+                        .HasDatabaseName("ix_day_change_workplace_id");
+
+                    b.ToTable("day_change", "workplaces", t =>
+                        {
+                            t.HasCheckConstraint("ck_day_change_day", "day between 1 and 7");
+
+                            t.HasCheckConstraint("ck_day_change_week", "week between 1 and 4");
+                        });
+                });
+
             modelBuilder.Entity("Quart.Modules.Workplaces.Persistence.Membership", b =>
                 {
                     b.Property<Guid>("Id")
@@ -301,6 +378,15 @@ namespace Quart.Modules.Workplaces.Persistence.Migrations
                         .HasDatabaseName("ix_workplace_join_code");
 
                     b.ToTable("workplace", "workplaces");
+                });
+
+            modelBuilder.Entity("Quart.Modules.Workplaces.Persistence.DayChange", b =>
+                {
+                    b.HasOne("Quart.Modules.Workplaces.Persistence.ShiftBlock", null)
+                        .WithMany()
+                        .HasForeignKey("BlockId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_day_change_shift_blocks_block_id");
                 });
 
             modelBuilder.Entity("Quart.Modules.Workplaces.Persistence.ShiftBlockConflict", b =>

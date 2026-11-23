@@ -29,6 +29,7 @@ internal static class PeriodEndpoints
     public const string DueRequired = "period.due_required";
     public const string DueInPast = "period.due_in_past";
     public const string DueAfterStart = "period.due_after_start";
+    public const string OldDayChanges = "period.old_day_changes";
 
     private static readonly NodaTime.Text.LocalTimePattern DueTimePattern = NodaTime.Text.LocalTimePattern.CreateWithInvariantCulture("HH:mm");
 
@@ -138,6 +139,21 @@ internal static class PeriodEndpoints
         }
         var due = DueOf(request.DueDate!.Value, request.DueTime!, template.TimeZone);
 
+        // M4-01: day changes the last period already used are only used again once the manager says so.
+        var lastOpenedAt = existing.Count == 0 ? (Instant?)null : existing.Max(x => x.CreatedAt);
+        var used = TemplateShifts.UsedBefore(template, weeks, lastOpenedAt);
+        if (used.Count > 0 && request.KeepOldDayChanges != true)
+        {
+            return TypedResults.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                extensions: new Dictionary<string, object?>
+                {
+                    ["code"] = OldDayChanges,
+                    ["since"] = lastOpenedAt!.Value.ToDateTimeOffset(),
+                    ["days"] = used.Select(x => new { week = x.Week, day = (int)x.Day }).Distinct().OrderBy(x => x.week).ThenBy(x => x.day).ToList(),
+                });
+        }
+
         var period = new Period
         {
             Id = Guid.NewGuid(),
@@ -153,7 +169,7 @@ internal static class PeriodEndpoints
         db.Periods.Add(period);
         for (var date = start; date <= end; date = date.PlusDays(1))
         {
-            foreach (var block in template.Blocks.Where(block => block.Days.Contains(date.DayOfWeek)))
+            foreach (var block in TemplateShifts.ForDate(template, start, date))
             {
                 db.Shifts.Add(new Shift
                 {
@@ -164,7 +180,7 @@ internal static class PeriodEndpoints
                     StartTime = block.Start,
                     EndTime = block.End,
                     Headcount = block.Headcount,
-                    SourceBlockId = block.Id,
+                    SourceBlockId = block.SourceId,
                     Name = block.Name,
                     // AD-028: stored as local date and time; the instant is only for ordering and overlap checks.
                     StartsAt = Support.InstantOf(date, block.Start, template.TimeZone),
@@ -265,7 +281,8 @@ internal sealed record PeriodRules(int? MaxConsecutiveShifts, bool OpeningFairne
 /// <param name="StartDate">A Monday. The length comes from the generator rules (FR-090).</param>
 /// <param name="DueDate">The day availability is due, in the workplace's time zone (FR-091). Required.</param>
 /// <param name="DueTime">The time on that day, "HH:mm". Required.</param>
-public sealed record CreatePeriodRequest(DateOnly StartDate, DateOnly? DueDate, string? DueTime);
+/// <param name="KeepOldDayChanges">True once the manager said to use again the day changes the last period used (M4-01).</param>
+public sealed record CreatePeriodRequest(DateOnly StartDate, DateOnly? DueDate, string? DueTime, bool? KeepOldDayChanges = null);
 
 /// <param name="Status">"collecting", "building" or "published".</param>
 /// <param name="Version">0 until first published.</param>

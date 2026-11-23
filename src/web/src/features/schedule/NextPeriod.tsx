@@ -3,17 +3,21 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { messageKeyFor } from '../../i18n/errors';
 import { formatDateRange, formatDue } from '../../i18n/format';
+import { ApiError } from '../../lib/api/client';
 import { Button } from '../../ui/Button';
+import { Dialog } from '../../ui/Dialog';
 import { buttonClassName } from '../../ui/button-styles';
 import { HeroCard } from '../../ui/HeroCard';
 import { Icon, iconButtonClassName } from '../../ui/Icon';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
+import { weekdayName } from '../day-editor/template-days';
 import { FormError } from '../identity/FormError';
 import {
   addDays,
   mondayOnOrAfter,
   suggestedDueDate,
+  useClearOldDayChanges,
   useCreatePeriod,
   useTeamAvailability,
   type NextPeriod,
@@ -111,6 +115,13 @@ function OpenPeriodBox({ after }: { after?: string }) {
   const dueDate = chosenDue ?? suggestedDueDate(startDate, today);
   const [dueTime, setDueTime] = useState('00:00');
   const remindersId = useId();
+  const clear = useClearOldDayChanges();
+  const open = (keepOldDayChanges?: boolean) =>
+    create.mutate({ startDate, dueDate, dueTime, ...(keepOldDayChanges ? { keepOldDayChanges } : {}) });
+  const oldChanges =
+    create.error instanceof ApiError && create.error.code === 'period.old_day_changes'
+      ? (create.error.problem as { since: string; days: { week: number; day: number }[] })
+      : null;
 
   return (
     // Only the title, the fields and one line about reminders (2026-11-22).
@@ -149,14 +160,43 @@ function OpenPeriodBox({ after }: { after?: string }) {
         <p id={remindersId} className="-mt-1 text-xs text-muted">
           {t('schedule.open.reminders')}
         </p>
-        <FormError message={create.error ? t(messageKeyFor(create.error)) : undefined} />
+        <FormError message={create.error && !oldChanges ? t(messageKeyFor(create.error)) : undefined} />
+        <FormError message={clear.error ? t(messageKeyFor(clear.error)) : undefined} />
         <div className="flex items-end gap-2">
-          <Button loading={create.isPending} onClick={() => create.mutate({ startDate, dueDate, dueTime })}>
+          <Button loading={create.isPending} onClick={() => open()}>
             {t('schedule.open.submit')}
           </Button>
           <GeneratorRulesLink />
         </div>
       </div>
+      {/* M4-01: day changes the last period used are used again only when the manager says so (2026-11-23). */}
+      <Dialog
+        open={oldChanges !== null && !create.isPending}
+        onOpenChange={(next) => !next && create.reset()}
+        title={t('schedule.oldChanges.title')}
+        description={t('schedule.oldChanges.text')}
+      >
+        <ul className="mb-4 rounded-field bg-surface-3 px-4 py-2.5 text-sm font-bold">
+          {(oldChanges?.days ?? []).map((day) => (
+            <li key={`${day.week}-${day.day}`}>
+              {weekdayName(day.day, i18n.language, 'long')} · {t('dayEditor.weekShort', { week: day.week })}
+            </li>
+          ))}
+        </ul>
+        <div className="flex flex-col gap-2">
+          <Button onClick={() => open(true)}>{t('schedule.oldChanges.keep')}</Button>
+          <Button
+            variant="danger"
+            loading={clear.isPending}
+            onClick={() => oldChanges && clear.mutate(oldChanges.since, { onSuccess: () => open() })}
+          >
+            {t('schedule.oldChanges.clear')}
+          </Button>
+          <Button variant="white" onClick={() => create.reset()}>
+            {t('schedule.oldChanges.back')}
+          </Button>
+        </div>
+      </Dialog>
     </HeroCard>
   );
 }

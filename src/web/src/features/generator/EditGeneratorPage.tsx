@@ -1,24 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router';
 import { useGoBack } from '../../app/useGoBack';
 import { SubPage } from '../../app/SubPage';
 import { messageKeyFor } from '../../i18n/errors';
 import { api, unwrap, type Schemas } from '../../lib/api/client';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
+import { Icon } from '../../ui/Icon';
 import { cx } from '../../ui/cx';
 import { Dialog } from '../../ui/Dialog';
-import { Select } from '../../ui/Select';
 import { Sheet } from '../../ui/Sheet';
 import { Skeleton } from '../../ui/Skeleton';
 import { Stepper } from '../../ui/Stepper';
 import { Switch } from '../../ui/Switch';
 import { TextField } from '../../ui/TextField';
+import { LevelRuleField, PairsField } from '../day-editor/ShiftRuleFields';
 import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
 import { Pill } from '../schedule/Pill';
-import { useMembers } from '../team/data';
 import { useWorkplace } from '../workplaces/workplace';
 
 type Setup = Schemas['GeneratorSetup'];
@@ -86,20 +87,26 @@ function GeneratorForm({ initial }: { initial: Setup }) {
   const [leaving, setLeaving] = useState(false);
   const blocks = draft.blocks ?? [];
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
+  const navigate = useNavigate();
+  // Saving leads back, or on to "Edit a specific day", which saves unsaved changes first (2026-11-23).
   const save = useMutation({
-    mutationFn: () =>
+    // The page to go to next rides along as the mutation's variable.
+    mutationFn: (next: 'back' | 'days') =>
+      next &&
       unwrap(
         api.PUT('/api/workplaces/{workplaceId}/generator', {
           params: { path: { workplaceId: id } },
           body: draft,
         }),
       ),
-    onSuccess: async () => {
+    onSuccess: async (_, next) => {
       await client.invalidateQueries({ queryKey: ['workplace', id] });
       toast(t('generator.saved'));
-      goBack();
+      if (next === 'days') void navigate('/generator/days');
+      else goBack();
     },
   });
+  const openDays = () => (dirty ? save.mutate('days') : void navigate('/generator/days'));
 
   function saveBlock(block: Block) {
     setDraft((current) => {
@@ -224,6 +231,10 @@ function GeneratorForm({ initial }: { initial: Setup }) {
                 </li>
               ))}
             </ul>
+            <Button variant="white" loading={save.isPending && save.variables === 'days'} onClick={openDays}>
+              <Icon name="calendar" className="size-5" />
+              {t('dayEditor.open')}
+            </Button>
             <Button variant="white" onClick={() => setEditing('new')}>
               {t('generator.blocks.add')}
             </Button>
@@ -231,7 +242,7 @@ function GeneratorForm({ initial }: { initial: Setup }) {
         )}
 
         <FormError message={save.error ? t(messageKeyFor(save.error)) : undefined} />
-        <Button loading={save.isPending} disabled={!dirty} onClick={() => save.mutate()}>
+        <Button loading={save.isPending} disabled={!dirty} onClick={() => save.mutate('back')}>
           {t('generator.save')}
         </Button>
         <p className="text-center text-xs text-muted">{t('generator.saveHint')}</p>
@@ -320,14 +331,8 @@ type BlockSheetProps = {
 /** Mockup 1k5: one shift's times, days, people needed, "at least N of level L" and "cannot work together". */
 function BlockSheet({ block, isNew, onSave, onDelete, onApplyRulesToAll, onClose }: BlockSheetProps) {
   const { t, i18n } = useTranslation();
-  const members = useMembers().data ?? [];
   const [value, setValue] = useState<Block>(block);
-  const [first, setFirst] = useState('');
-  const [second, setSecond] = useState('');
-  const requirement = value.requirements?.[0];
   const conflicts = value.conflicts ?? [];
-  const nameOf = (membershipId: string) =>
-    members.find((member) => member.membershipId === membershipId)?.displayName ?? '?';
   // The same checks as the server, so the mistake shows before Save (FR-061, FR-062).
   const problem =
     !/^\d\d:\d\d$/.test(value.start) || !/^\d\d:\d\d$/.test(value.end)
@@ -339,11 +344,6 @@ function BlockSheet({ block, isNew, onSave, onDelete, onApplyRulesToAll, onClose
           : value.days.length === 0
             ? t('errors.template.no_days')
             : undefined;
-  const pairExists = conflicts.some(
-    (pair) =>
-      (pair.membershipA === first && pair.membershipB === second) ||
-      (pair.membershipA === second && pair.membershipB === first),
-  );
 
   return (
     <Sheet
@@ -421,104 +421,13 @@ function BlockSheet({ block, isNew, onSave, onDelete, onApplyRulesToAll, onClose
             })
           }
         />
-        <div className="flex flex-col gap-2">
-          {/* Counted inside the headcount, not on top of it (FR-065). */}
-          <Stepper
-            label={t('generator.block.atLeast')}
-            description={t('generator.block.atLeastText')}
-            value={requirement?.minCount ?? 0}
-            min={0}
-            max={value.headcount}
-            onChange={(minCount) =>
-              setValue({
-                ...value,
-                requirements: minCount === 0 ? [] : [{ level: requirement?.level ?? 3, minCount }],
-              })
-            }
-          />
-          {requirement && (
-            <Select
-              label={t('generator.block.level')}
-              value={requirement.level}
-              onChange={(event) =>
-                setValue({
-                  ...value,
-                  requirements: [{ level: Number(event.target.value), minCount: requirement.minCount }],
-                })
-              }
-            >
-              {[1, 2, 3].map((level) => (
-                <option key={level} value={level}>
-                  {t('scheduling.level', { level })}
-                </option>
-              ))}
-            </Select>
-          )}
-        </div>
-
-        <div>
-          <h3 className="text-[17px]">{t('generator.block.pairs')}</h3>
-          <p className="mb-2 text-sm text-muted">{t('generator.block.pairsText')}</p>
-          <ul className="mb-2 flex flex-col gap-2">
-            {conflicts.map((pair) => (
-              <li
-                key={`${pair.membershipA}-${pair.membershipB}`}
-                className="flex items-center gap-2 rounded-field bg-surface-3 px-4 py-2"
-              >
-                <span className="min-w-0 flex-1 text-sm font-bold">
-                  {nameOf(pair.membershipA)} · {nameOf(pair.membershipB)}
-                </span>
-                <Button
-                  variant="white"
-                  className="min-h-11 px-4 text-sm"
-                  aria-label={t('generator.block.removePair', {
-                    first: nameOf(pair.membershipA),
-                    second: nameOf(pair.membershipB),
-                  })}
-                  onClick={() =>
-                    setValue({ ...value, conflicts: conflicts.filter((other) => other !== pair) })
-                  }
-                >
-                  {t('draft.editor.remove')}
-                </Button>
-              </li>
-            ))}
-          </ul>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { label: t('generator.block.first'), chosen: first, choose: setFirst, other: second },
-              { label: t('generator.block.second'), chosen: second, choose: setSecond, other: first },
-            ].map((side) => (
-              <Select
-                key={side.label}
-                label={side.label}
-                value={side.chosen}
-                onChange={(event) => side.choose(event.target.value)}
-              >
-                <option value="">{t('generator.block.pick')}</option>
-                {members
-                  .filter((member) => member.membershipId !== side.other)
-                  .map((member) => (
-                    <option key={member.membershipId} value={member.membershipId}>
-                      {member.displayName}
-                    </option>
-                  ))}
-              </Select>
-            ))}
-          </div>
-          <Button
-            variant="white"
-            className="mt-2 w-full"
-            disabled={first === '' || second === '' || pairExists}
-            onClick={() => {
-              setValue({ ...value, conflicts: [...conflicts, { membershipA: first, membershipB: second }] });
-              setFirst('');
-              setSecond('');
-            }}
-          >
-            {t('generator.block.addPair')}
-          </Button>
-        </div>
+        {/* Counted inside the headcount, not on top of it (FR-065). */}
+        <LevelRuleField
+          headcount={value.headcount}
+          requirements={value.requirements ?? []}
+          onChange={(requirements) => setValue({ ...value, requirements })}
+        />
+        <PairsField pairs={conflicts} onChange={(pairs) => setValue({ ...value, conflicts: pairs })} />
 
         <FormError message={problem} />
         <Button disabled={problem !== undefined} onClick={() => onSave(value)}>

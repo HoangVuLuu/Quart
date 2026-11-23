@@ -6,6 +6,7 @@ import { PersonAvailabilityPage } from '../features/availability/PersonAvailabil
 import { TeamAvailabilityPage } from '../features/availability/TeamAvailabilityPage';
 import { ForcedErrorPage } from '../features/diagnostics/ForcedErrorPage';
 import { EditGeneratorPage } from '../features/generator/EditGeneratorPage';
+import { SpecificDayPage, SpecificDaysLayout, SpecificDaysPage } from '../features/generator/SpecificDays';
 import { HomePage } from '../features/home/HomePage';
 import {
   CheckEmailPage,
@@ -124,6 +125,15 @@ export const routes: RouteObject[] = [
                     element: <PersonAvailabilityPage />,
                   },
                   { path: 'generator', element: <EditGeneratorPage /> },
+                  // "Edit a specific day" (M4-01): the edits are kept above both pages until saved.
+                  {
+                    path: 'generator/days',
+                    element: <SpecificDaysLayout />,
+                    children: [
+                      { index: true, element: <SpecificDaysPage /> },
+                      { path: ':day', element: <SpecificDayPage /> },
+                    ],
+                  },
                   { path: 'trade/mine', element: <MyShiftsToTradePage /> },
                   { path: 'schedule/build', element: <BuildingPage mode="build" /> },
                   { path: 'schedule/edit', element: <BuildingPage mode="edit" /> },
