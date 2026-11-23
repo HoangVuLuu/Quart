@@ -104,21 +104,25 @@ describe('availability', () => {
     renderApp('/availability');
 
     const monday = await screen.findByRole('group', { name: 'Mon 5' });
-    await userEvent.click(within(monday).getByRole('button', { name: /Closing/ }));
+    await userEvent.click(within(monday).getByRole('button', { name: /^Closing/ }));
     await userEvent.click(
-      within(screen.getByRole('group', { name: 'Tue 6' })).getByRole('button', { name: /Opening/ }),
+      within(screen.getByRole('group', { name: 'Tue 6' })).getByRole('button', { name: /^Opening/ }),
     );
 
     // Colour is never the only sign (NFR-008): the state is exposed as pressed.
-    expect(within(monday).getByRole('button', { name: /Closing/ })).toHaveAttribute('aria-pressed', 'true');
-    expect(within(monday).getByRole('button', { name: /Opening/ })).toHaveAttribute('aria-pressed', 'false');
+    expect(within(monday).getByRole('button', { name: /^Closing/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(monday).getByRole('button', { name: /^Opening/ })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('status')).toHaveTextContent('2 shifts · 13 h selected');
 
     await userEvent.click(screen.getByRole('button', { name: en.availability.send }));
 
     const sent = calls.find((call) => call.path.endsWith('/availability/me/send'));
     // BR-032: last period's number is offered and sent with the shifts.
-    expect(sent?.body).toEqual({ shiftIds: ['mon-close', 'tue-open'], desiredWeeklyHours: 18 });
+    expect(sent?.body).toEqual({
+      shiftIds: ['mon-close', 'tue-open'],
+      desiredWeeklyHours: 18,
+      shiftNotes: [],
+    });
   });
 
   it('tells staff when availability is due, on Home and on the availability page (FR-091, mockup 1a)', async () => {
@@ -373,6 +377,7 @@ describe('the schedule tab', () => {
           requirements: [{ level: 3, minCount: 1 }],
           people: [{ membershipId: mine, locked: true }],
           availableIds: [mine, kevin],
+          notes: [{ membershipId: kevin, note: 'Until 21:00 only' }],
         },
       ],
       people: [
@@ -423,15 +428,22 @@ describe('the schedule tab', () => {
       [`GET ${base}/periods/${periodId}/draft`]: draft,
       [`POST ${base}/periods/${periodId}/draft/start`]: draft,
       [`POST ${base}/periods/${periodId}/draft/assignments`]: { ...draft, issues: [] },
-      [`GET ${base}/periods/${periodId}/availability/${kevin}`]: {
+      [`GET ${base}/periods/${periodId}/availability`]: {
         period: building,
-        membershipId: kevin,
-        name: 'Kevin T.',
-        status: 'sent',
-        desiredWeeklyHours: 20,
-        shifts: [],
-        notes: [
-          { id: 'note-1', body: 'Exams on Thursday, evenings only', createdAt: '2099-10-01T12:00:00Z' },
+        sentCount: 2,
+        total: 2,
+        people: [
+          {
+            membershipId: kevin,
+            name: 'Kevin T.',
+            level: 3,
+            status: 'sent',
+            hoursOffered: 20,
+            desiredWeeklyHours: 20,
+            notes: [
+              { id: 'note-1', body: 'Exams on Thursday, evenings only', createdAt: '2099-10-01T12:00:00Z' },
+            ],
+          },
         ],
       },
     });
@@ -439,6 +451,8 @@ describe('the schedule tab', () => {
 
     expect(await screen.findByText('No level 3')).toBeInTheDocument();
     expect(screen.getByText(en.scheduling.grid.kept)).toBeInTheDocument();
+    // FR-103a: the card says someone who can work it left a note.
+    expect(screen.getByText(en.draft.editor.hasNotes)).toBeInTheDocument();
     // 2026-11-21: Publish is at the bottom, across the whole width.
     const publish = screen.getByRole('button', { name: en.draft.publish });
     expect(publish).toHaveClass('w-full');
@@ -455,13 +469,13 @@ describe('the schedule tab', () => {
     await userEvent.click(within(issues).getByRole('button', { name: /needs 1 at level 3/ }));
     const editor = await screen.findByRole('dialog', { name: /Closing/ });
     expect(within(editor).getByText(en.draft.editor.available)).toBeInTheDocument();
-    // 2026-11-21: tapping someone with a note opens it under their row; tapping again closes it.
-    const row = within(editor).getByRole('button', { name: /Kevin T\..*1 note/ });
-    expect(row).toHaveAttribute('aria-expanded', 'false');
-    await userEvent.click(row);
-    expect(await within(editor).findByText('Exams on Thursday, evenings only')).toBeInTheDocument();
-    await userEvent.click(row);
+    // FR-103a: this shift's note shows by the name; the week notes wait in a closed section (2026-11-23).
+    expect(within(editor).getByText('Until 21:00 only')).toBeInTheDocument();
     expect(within(editor).queryByText('Exams on Thursday, evenings only')).not.toBeInTheDocument();
+    const weekNotes = within(editor).getByRole('button', { name: new RegExp(en.draft.editor.weekNotes) });
+    expect(weekNotes).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(weekNotes);
+    expect(await within(editor).findByText('Exams on Thursday, evenings only')).toBeInTheDocument();
     await userEvent.click(within(editor).getByRole('button', { name: 'Add Kevin T.' }));
 
     expect(calls.find((call) => call.path.endsWith('/draft/assignments'))?.body).toEqual({
@@ -502,6 +516,7 @@ describe('the schedule tab', () => {
           requirements: [],
           people: [{ membershipId: mine, locked: false }],
           availableIds: [mine, kevin],
+          notes: [],
         },
       ],
       people: [person(mine, 'Sophie L.'), person(kevin, 'Kevin T.')],

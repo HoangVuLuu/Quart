@@ -47,6 +47,9 @@
   --color-danger-soft: #fde1e6;
   --color-warning: #6b4a00;
   --color-warning-soft: #fff0c9;
+  /* A note on one shift (FR-103a): the strip on a shift that has one. The soft, empty strip is warning-soft. */
+  --color-note: #ffc727;
+  --color-on-note: #3d2c00;
   --color-neutral: #4a4f66;
   --color-neutral-soft: #ecedf3;
 
@@ -142,6 +145,8 @@
     --color-danger-soft: #3a1520;
     --color-warning: #f3d08a;
     --color-warning-soft: #33280e;
+    --color-note: #e9b949;
+    --color-on-note: #2b1f00;
     --color-neutral: #c4cae2;
     --color-neutral-soft: #262b3f;
     --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);
@@ -166,6 +171,8 @@
   --color-danger-soft: #3a1520;
   --color-warning: #f3d08a;
   --color-warning-soft: #33280e;
+  --color-note: #e9b949;
+  --color-on-note: #2b1f00;
   --color-neutral: #c4cae2;
   --color-neutral-soft: #262b3f;
   --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);

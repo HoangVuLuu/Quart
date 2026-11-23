@@ -12,6 +12,8 @@ import { StatusChip } from '../../ui/StatusChip';
 import { Pill } from '../schedule/Pill';
 import { byDay, usePersonAvailability, weekOf } from '../scheduling/data';
 import { useWorkplace } from '../workplaces/workplace';
+import { shiftKindKey } from './shift-note-rules';
+import { DayNotes, NoteStrip } from './shift-notes';
 
 /**
  * A manager reads one person's availability (2026-11-18), opened from "Who has sent" or from an alert:
@@ -82,47 +84,57 @@ export function PersonAvailabilityPage() {
         <Card className="flex flex-col gap-3 p-4" {...swipeWeeks}>
           {byDay(data.shifts)
             .filter((day) => weekOf(data.period, day.date) === week)
-            .map((day) => (
-              <ul
-                key={day.date}
-                aria-label={formatDayShort(day.date, language)}
-                className="flex items-center gap-2"
-              >
-                <li className="w-14 shrink-0 text-sm font-bold" aria-hidden="true">
-                  {formatDayShort(day.date, language)}
-                </li>
-                {day.shifts.map((shift, index) => {
-                  const name =
-                    day.shifts.length > 1 && index === day.shifts.length - 1
-                      ? t('scheduling.kind.closing')
-                      : index === 0
-                        ? t('scheduling.kind.opening')
-                        : t('scheduling.kind.mid');
-                  return (
-                    <li
-                      key={shift.id}
-                      className={cx(
-                        'min-h-12 flex-1 rounded-chip px-2 py-1.5 text-center',
-                        shift.selected ? 'bg-ink text-bg' : 'bg-surface-3 text-muted',
-                      )}
-                    >
-                      {/* Colour is never the only sign (NFR-008): a tick or a dash, and the words. */}
-                      <span className="block text-sm font-bold">
-                        <span aria-hidden="true">{shift.selected ? '✓ ' : '– '}</span>
-                        {name}
-                        <span className="sr-only">
-                          {' '}
-                          {shift.selected ? t('personAvailability.can') : t('personAvailability.cannot')}
-                        </span>
-                      </span>
-                      <span className="block text-[11px]">
-                        {shift.start}–{shift.end}
-                      </span>
+            .map((day) => {
+              const names = day.shifts.map((_, index) => t(shiftKindKey(index, day.shifts.length)));
+              return (
+                <div key={day.date} className="flex flex-col gap-1.5">
+                  <ul aria-label={formatDayShort(day.date, language)} className="flex items-center gap-2">
+                    <li className="w-14 shrink-0 text-sm font-bold" aria-hidden="true">
+                      {formatDayShort(day.date, language)}
                     </li>
-                  );
-                })}
-              </ul>
-            ))}
+                    {day.shifts.map((shift, index) => {
+                      const name = names[index] ?? '';
+                      const note = shift.selected ? (shift.note ?? undefined) : undefined;
+                      return (
+                        <li
+                          key={shift.id}
+                          className="flex min-h-12 min-w-0 flex-1 overflow-hidden rounded-chip"
+                        >
+                          <span
+                            className={cx(
+                              'block min-w-0 flex-1 px-2 py-1.5 text-center',
+                              shift.selected ? 'bg-ink text-bg' : 'bg-surface-3 text-muted',
+                            )}
+                          >
+                            {/* Colour is never the only sign (NFR-008): a tick or a dash, and the words. */}
+                            <span className="block text-sm font-bold">
+                              <span aria-hidden="true">{shift.selected ? '✓ ' : '– '}</span>
+                              {name}
+                              <span className="sr-only">
+                                {' '}
+                                {shift.selected
+                                  ? t('personAvailability.can')
+                                  : t('personAvailability.cannot')}
+                              </span>
+                            </span>
+                            <span className="block text-[11px] whitespace-nowrap">
+                              {shift.start}–{shift.end}
+                            </span>
+                          </span>
+                          {/* FR-103a: their note on this shift, read in full on the line under the day. */}
+                          {note && <NoteStrip note={note} label={name} />}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <DayNotes
+                    notes={day.shifts.flatMap((shift, index) =>
+                      shift.selected && shift.note ? [{ name: names[index] ?? '', note: shift.note }] : [],
+                    )}
+                  />
+                </div>
+              );
+            })}
         </Card>
 
         {sent && (

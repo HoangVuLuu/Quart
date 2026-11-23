@@ -508,7 +508,14 @@ internal static class DraftEndpoints
             data.Availabilities
                 .Where(x => x.Status == Persistence.Availability.Sent && x.Blocks.Any(b => b.ShiftId == shift.Id)
                     && !DraftBuilder.IsBusyElsewhere(data, x.MembershipId, shift))
-                .Select(x => x.MembershipId).ToList())).ToList();
+                .Select(x => x.MembershipId).ToList(),
+            // FR-103a: only this shift's notes, from the people who can work it, for those who may read notes.
+            canReadNotes
+                ? data.Availabilities
+                    .Where(x => x.Status == Persistence.Availability.Sent && !DraftBuilder.IsBusyElsewhere(data, x.MembershipId, shift))
+                    .SelectMany(x => x.Blocks.Where(b => b.ShiftId == shift.Id && b.Note != null).Select(b => new DraftShiftNote(x.MembershipId, b.Note!)))
+                    .ToList()
+                : [])).ToList();
 
         var people = data.Members.Select(person => new DraftPerson(
             person.MembershipId,
@@ -583,6 +590,7 @@ public sealed record DraftView(
 
 /// <param name="Part">"opening", "closing", "mid", or "only" for a day's single shift (BR-034).</param>
 /// <param name="AvailableIds">Members who sent their availability and can work this shift.</param>
+/// <param name="Notes">Their notes on this shift (FR-103a); empty unless the caller may read notes.</param>
 public sealed record DraftShift(
     Guid Id,
     Guid BlockId,
@@ -594,7 +602,11 @@ public sealed record DraftShift(
     string Part,
     IReadOnlyList<DraftRequirement> Requirements,
     IReadOnlyList<DraftAssignment> People,
-    IReadOnlyList<Guid> AvailableIds);
+    IReadOnlyList<Guid> AvailableIds,
+    IReadOnlyList<DraftShiftNote> Notes);
+
+/// <summary>One person's note on one shift (FR-103a). Plain text.</summary>
+public sealed record DraftShiftNote(Guid MembershipId, string Note);
 
 public sealed record DraftRequirement(int Level, int MinCount);
 

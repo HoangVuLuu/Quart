@@ -3369,6 +3369,15 @@
               "number"
             ],
             "format": "double"
+          },
+          "shiftNotes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ShiftNoteRequest"
+            }
           }
         }
       },
@@ -3412,6 +3421,12 @@
           },
           "busyElsewhere": {
             "type": "boolean"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3903,7 +3918,8 @@
           "part",
           "requirements",
           "people",
-          "availableIds"
+          "availableIds",
+          "notes"
         ],
         "type": "object",
         "properties": {
@@ -3954,6 +3970,28 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DraftShiftNote"
+            }
+          }
+        }
+      },
+      "DraftShiftNote": {
+        "required": [
+          "membershipId",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "membershipId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "note": {
+            "type": "string"
           }
         }
       },
@@ -5348,6 +5386,25 @@
         "type": "object",
         "properties": {
           "key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ShiftNoteRequest": {
+        "required": [
+          "shiftId",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "shiftId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "note": {
             "type": [
               "null",
               "string"

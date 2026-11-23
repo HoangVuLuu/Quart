@@ -33,6 +33,8 @@ const errorKeys = {
   'availability.not_shift_worker': 'errors.availability.not_shift_worker',
   'availability.note_empty': 'errors.availability.note_empty',
   'availability.note_too_long': 'errors.availability.note_too_long',
+  'availability.shift_note_too_long': 'errors.availability.shift_note_too_long',
+  'availability.shift_note_unselected': 'errors.availability.shift_note_unselected',
   'availability.too_many_notes': 'errors.availability.too_many_notes',
   'availability.unknown_shift': 'errors.availability.unknown_shift',
   'marketplace.already_offered': 'errors.marketplace.already_offered',

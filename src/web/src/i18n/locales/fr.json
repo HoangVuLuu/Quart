@@ -112,7 +112,9 @@
       "note_empty": "Écris d’abord quelque chose.",
       "note_too_long": "Une note peut contenir 500 caractères au maximum.",
       "too_many_notes": "Tu as atteint le nombre de notes pour cette période.",
-      "unknown_shift": "Un de ces quarts n’existe plus. Recharge et réessaie."
+      "unknown_shift": "Un de ces quarts n’existe plus. Recharge et réessaie.",
+      "shift_note_too_long": "Une note sur un quart peut faire 60 caractères au plus.",
+      "shift_note_unselected": "Choisis le quart avant d’y ajouter une note."
     },
     "marketplace": {
       "already_offered": "Tu donnes déjà ce quart.",
@@ -712,6 +714,8 @@
       "back": "Revenir"
     },
     "editor": {
+      "hasNotes": "Quelqu’un a laissé une note sur ce quart",
+      "weekNotes": "Notes de la semaine",
       "onShift": "Sur ce quart",
       "nobody": "Personne pour l’instant.",
       "thisWeek": "{{hours}} cette semaine",
@@ -724,9 +728,7 @@
       "addNamed": "Ajouter {{name}}",
       "available": "Disponible",
       "unavailable": "Pas disponible",
-      "noAnswer": "Pas de réponse",
-      "notes_one": "{{count}} note",
-      "notes_other": "{{count}} notes"
+      "noAnswer": "Pas de réponse"
     }
   },
   "teamAvailability": {
@@ -1001,6 +1003,24 @@
     "emailDescription": "Horaire publié, demandes",
     "emailOn": "Les courriels sont activés pour ce lieu de travail",
     "emailOff": "Les courriels sont désactivés pour ce lieu de travail"
+  },
+  "shiftNote": {
+    "title": "Note pour {{day}} · {{shift}}",
+    "hint": "Ton gérant verra cette note.",
+    "label": "Note",
+    "counter": "{{count}}/{{max}}",
+    "placeholder": "Je peux rester jusqu’à 21 h seulement",
+    "selectFirst": "Choisis d’abord ce quart",
+    "quickPicks": "Choix rapides",
+    "pick": {
+      "startLater": "Je peux commencer plus tard",
+      "leaveEarly": "Je dois partir plus tôt",
+      "preferNot": "Je préfère éviter"
+    },
+    "remove": "Retirer la note",
+    "save": "Enregistrer la note",
+    "add": "Ajouter une note pour {{day}} · {{shift}}",
+    "edit": "Modifier la note pour {{day}} · {{shift}}"
   },
   "push": {
     "label": "Notifications push sur ce téléphone",

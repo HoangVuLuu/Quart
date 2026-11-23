@@ -7,6 +7,7 @@ import { Button } from '../../ui/Button';
 import { Cup } from '../../ui/Cup';
 import { cx } from '../../ui/cx';
 import { Dialog } from '../../ui/Dialog';
+import { Icon } from '../../ui/Icon';
 import { Sheet } from '../../ui/Sheet';
 import { Skeleton } from '../../ui/Skeleton';
 import { StatusChip, type StatusTone } from '../../ui/StatusChip';
@@ -17,7 +18,7 @@ import {
   byDay,
   useDraft,
   useDraftActions,
-  usePersonAvailability,
+  useTeamAvailability,
   weekOf,
   type DraftIssue,
   type DraftPerson,
@@ -242,16 +243,25 @@ function DayRow({
                       {shift.start}–{shift.end}
                     </span>
                   </span>
-                  <StatusChip tone={full ? 'success' : 'danger'} className="shrink-0 px-1.5 text-[11px]">
-                    <span
-                      aria-label={t('scheduling.grid.fill', {
-                        filled: shift.people.length,
-                        headcount: shift.headcount,
-                      })}
-                    >
-                      {shift.people.length}/{shift.headcount}
-                    </span>
-                  </StatusChip>
+                  <span className="flex shrink-0 flex-col items-end gap-1">
+                    <StatusChip tone={full ? 'success' : 'danger'} className="shrink-0 px-1.5 text-[11px]">
+                      <span
+                        aria-label={t('scheduling.grid.fill', {
+                          filled: shift.people.length,
+                          headcount: shift.headcount,
+                        })}
+                      >
+                        {shift.people.length}/{shift.headcount}
+                      </span>
+                    </StatusChip>
+                    {/* FR-103a: someone who can work it left a note on this shift (Hoang: a dot on the card). */}
+                    {shift.notes.length > 0 && (
+                      <span className="flex size-6 items-center justify-center rounded-full bg-note text-on-note">
+                        <Icon name="note" className="size-3.5" />
+                        <span className="sr-only">{t('draft.editor.hasNotes')}</span>
+                      </span>
+                    )}
+                  </span>
                 </span>
                 {shift.people.map((assignment) => {
                   const person = people.get(assignment.membershipId);
@@ -404,8 +414,13 @@ function ShiftEditor({
     (issue) => issue.shiftIds.includes(shift.id) && issue.severity !== 'show',
   );
   const full = shift.people.length >= shift.headcount;
-  // Whose notes are open under their row (2026-11-21).
-  const [reading, setReading] = useState<string | null>(null);
+  // FR-103a: only this shift's notes, from people who can work it (Hoang, 2026-11-23).
+  const shiftNotes = new Map(shift.notes.map((item) => [item.membershipId, item.note]));
+  // Their week notes (FR-103) are in a closed section at the bottom, for the people in this sheet.
+  const withWeekNotes = [
+    ...shift.people.flatMap((assignment) => people.get(assignment.membershipId) ?? []),
+    ...candidates,
+  ].filter((person) => person.noteCount > 0);
   const error = actions.add.error ?? actions.remove.error ?? actions.keep.error;
   const hours = (person: DraftPerson) =>
     // No target until the person sends availability with their hours (BR-032).
@@ -439,48 +454,50 @@ function ShiftEditor({
           const person = people.get(assignment.membershipId);
           const name = person?.name ?? t('team.former');
           return (
-            <li
-              key={assignment.membershipId}
-              className="flex items-center gap-2 rounded-field bg-surface-3 px-4 py-2"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="font-bold">
-                  {name}{' '}
-                  <span className="text-xs text-muted">
-                    {person && t('scheduling.levelShort', { level: person.level })}
-                  </span>
-                </p>
-                {person && (
-                  <p className="text-xs text-muted">{t('draft.editor.thisWeek', { hours: hours(person) })}</p>
-                )}
+            <li key={assignment.membershipId} className="rounded-field bg-surface-3 px-4 py-2">
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold">
+                    {name}{' '}
+                    <span className="text-xs text-muted">
+                      {person && t('scheduling.levelShort', { level: person.level })}
+                    </span>
+                  </p>
+                  {person && (
+                    <p className="text-xs text-muted">
+                      {t('draft.editor.thisWeek', { hours: hours(person) })}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant={assignment.locked ? 'dark' : 'white'}
+                  className="min-h-11 px-4 text-sm"
+                  aria-pressed={assignment.locked}
+                  aria-label={t('scheduling.grid.keep', { name })}
+                  disabled={actions.keep.isPending || actions.remove.isPending}
+                  onClick={() =>
+                    actions.keep.mutate({
+                      shiftId: shift.id,
+                      membershipId: assignment.membershipId,
+                      locked: !assignment.locked,
+                    })
+                  }
+                >
+                  {assignment.locked ? t('scheduling.grid.kept') : t('draft.editor.keep')}
+                </Button>
+                <Button
+                  variant="white"
+                  className="min-h-11 px-4 text-sm"
+                  aria-label={t('draft.editor.removeNamed', { name })}
+                  disabled={actions.keep.isPending || actions.remove.isPending}
+                  onClick={() =>
+                    actions.remove.mutate({ shiftId: shift.id, membershipId: assignment.membershipId })
+                  }
+                >
+                  {t('draft.editor.remove')}
+                </Button>
               </div>
-              <Button
-                variant={assignment.locked ? 'dark' : 'white'}
-                className="min-h-11 px-4 text-sm"
-                aria-pressed={assignment.locked}
-                aria-label={t('scheduling.grid.keep', { name })}
-                disabled={actions.keep.isPending || actions.remove.isPending}
-                onClick={() =>
-                  actions.keep.mutate({
-                    shiftId: shift.id,
-                    membershipId: assignment.membershipId,
-                    locked: !assignment.locked,
-                  })
-                }
-              >
-                {assignment.locked ? t('scheduling.grid.kept') : t('draft.editor.keep')}
-              </Button>
-              <Button
-                variant="white"
-                className="min-h-11 px-4 text-sm"
-                aria-label={t('draft.editor.removeNamed', { name })}
-                disabled={actions.keep.isPending || actions.remove.isPending}
-                onClick={() =>
-                  actions.remove.mutate({ shiftId: shift.id, membershipId: assignment.membershipId })
-                }
-              >
-                {t('draft.editor.remove')}
-              </Button>
+              <ShiftNoteLine note={shiftNotes.get(assignment.membershipId)} />
             </li>
           );
         })}
@@ -491,7 +508,6 @@ function ShiftEditor({
       <ul className="flex flex-col">
         {candidates.map((person) => {
           const chip = availabilityChip[status(person)];
-          const open = reading === person.membershipId;
           const summary = (
             <>
               <span className="block font-bold">
@@ -503,31 +519,13 @@ function ShiftEditor({
               </span>
               <span className="flex flex-wrap gap-1.5">
                 <StatusChip tone={chip.tone}>{t(`draft.editor.${chip.key}`)}</StatusChip>
-                {person.noteCount > 0 && (
-                  <StatusChip tone="warning">
-                    {t('draft.editor.notes', { count: person.noteCount })}
-                    <span aria-hidden="true">{open ? ' ▴' : ' ▾'}</span>
-                  </StatusChip>
-                )}
               </span>
             </>
           );
           return (
             <li key={person.membershipId} className="border-b border-line py-2 last:border-b-0">
               <div className="flex items-center gap-3">
-                {/* 2026-11-21: tapping someone with notes opens them under the row; tapping again closes. */}
-                {person.noteCount > 0 ? (
-                  <button
-                    type="button"
-                    aria-expanded={open}
-                    className="min-w-0 flex-1 text-left"
-                    onClick={() => setReading(open ? null : person.membershipId)}
-                  >
-                    {summary}
-                  </button>
-                ) : (
-                  <div className="min-w-0 flex-1">{summary}</div>
-                )}
+                <div className="min-w-0 flex-1">{summary}</div>
                 <Button
                   className="min-h-11 px-4 text-sm"
                   disabled={actions.add.isPending}
@@ -537,31 +535,71 @@ function ShiftEditor({
                   {t('draft.editor.addButton')}
                 </Button>
               </div>
-              {open && <PersonNotes periodId={periodId} membershipId={person.membershipId} />}
+              <ShiftNoteLine note={shiftNotes.get(person.membershipId)} />
             </li>
           );
         })}
       </ul>
+      {withWeekNotes.length > 0 && <WeekNotes periodId={periodId} people={withWeekNotes} />}
     </Sheet>
   );
 }
 
-/** A person's availability notes, read under their row in the shift sheet (2026-11-21). */
-function PersonNotes({ periodId, membershipId }: { periodId: string; membershipId: string }) {
-  const { t } = useTranslation();
-  const answer = usePersonAvailability(periodId, membershipId);
-  if (answer.isPending) return <Skeleton className="mt-2 h-10 w-full" />;
-  if (answer.error) return <FormError message={t(messageKeyFor(answer.error))} />;
+/** A person's note on this shift (FR-103a), under their name. Text only. */
+function ShiftNoteLine({ note }: { note: string | undefined }) {
+  if (!note) return null;
   return (
-    <div className="mt-2 flex flex-col gap-2">
-      {answer.data.notes.map((note) => (
-        <p
-          key={note.id}
-          className="rounded-field bg-warning-soft px-3 py-2 text-sm whitespace-pre-wrap text-warning"
-        >
-          {note.body}
-        </p>
-      ))}
-    </div>
+    <p className="mt-1.5 flex items-start gap-1.5 rounded-field bg-warning-soft px-3 py-1.5 text-xs font-bold text-warning">
+      <Icon name="note" className="size-4" />
+      <span className="min-w-0 break-words">{note}</span>
+    </p>
+  );
+}
+
+/**
+ * "Week notes": the notes about the whole period (FR-103) of the people in the shift sheet, closed until
+ * tapped (Hoang, 2026-11-23). Loaded only when opened.
+ */
+function WeekNotes({ periodId, people }: { periodId: string; people: DraftPerson[] }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const team = useTeamAvailability(open ? periodId : undefined);
+  const notesOf = new Map(team.data?.people.map((row) => [row.membershipId, row.notes]));
+  return (
+    <section className="mt-5 border-t border-line pt-3">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        className="flex min-h-11 w-full items-center justify-between gap-2 text-left"
+      >
+        <span className="text-[17px] font-bold">{t('draft.editor.weekNotes')}</span>
+        <StatusChip tone="warning">
+          {people.length}
+          <span aria-hidden="true">{open ? ' ▴' : ' ▾'}</span>
+        </StatusChip>
+      </button>
+      {open && team.isPending && <Skeleton className="mt-2 h-16 w-full" />}
+      {open && team.error && <FormError message={t(messageKeyFor(team.error))} />}
+      {open && team.data && (
+        <ul className="mt-2 flex flex-col gap-3">
+          {people.map((person) => (
+            <li key={person.membershipId}>
+              <p className="mb-1 text-sm font-bold">{person.name}</p>
+              <div className="flex flex-col gap-1.5">
+                {(notesOf.get(person.membershipId) ?? []).map((note) => (
+                  <p
+                    key={note.id}
+                    className="rounded-field bg-warning-soft px-3 py-2 text-sm whitespace-pre-wrap text-warning"
+                  >
+                    {note.body}
+                  </p>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

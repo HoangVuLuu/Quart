@@ -1136,6 +1136,7 @@ export interface components {
       shiftIds: null | string[];
       /** Format: double */
       desiredWeeklyHours?: null | number;
+      shiftNotes?: null | components['schemas']['ShiftNoteRequest'][];
     };
     AvailabilityShift: {
       /** Format: uuid */
@@ -1150,6 +1151,7 @@ export interface components {
       hours: number;
       selected: boolean;
       busyElsewhere: boolean;
+      note?: null | string;
     };
     BlockSetup: {
       /** Format: uuid */
@@ -1286,6 +1288,12 @@ export interface components {
       requirements: components['schemas']['DraftRequirement'][];
       people: components['schemas']['DraftAssignment'][];
       availableIds: string[];
+      notes: components['schemas']['DraftShiftNote'][];
+    };
+    DraftShiftNote: {
+      /** Format: uuid */
+      membershipId: string;
+      note: string;
     };
     DraftView: {
       period: components['schemas']['PeriodSummary'];
@@ -1655,6 +1663,11 @@ export interface components {
     };
     SeenRequest: {
       key: null | string;
+    };
+    ShiftNoteRequest: {
+      /** Format: uuid */
+      shiftId: string;
+      note: null | string;
     };
     ShiftRef: {
       /** Format: uuid */

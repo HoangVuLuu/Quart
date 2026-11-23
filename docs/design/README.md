@@ -34,6 +34,7 @@ a bubble tea shop, not a payroll system.
 | `success` / `success-soft` | `#11643A` / `#DDF3E4` | Sent, covered, approved |
 | `danger` / `danger-soft` | `#8E1A33` / `#FDE1E6` | Missing level 3, blocked publish, not available |
 | `warning` / `warning-soft` | `#6B4A00` / `#FFF0C9` | Needs a look: reopened, confirm before publishing |
+| `note` / `on-note` | `#FFC727` / `#3D2C00` (dark: `#E9B949` / `#2B1F00`) | A shift that has a note (FR-103a): the solid strip on an availability pill and the dot on a Building Schedule card. An empty strip uses `warning-soft` |
 | `neutral` / `neutral-soft` | `#4A4F66` / `#ECEDF3` | No answer yet |
 | `opening` | `#CDD35B` | The opening shift's flavour |
 | `closing` | `#ADA8DA` | The closing shift's flavour |

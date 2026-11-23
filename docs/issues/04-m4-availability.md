@@ -159,3 +159,28 @@ spec: FR-068, FR-069
 
 **Done when**
 - [ ] Changing the closing time and applying it to an open period resets exactly those answers and notifies exactly those people.
+
+## M4-09 · A note on one shift of the availability
+labels: type:feature, stack:full, area:availability, size:M
+depends: M4-03, M5-02
+spec: FR-103a, FR-103, FR-104a, BR-035
+
+**Goal.** "Can only stay until 21:00" reaches the manager on the shift it is about, not lost in a note for the whole week.
+
+Decided by Hoang on 2026-11-23: unchoosing a shift deletes its note without asking; shift notes lock with the availability; Building Schedule shows a mark on shift cards that have notes; the shift panel shows only that shift's notes, and the week notes move to a closed "Week notes" section for the people listed there.
+
+**Backend**
+- [x] A nullable note (60 characters) on `scheduling.availability_block`, the row that says "can work this shift". Expand-only migration.
+- [x] Send and save take `shiftNotes`; each must be on a chosen shift, trimmed, empty means none. Left out, the notes of kept shifts stay (older apps).
+- [x] The person's own view and the managers' read-only view return the note; Building Schedule returns each shift's notes from people who sent and can work it, only to those who may read notes.
+
+**Frontend**
+- [x] A strip on the right of a chosen shift (pale without a note, solid yellow with one) opens the note sheet: 60-character field with a counter, quick picks, Remove note, Save note. The note shows under the day. Locked, it only shows.
+- [x] Building Schedule: a yellow mark on cards with notes; the shift panel shows the shift's note under each person; a closed "Week notes" section.
+
+**Tests**
+- [x] Server: notes only on chosen shifts, 60 characters, dropped when unchosen, locked with the availability, shown to managers on their own shift only, never to coworkers or other workplaces.
+- [x] App: the strip appears only on a chosen shift, the sheet saves, removes and counts, unchoosing drops the note, locked is read-only, the shift panel shows only its notes.
+
+**Done when**
+- [ ] On staging, a note on one shift shows on that shift in Building Schedule and nowhere else.

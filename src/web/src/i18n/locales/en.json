@@ -112,7 +112,9 @@
       "note_empty": "Write something first.",
       "note_too_long": "A note can have 500 characters at most.",
       "too_many_notes": "You have reached the number of notes for this period.",
-      "unknown_shift": "One of these shifts no longer exists. Reload and try again."
+      "unknown_shift": "One of these shifts no longer exists. Reload and try again.",
+      "shift_note_too_long": "A note on one shift can be 60 characters at most.",
+      "shift_note_unselected": "Choose the shift before adding a note to it."
     },
     "marketplace": {
       "already_offered": "You are already giving this shift away.",
@@ -712,6 +714,8 @@
       "back": "Go back"
     },
     "editor": {
+      "hasNotes": "Someone left a note on this shift",
+      "weekNotes": "Week notes",
       "onShift": "On this shift",
       "nobody": "Nobody yet.",
       "thisWeek": "{{hours}} this week",
@@ -724,9 +728,7 @@
       "addNamed": "Add {{name}}",
       "available": "Available",
       "unavailable": "Not available",
-      "noAnswer": "No answer",
-      "notes_one": "{{count}} note",
-      "notes_other": "{{count}} notes"
+      "noAnswer": "No answer"
     }
   },
   "teamAvailability": {
@@ -1001,6 +1003,24 @@
     "emailDescription": "Schedule published, requests",
     "emailOn": "Emails are on for this workplace",
     "emailOff": "Emails are off for this workplace"
+  },
+  "shiftNote": {
+    "title": "Note for {{day}} · {{shift}}",
+    "hint": "Your manager will see this.",
+    "label": "Note",
+    "counter": "{{count}}/{{max}}",
+    "placeholder": "Can only stay until 21:00",
+    "selectFirst": "Select this shift first",
+    "quickPicks": "Quick picks",
+    "pick": {
+      "startLater": "Can start later",
+      "leaveEarly": "Must leave early",
+      "preferNot": "Prefer not"
+    },
+    "remove": "Remove note",
+    "save": "Save note",
+    "add": "Add a note for {{day}} · {{shift}}",
+    "edit": "Change the note for {{day}} · {{shift}}"
   },
   "push": {
     "label": "Push on this phone",
