@@ -13,6 +13,8 @@ export interface PushBody {
   type: string;
   parameters: Record<string, string>;
   language: string;
+  /** More than one: several alerts of this kind within a few minutes, sent as one (M8-07, FR-213). */
+  count?: number;
 }
 
 export interface PushNotice {
@@ -31,18 +33,25 @@ export function pushNotice(data: unknown): PushNotice {
   if (!body) return { title: texts[language].unknown, url: '/alerts', tag: 'quart' };
 
   const [group, name] = body.type.split('.', 2) as [string, string];
-  const template = (texts[language].types as Record<string, Record<string, string> | undefined>)[group]?.[
-    name
-  ];
-  const values: Record<string, string> = { ...body.parameters };
+  const bundle = (body.count ?? 1) > 1;
+  // A bundle says how many ("3 shifts are up for grabs"); the latest alert's details would mislead.
+  const sentences = (bundle ? texts[language].bundles : texts[language].types) as Record<
+    string,
+    Record<string, string> | undefined
+  >;
+  const template = sentences[group]?.[name];
+  const values: Record<string, string> = bundle ? { count: String(body.count) } : { ...body.parameters };
   for (const key of ['date', 'periodStart']) {
     if (values[key]) values[key] = formatShortDate(values[key], language);
   }
   const title = template
     ? template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => values[key] ?? '')
     : texts[language].unknown;
-  const to = pushDestination(body.type, body.parameters);
-  const query = new URLSearchParams({ workplace: body.workplaceId, notification: body.id, to });
+  // A bundle opens the kind's page and leaves its alerts unread, to be seen there; one alert opens its own place.
+  const to = pushDestination(body.type, bundle ? {} : body.parameters);
+  const query = new URLSearchParams(
+    bundle ? { workplace: body.workplaceId, to } : { workplace: body.workplaceId, notification: body.id, to },
+  );
   return { title, url: `/open?${query.toString()}`, tag: body.id };
 }
 
@@ -57,6 +66,7 @@ function readBody(data: unknown): PushBody | null {
     typeof value.workplaceId === 'string' &&
     typeof value.type === 'string' &&
     typeof value.language === 'string' &&
+    (value.count === undefined || typeof value.count === 'number') &&
     strings(value.parameters)
     ? (value as PushBody)
     : null;

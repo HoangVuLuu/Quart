@@ -63,3 +63,23 @@ describe('the push text and where it opens (M8-06)', () => {
     expect(pushNotice({ id: 1 }).url).toBe('/alerts');
   });
 });
+
+describe('a bundle of alerts (M8-07, FR-213)', () => {
+  it('says how many, in the person’s language, and opens the kind’s page without marking one read', () => {
+    const en = pushNotice({ ...body('shift.offered', { name: 'Marc T.', date: '2026-12-10' }), count: 3 });
+    expect(en.title).toBe('3 shifts are up for grabs');
+    const url = new URL(en.url, 'https://quart.test');
+    expect(url.searchParams.get('to')).toBe('/trade');
+    expect(url.searchParams.get('notification')).toBeNull();
+    expect(url.searchParams.get('workplace')).toBe(workplaceId);
+
+    const fr = pushNotice({ ...body('schedule.changed', { added: '1', removed: '0' }, 'fr'), count: 5 });
+    expect(fr.title).toBe('Ton horaire a changé 5 fois');
+  });
+
+  it('reads one alert like before', () => {
+    expect(
+      pushNotice({ ...body('schedule.published', { periodStart: '2026-12-07' }), count: 1 }).url,
+    ).toContain('notification=');
+  });
+});

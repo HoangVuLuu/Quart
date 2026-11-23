@@ -82,6 +82,10 @@ public sealed class NotificationEmailTests(PostgresFixture postgres)
                 var web = (types[type] ?? types[group]?[name])?.GetValue<string>();
                 Assert.True(web is not null, $"No in-app text for {type} in {language}.");
                 Assert.Equal(web!.Replace("{{", "{", StringComparison.Ordinal).Replace("}}", "}", StringComparison.Ordinal), NotificationEmails.Sentence(type, language));
+                // A bundle's email says what its push says (M8-07, FR-213).
+                var bundle = json["alerts"]!["bundles"]![group]?[name]?.GetValue<string>();
+                Assert.True(bundle is not null, $"No bundle text for {type} in {language}.");
+                Assert.Equal(bundle!.Replace("{{", "{", StringComparison.Ordinal).Replace("}}", "}", StringComparison.Ordinal), NotificationEmails.BundleSentence(type, language));
             }
         }
     }

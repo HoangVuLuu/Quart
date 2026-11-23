@@ -122,15 +122,19 @@ labels: type:feature, stack:full, area:notifications, size:M
 depends: M8-06
 spec: FR-213, FR-215, FR-211
 
-**Goal.** Five edits in ten minutes produce one notification, not five.
+**Goal.** Five edits in five minutes produce one notification, not five.
+
+Decided by Hoang on 2026-11-22: a 5-minute wait (single alerts arrive 5–10 minutes later); one Email switch
+per workplace, on by default for everyone, push or not; push stays a choice per browser (M8-06); no
+categories. In-app rows are not merged.
 
 **Backend**
-- [ ] Group notifications of the same type for the same recipient within a window (for example 10 minutes) before push or email goes out. In-app rows can merge the same way.
-- [ ] New-post notifications to all members use the same path (FR-215).
-- [ ] Per-user preferences: push and email per category, within what the spec allows.
+- [x] Group notifications of the same type for the same recipient within 5 minutes before push or email goes out. In-app rows stay one per alert.
+- [ ] New-post notifications to all members use the same path (FR-215). Waits for the News tab (M8-01).
+- [x] Per-user preferences: an Email switch per workplace (mockup 1g); push is the per-browser switch of M8-06.
 
 **Tests**
-- [ ] Five schedule edits within the window → one push and one email; one after the window → a second.
+- [x] Five schedule edits within the window → one push and one email; one after the window → a second.
 
 **Done when**
 - [ ] Rapid edits on staging produce a single notification per affected person.

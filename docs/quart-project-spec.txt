@@ -596,19 +596,23 @@ FR-193  Approval requirements are two independent settings: one for claims, one
 6.9 NOTIFICATIONS
 FR-210  Three channels: in-app, push, and email.
 FR-211  Email is used for account essentials only: email verification and
-        password reset. It is additionally used as a fallback for actionable
-        items (a new or changed schedule, a trade waiting on you) for people who
-        have not enabled push. Deliberately quiet by default.
+        password reset. It is additionally used for actionable items (a new or
+        changed schedule, a trade waiting on you). Everyone gets these emails,
+        with or without push, until they turn Email off in Profile; the choice
+        is per workplace. Alerts in the app are always on (2026-11-22).
 FR-212  Push notifications are delivered through the installed PWA. See NFR-012.
         A push shows the same sentence as the alert in the app, in the
-        recipient's language. Every alert is pushed except the managers'
+        recipient's language (a bundle says how many, FR-213). Every alert is pushed except the managers'
         "just so you know" ones (someone joined, sent availability, added a
         note). A browser belongs to whoever turned push on there last;
         signing out everywhere, or changing or resetting the password or
         email, turns push off on every browser of that person (decision
         0015).
-FR-213  Notifications generated close together are bundled. Five edits in ten
-        minutes produce one notification, not five.
+FR-213  Notifications generated close together are bundled. A push or email
+        leaves five minutes after its alert, and alerts of the same kind to
+        the same person in the meantime go with it as one ("3 shifts are up
+        for grabs"). Alerts the person already read in the app are left out.
+        The Alerts tab still lists each alert on its own (2026-11-22).
 FR-214  Philippe receives one email per month containing the final schedule for
         the month as PDF and CSV, so the business keeps its own records without
         the app storing them indefinitely.
@@ -2033,6 +2037,13 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             email is sent first and its outbox row is then deleted, so no
             table keeps the address. Accounts that never confirmed their
             email are deleted 7 days after sign-up.  (FR-009, 13)
+2026-11-22  Notification settings and bundling (M8-07, Hoang): Profile has an
+            Email switch per workplace, on by default for everyone, push or
+            not (replaces "email only without push"); push stays a choice per
+            browser. Pushes and emails wait five minutes and group alerts of
+            the same kind for the same person, so single alerts arrive 5-10
+            minutes after they happen. The five minutes are fixed in the
+            code, not a setting (Hoang).  (FR-211, FR-213)
 2026-11-22  From testing on staging (Hoang): on Schedule, the period buttons
             share their row equally; My shifts / Whole team is one pill
             across the row; "Edit current period" is a full-width button

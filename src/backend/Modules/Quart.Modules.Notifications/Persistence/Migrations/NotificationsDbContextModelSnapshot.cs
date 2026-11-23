@@ -31,9 +31,21 @@ namespace Quart.Modules.Notifications.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("BundleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bundle_id");
+
                     b.Property<Instant>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<Instant?>("DeliverAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deliver_at");
+
+                    b.Property<Instant?>("DeliveredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("delivered_at");
 
                     b.Property<Guid>("MembershipId")
                         .HasColumnType("uuid")
@@ -64,10 +76,41 @@ namespace Quart.Modules.Notifications.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_notification");
 
+                    b.HasIndex("BundleId")
+                        .HasDatabaseName("ix_notification_bundle_id");
+
                     b.HasIndex("MembershipId", "CreatedAt")
                         .HasDatabaseName("ix_notification_membership_id_created_at");
 
+                    b.HasIndex("UserId", "WorkplaceId", "Type")
+                        .HasDatabaseName("ix_notification_open_bundle")
+                        .HasFilter("delivered_at IS NULL AND bundle_id IS NOT NULL");
+
                     b.ToTable("notification", "notifications");
+                });
+
+            modelBuilder.Entity("Quart.Modules.Notifications.Persistence.NotificationSetting", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkplaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workplace_id");
+
+                    b.Property<bool>("Email")
+                        .HasColumnType("boolean")
+                        .HasColumnName("email");
+
+                    b.Property<Instant>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("UserId", "WorkplaceId")
+                        .HasName("pk_notification_setting");
+
+                    b.ToTable("notification_setting", "notifications");
                 });
 
             modelBuilder.Entity("Quart.Modules.Notifications.Persistence.OutboxMessage", b =>

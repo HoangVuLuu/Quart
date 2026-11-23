@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NodaTime;
 using Npgsql;
+using Quart.Modules.Notifications.Delivery;
 using Quart.Modules.Notifications.Email;
 using Quart.Modules.Notifications.Push;
 using Quart.Modules.Notifications.Persistence;
@@ -40,6 +41,9 @@ public static class NotificationsModule
         services.AddScoped<IJobHandler, NotificationRetention>();
         services.AddSingleton(new NightlyJob(NotificationRetention.JobType));
         services.AddScoped<INotifier, Notifier>();
+        // Bundling (M8-07, FR-213): pushes and emails go out a few minutes after the alert, grouped by kind.
+        services.AddSingleton(BundleWait.FiveMinutes);
+        services.AddScoped<IJobHandler, DeliverBundleHandler>();
         services.AddScoped<IAccountDeletedHandler, ForgetNotificationsOnAccountDeleted>();
 
         // Web push (M8-06, decision 0015). Off until both VAPID keys are set.
@@ -55,6 +59,7 @@ public static class NotificationsModule
     public static IEndpointRouteBuilder MapNotificationsModule(this IEndpointRouteBuilder endpoints)
     {
         PushEndpoints.Map(endpoints);
+        NotificationSettingsEndpoints.Map(endpoints);
 
         var group = endpoints.MapGroup("/api/workplaces/{workplaceId:guid}/notifications");
 
@@ -136,12 +141,10 @@ public sealed record NotificationInbox(int Unread, IReadOnlyList<NotificationIte
 public sealed record NotificationItem(Guid Id, string Type, IReadOnlyDictionary<string, string> Parameters, DateTimeOffset CreatedAt, bool Read);
 
 /// <summary>
-/// Stores in-app notifications and, for the types in <see cref="NotificationEmails"/>, an email to the
-/// recipient in their language (FR-211, FR-261). Both are written in one transaction. The emails are sent by
-/// a job on the next tick rather than during the request, so publishing to the whole team never waits on the
-/// email provider; the job retries with a growing delay and gives up after a day (background-jobs.md).
+/// Stores each alert for the Alerts tab, then puts the ones that leave the app in bundles (M8-07, FR-213): pushes
+/// and emails go out a few minutes later, one per kind and person for everything that came in meanwhile.
 /// </summary>
-internal sealed class Notifier(NotificationsDbContext db, IUserDirectory users, IJobScheduler jobs, IClock clock) : INotifier
+internal sealed class Notifier(NotificationsDbContext db, IJobScheduler jobs, IClock clock, BundleWait wait) : INotifier
 {
     public async Task NotifyAsync(IReadOnlyCollection<NotificationRequest> notifications, CancellationToken cancellationToken)
     {
@@ -174,76 +177,11 @@ internal sealed class Notifier(NotificationsDbContext db, IUserDirectory users, 
             stored.Add(notification);
         }
 
-        // FR-211: email is the fallback for people who have not turned push on.
-        var pushed = notifications.Select(x => x.UserId).Distinct().ToList();
-        var subscriptions = await db.PushSubscriptions.AsNoTracking()
-            .Where(x => pushed.Contains(x.UserId))
-            .Select(x => new { x.Id, x.UserId })
-            .ToListAsync(cancellationToken);
-        var withPush = subscriptions.Select(x => x.UserId).ToHashSet();
-        var emails = await EmailsForAsync(notifications.Where(x => !withPush.Contains(x.UserId)).ToList(), now, cancellationToken);
+        // Saved with the alerts; the deliveries run on a later tick, so the request that caused them never waits
+        // on a push service or the mail server.
+        var opened = await Bundles.AssignAsync(db, stored, wait.Value, now, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
-
-        // One job per notification and browser (M8-06), on the next tick like emails, so the request that caused
-        // them never waits on a push service.
-        foreach (var notification in stored.Where(x => !NotificationTypes.NotPushed.Contains(x.Type)))
-        {
-            foreach (var subscription in subscriptions.Where(x => x.UserId == notification.UserId))
-            {
-                await jobs.ScheduleAsync(
-                    new JobRequest(SendPushHandler.JobType, now)
-                    {
-                        Payload = new SendPushPayload(notification.Id, subscription.Id),
-                        DedupeKey = $"push:{notification.Id}:{subscription.Id}",
-                    },
-                    cancellationToken);
-            }
-        }
-        foreach (var email in emails)
-        {
-            await jobs.ScheduleAsync(
-                new JobRequest(SendEmailHandler.JobType, now)
-                {
-                    Payload = new SendEmailPayload(email.Id),
-                    DedupeKey = $"email:{email.Id}",
-                },
-                cancellationToken);
-        }
-    }
-
-    private async Task<List<OutboxMessage>> EmailsForAsync(IReadOnlyCollection<NotificationRequest> notifications, Instant now, CancellationToken cancellationToken)
-    {
-        var emailed = notifications.Where(x => NotificationEmails.IsEmailed(x.Type)).ToList();
-        if (emailed.Count == 0)
-        {
-            return [];
-        }
-        var recipients = await users.GetAsync(emailed.Select(x => x.UserId).Distinct().ToList(), cancellationToken);
-        var messages = new List<OutboxMessage>();
-        foreach (var request in emailed)
-        {
-            // A deleted account is missing; an unconfirmed address gets nothing but its verification email.
-            if (!recipients.TryGetValue(request.UserId, out var recipient) || !recipient.EmailConfirmed)
-            {
-                continue;
-            }
-            var parameters = new Dictionary<string, string>(request.Parameters ?? new Dictionary<string, string>())
-            {
-                [NotificationEmails.RecipientParameter] = recipient.DisplayName,
-            };
-            var message = new OutboxMessage
-            {
-                Id = Guid.NewGuid(),
-                Recipient = recipient.Email,
-                Template = NotificationEmails.TemplatePrefix + request.Type,
-                Language = recipient.Language,
-                Parameters = JsonSerializer.Serialize(parameters),
-                CreatedAt = now,
-            };
-            db.OutboxMessages.Add(message);
-            messages.Add(message);
-        }
-        return messages;
+        await Bundles.ScheduleAsync(jobs, opened, cancellationToken);
     }
 }
 
@@ -258,6 +196,7 @@ internal sealed class ForgetNotificationsOnAccountDeleted(NotificationsDbContext
     {
         await db.Notifications.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
         await db.PushSubscriptions.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+        await db.NotificationSettings.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
         if ((await users.GetAsync([userId], cancellationToken)).GetValueOrDefault(userId) is { } user)
         {
             var address = user.Email.ToUpperInvariant();
