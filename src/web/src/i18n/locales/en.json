@@ -911,7 +911,8 @@
         "awaiting_approval": "{{count}} trades wait for your approval",
         "applied": "{{count}} trades are done",
         "rejected": "{{count}} trades were not applied",
-        "expired": "{{count}} trades expired"
+        "expired": "{{count}} trades expired",
+        "cancelled": "{{count}} trades were cancelled: a manager changed the hours"
       },
       "period": {
         "cancelled": "{{count}} periods were cancelled"
@@ -956,7 +957,8 @@
         "awaiting_approval": "A trade for {{date}}, {{start}}–{{end}} waits for your approval",
         "applied": "The trade for {{date}}, {{start}}–{{end}} is done",
         "rejected": "The trade for {{date}}, {{start}}–{{end}} was not applied",
-        "expired": "The trade for {{date}}, {{start}}–{{end}} expired"
+        "expired": "The trade for {{date}}, {{start}}–{{end}} expired",
+        "cancelled": "The trade for {{date}}, {{start}}–{{end}} was cancelled: a manager changed the shift's hours"
       },
       "period": {
         "cancelled": "The period starting {{periodStart}} was cancelled"

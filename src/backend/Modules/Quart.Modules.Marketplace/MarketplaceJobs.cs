@@ -85,3 +85,37 @@ internal sealed class TradeExpiryHandler(
         return JobOutcome.Done;
     }
 }
+
+/// <summary>
+/// A manager changed the hours of published shifts (FR-191, M7-08): a pending trade on one of them is cancelled,
+/// since it was agreed for the old hours, and both people are told. A trade already ended is left alone.
+/// </summary>
+internal sealed class CancelTradesOnShiftChange(
+    MarketplaceDb db, IScheduleLedger ledger, IWorkplaceDirectory directory, INotifier notifier, IClock clock) : IShiftsChangedHandler
+{
+    public async Task HandleAsync(Guid workplaceId, IReadOnlyCollection<Guid> shiftIds, CancellationToken cancellationToken)
+    {
+        var trades = await db.Trades
+            .Where(x => x.WorkplaceId == workplaceId && (x.Status == Trade.Requested || x.Status == Trade.AwaitingApproval)
+                && (shiftIds.Contains(x.AShiftId) || shiftIds.Contains(x.BShiftId)))
+            .ToListAsync(cancellationToken);
+        if (trades.Count == 0)
+        {
+            return;
+        }
+        trades.ForEach(x => x.Status = Trade.Cancelled);
+        await db.SaveChangesAsync(cancellationToken);
+        var context = await MarketplaceEndpoints.Context.LoadAsync(workplaceId, db, ledger, directory, notifier, clock, cancellationToken);
+        foreach (var trade in trades)
+        {
+            // The changed shift, with its new hours.
+            var changed = shiftIds.Contains(trade.AShiftId) ? trade.AShiftId : trade.BShiftId;
+            if (context.Shifts.GetValueOrDefault(changed) is { } shift)
+            {
+                await context.NotifyAsync(
+                    context.Members.Values.Where(x => x.MembershipId == trade.AMembershipId || x.MembershipId == trade.BMembershipId),
+                    NotificationTypes.TradeCancelled, shift, trade.AMembershipId, cancellationToken);
+            }
+        }
+    }
+}

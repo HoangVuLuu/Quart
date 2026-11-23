@@ -73,3 +73,12 @@ public enum LedgerResult
     /// <summary>The swap would leave a shift without its required level (FR-192).</summary>
     MissingLevel,
 }
+
+/// <summary>
+/// Told, in the same request, when a manager changes the hours of published shifts (FR-191, M7-08): the Marketplace
+/// module cancels the pending trades on them and tells both people. Handlers must cope with being told twice.
+/// </summary>
+public interface IShiftsChangedHandler
+{
+    Task HandleAsync(Guid workplaceId, IReadOnlyCollection<Guid> shiftIds, CancellationToken cancellationToken);
+}

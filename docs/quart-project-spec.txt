@@ -633,6 +633,9 @@ FR-190  The requester can cancel a trade at any time until it is approved.
 FR-191  A pending trade expires after 14 days, or when either shift starts,
         whichever comes first. It is also cancelled automatically if the admin
         edits either of the two shifts.
+        Built 2026-11-23 (M7-08): changing a published shift's hours cancels
+        its pending trades; removing the shift or taking someone off it ends
+        them too. Both people are told in every case.
 FR-192  At the moment of approval the app re-validates: both people still hold
         those shifts and nobody ends up double-booked. A trade that no longer
         makes sense is rejected with an explanation, never applied blindly. A

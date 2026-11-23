@@ -61,4 +61,30 @@ public sealed class MarketplaceAlertTests(PostgresFixture postgres)
         Assert.Equal(1, Count(await team.NotificationTypesAsync(omar), "trade.expired"));
         Assert.Empty((await omar.GetAsync($"{team.Base}/marketplace"))["trades"]!.AsArray());
     }
+    [Fact]
+    public async Task Changing_the_hours_of_a_shift_cancels_its_pending_trade_and_tells_both_people()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        var schedule = await team.PublishAsync();
+        var (nora, omar) = (team.Staff[2], team.Staff[3]);
+        JsonNode Of(TestUser holder, TestUser other) => Team.ShiftsOf(schedule, holder).First(x => !Team.Holds(x, other));
+        var hers = Of(nora, omar);
+        await nora.PostAsync($"{team.Base}/marketplace/trades", new { myShiftId = Team.Id(hers), theirShiftId = Team.Id(Of(omar, nora)), theirMembershipId = omar.MembershipId });
+
+        // The manager moves Nora's shift one hour later (FR-191).
+        var shifts = (await team.Owner.GetAsync($"{team.Period}/shifts"))["shifts"]!.AsArray().Select(x => new JsonObject
+        {
+            ["id"] = x!["id"]!.GetValue<string>(), ["date"] = x["date"]!.GetValue<string>(),
+            ["start"] = x["start"]!.GetValue<string>(), ["end"] = x["end"]!.GetValue<string>(),
+            ["headcount"] = x["headcount"]!.GetValue<int>(), ["requirements"] = x["requirements"]!.DeepClone(),
+        }).ToList();
+        var moved = shifts.Single(x => x["id"]!.GetValue<string>() == Team.Id(hers));
+        moved["start"] = moved["start"]!.GetValue<string>() == "10:00" ? "11:00" : "17:00";
+        await team.Owner.SendAsync(HttpMethod.Put, $"{team.Period}/shifts", new { shifts });
+
+        Assert.Equal(1, Count(await team.NotificationTypesAsync(nora), "trade.cancelled"));
+        Assert.Equal(1, Count(await team.NotificationTypesAsync(omar), "trade.cancelled"));
+        Assert.Empty((await omar.GetAsync($"{team.Base}/marketplace"))["trades"]!.AsArray());
+    }
 }

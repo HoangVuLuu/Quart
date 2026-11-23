@@ -64,6 +64,9 @@ public static class NotificationTypes
     public const string TradeRejected = "trade.rejected";
     public const string TradeExpired = "trade.expired";
 
+    /// <summary>To both people in a pending trade: a manager changed the hours of one of its shifts (FR-191).</summary>
+    public const string TradeCancelled = "trade.cancelled";
+
     /// <summary>To managers: a shift given away is still untaken 36 hours before it starts (FR-183, M7-05).</summary>
     public const string ShiftUnclaimed = "shift.unclaimed";
 
@@ -122,6 +125,7 @@ public static class NotificationTypes
             [TradeApplied] = Shift,
             [TradeRejected] = ["date", "start", "end", "name", "reason"],
             [TradeExpired] = Shift,
+            [TradeCancelled] = Shift,
             [ShiftUnclaimed] = Shift,
             [ShiftUnclaimedMine] = Shift,
         };

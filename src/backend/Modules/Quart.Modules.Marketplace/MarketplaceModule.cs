@@ -6,6 +6,7 @@ using NodaTime;
 using Npgsql;
 using Quart.Modules.Marketplace.Persistence;
 using Quart.SharedKernel.Jobs;
+using Quart.SharedKernel.Scheduling;
 
 namespace Quart.Modules.Marketplace;
 
@@ -24,6 +25,7 @@ public static class MarketplaceModule
         services.AddScoped<IJobHandler, MarketplaceRetention>();
         services.AddScoped<IJobHandler, OfferUnclaimedHandler>();
         services.AddScoped<IJobHandler, TradeExpiryHandler>();
+        services.AddScoped<IShiftsChangedHandler, CancelTradesOnShiftChange>();
         services.AddSingleton(new NightlyJob(MarketplaceRetention.JobType));
         return services;
     }

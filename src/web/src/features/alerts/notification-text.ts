@@ -32,6 +32,7 @@ export const notificationTypes = [
   'trade.applied',
   'trade.rejected',
   'trade.expired',
+  'trade.cancelled',
 ] as const;
 
 type NotificationType = (typeof notificationTypes)[number];
