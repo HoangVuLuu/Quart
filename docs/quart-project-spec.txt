@@ -555,8 +555,10 @@ FR-145  The admin can leave a note on a shift from its panel, such as
         "Leaving at 5pm": plain text, up to 100 characters, enforced on the
         server, one per shift. It is part of the draft: saved and dropped with
         it, and seen by staff only once published (or updated, FR-161). The
-        whole team reads it: a mark on the person's own shift card opens it in
-        the shift's sheet, and the whole-team view shows it under the shift.
+        whole team reads it: a yellow mark on a shift that has one, on the
+        person's own shift cards, on Home's next shift and in the whole-team
+        view. Tapping the shift shows the note (in its sheet; in the
+        whole-team view, under the shift, and tapping again hides it).
         A new or changed note in an update notifies the people on that shift
         (in the app and by push, not by email, never with the note's text);
         removing a note notifies nobody. The generator ignores it

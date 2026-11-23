@@ -20,6 +20,7 @@ import {
   type ScheduleShift,
 } from '../scheduling/data';
 import { flavourOf, useShiftName } from '../scheduling/ShiftName';
+import { NoteMark } from '../schedule/manager-note';
 import { ShiftPeopleSheet } from '../schedule/PublishedSchedule';
 import { useWorkplace } from '../workplaces/workplace';
 import { OfflineBanner } from '../offline/OfflineBanner';
@@ -96,8 +97,10 @@ export function HomePage() {
           headingLevel={2}
           decoration={<Cup flavour={flavourOf(next.part)} className="w-16" />}
         >
-          <p className="font-bold">
+          <p className="flex items-center gap-2 font-bold">
             {shiftName(next.part)} · {next.start}–{next.end}
+            {/* FR-145: the manager left a note; "View shift" shows it. */}
+            {next.note && <NoteMark />}
           </p>
           <Coworkers shift={next} />
           {/* The same pop-up as tapping the shift on Schedule (2026-11-18). */}
@@ -123,6 +126,7 @@ export function HomePage() {
               {dayLabel(next, now, t, language)} · {shiftName(next.part)} {next.start}–{next.end}
             </p>
           </div>
+          {next.note && <NoteMark />}
           <span aria-hidden="true" className="text-xl text-muted">
             ›
           </span>

@@ -249,7 +249,7 @@ Decided by Hoang on 2026-11-23: one note per shift (not per person); the whole t
 
 **Frontend**
 - [x] Building and Editing Schedule: "Note for this shift" in the shift sheet, the note on the card.
-- [x] Schedule: a mark on my shift's card, the note in its sheet, the note under each shift in Whole team. The alert opens the shift.
+- [x] Schedule: a mark on my shift's card and on Home's next shift, the note in its sheet; in Whole team, a mark on each shift with a note, which opens under the shift on a tap and closes on the next. The alert opens the shift.
 
 **Tests**
 - [x] Server: length, unsaved notes dropped with the visit, live with publish, update tells only the shift's people, removal tells nobody, staff cannot write.

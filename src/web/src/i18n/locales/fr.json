@@ -1021,7 +1021,7 @@
   },
   "managerNote": {
     "label": "Note pour ce quart",
-    "hint": "Toute l’équipe la voit une fois publié. {{count}}/{{max}}",
+    "hint": "{{count}}/{{max}}",
     "placeholder": "Je pars à 17 h",
     "save": "Enregistrer la note",
     "remove": "Retirer la note",

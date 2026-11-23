@@ -1021,7 +1021,7 @@
   },
   "managerNote": {
     "label": "Note for this shift",
-    "hint": "The whole team sees it once you publish. {{count}}/{{max}}",
+    "hint": "{{count}}/{{max}}",
     "placeholder": "Leaving at 5pm",
     "save": "Save note",
     "remove": "Remove note",

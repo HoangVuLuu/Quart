@@ -1125,9 +1125,29 @@ describe('the manager’s note on a shift (FR-145)', () => {
     expect(within(sheet).getByText('Leaving at 5pm')).toBeInTheDocument();
     await userEvent.click(within(sheet).getByRole('button', { name: 'Close' }));
 
+    // Whole team: a mark on each shift with a note; tapping the shift opens it, tapping again closes it.
     await userEvent.click(screen.getByRole('button', { name: en.schedule.team }));
-    expect(await screen.findByText('Bring the keys')).toBeInTheDocument();
-    expect(screen.getByText('Leaving at 5pm')).toBeInTheDocument();
+    const opening = await screen.findByRole('button', { name: /^Opening.*Has a note/ });
+    expect(screen.getAllByText(en.managerNote.has)).toHaveLength(2);
+    expect(screen.queryByText('Bring the keys')).not.toBeInTheDocument();
+    await userEvent.click(opening);
+    expect(opening).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Bring the keys')).toBeInTheDocument();
+    expect(screen.queryByText('Leaving at 5pm')).not.toBeInTheDocument();
+    await userEvent.click(opening);
+    expect(screen.queryByText('Bring the keys')).not.toBeInTheDocument();
+  });
+
+  it('marks the next shift on Home when it has a note', async () => {
+    signedIn('employee', {
+      [`GET ${base}/periods/current`]: { live: published, next: null, upcoming: [] },
+      [`GET ${base}/periods/${periodId}/schedule`]: noted,
+    });
+    renderApp('/');
+
+    expect(await screen.findByText(en.managerNote.has)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: en.home.viewShift }));
+    expect(within(await screen.findByRole('dialog')).getByText('Leaving at 5pm')).toBeInTheDocument();
   });
 
   it('is written in the shift sheet on Building Schedule and shows on the card', async () => {
