@@ -98,7 +98,7 @@ export function HomePage() {
           decoration={<Cup flavour={flavourOf(next.part)} className="w-16" />}
         >
           <p className="flex items-center gap-2 font-bold">
-            {shiftName(next.part)} · {next.start}–{next.end}
+            {shiftName(next)} · {next.start}–{next.end}
             {/* FR-145: the manager left a note; "View shift" shows it. */}
             {next.note && <NoteMark />}
           </p>
@@ -123,7 +123,7 @@ export function HomePage() {
           <div className="min-w-0 flex-1">
             <p className="text-sm text-muted">{t('home.workingNext')}</p>
             <p className="font-bold">
-              {dayLabel(next, now, t, language)} · {shiftName(next.part)} {next.start}–{next.end}
+              {dayLabel(next, now, t, language)} · {shiftName(next)} {next.start}–{next.end}
             </p>
           </div>
           {next.note && <NoteMark />}

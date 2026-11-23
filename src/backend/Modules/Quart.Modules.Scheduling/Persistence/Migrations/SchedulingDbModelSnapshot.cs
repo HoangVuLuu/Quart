@@ -397,6 +397,11 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("headcount");
 
+                    b.Property<string>("Name")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
+                        .HasColumnName("name");
+
                     b.Property<string>("Note")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")

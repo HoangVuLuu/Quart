@@ -202,7 +202,9 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
           {days
             .filter((day) => weekOf(mine.period, day.date) === week)
             .map((day) => {
-              const names = day.shifts.map((_, index) => t(shiftKindKey(index, day.shifts.length)));
+              const names = day.shifts.map(
+                (shift, index) => shift.name || t(shiftKindKey(index, day.shifts.length)),
+              );
               const dayLabel = formatDayShort(day.date, language);
               return (
                 <div key={day.date} className="flex flex-col gap-1.5">

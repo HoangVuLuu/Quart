@@ -97,6 +97,37 @@ public sealed class SchedulingTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task A_shift_name_is_trimmed_copied_into_the_period_and_shown_on_the_draft_and_the_schedule()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        var url = $"{team.Base}/generator";
+        var setup = await team.Owner.GetAsync(url);
+
+        // M3-04: 24 characters at most, after trimming.
+        setup["blocks"]![0]!["name"] = new string('x', 25);
+        Assert.Equal("template.name_too_long", (await team.Owner.TryAsync(Put, url, setup)).Code);
+
+        setup["blocks"]![0]!["name"] = "  Rush  ";
+        setup["blocks"]![1]!["name"] = "   ";
+        await team.Owner.SendAsync(Put, url, setup);
+        var saved = (await team.Owner.GetAsync(url))["blocks"]!.AsArray();
+        Assert.Equal("Rush", saved[0]!["name"]!.GetValue<string>());
+        // Blank means no custom name: the shift is called Opening, Closing or Mid.
+        Assert.Null(saved[1]!["name"]);
+
+        var schedule = await team.PublishAsync();
+        var rushBlock = saved[0]!["id"]!.GetValue<string>();
+        var shifts = schedule["shifts"]!.AsArray();
+        Assert.All(shifts.Where(x => x!["blockId"]!.GetValue<string>() == rushBlock), x => Assert.Equal("Rush", x!["name"]!.GetValue<string>()));
+        Assert.All(shifts.Where(x => x!["blockId"]!.GetValue<string>() != rushBlock), x => Assert.Null(x!["name"]));
+        var draft = await team.Owner.GetAsync($"{team.Period}/draft");
+        Assert.Contains(draft["shifts"]!.AsArray(), x => x!["name"]?.GetValue<string>() == "Rush");
+        var mine = await team.Staff[0].GetAsync($"{team.Period}/availability/me");
+        Assert.Contains(mine["shifts"]!.AsArray(), x => x!["name"]?.GetValue<string>() == "Rush");
+    }
+
+    [Fact]
     public async Task A_period_without_a_template_cannot_be_opened()
     {
         await using var app = await TestApp.StartAsync(postgres);

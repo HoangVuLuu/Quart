@@ -354,13 +354,17 @@ local folder in Development. Only phase 6 needs the domain and production.
 
 ### Phase 3: scheduling extras
 
+The agreed details and mockups for this phase (2026-11-23) are in
+`docs/plans/phase-3.md` and the design canvas linked from it. They override the notes in
+section 5 where the two differ (for example 3.1 has two pages, Editing Shift and Editing day).
+
 | # | Plan ID | Work | Needs |
 | --- | --- | --- | --- |
 | 3.1 | M4-01 | Edit one period's shifts (closure, longer hours) | nothing |
-| 3.2 | M4-08 | Template changes reach an open period (FR-069) | nothing (D1 answered: build it) |
+| 3.2 | M4-08 | ~~Template changes reach an open period (FR-069)~~ **Dropped by Hoang on 2026-11-23**: Edit Generator never changes an open period. | n/a |
 | 3.3 | M5-08 | Reuse a past schedule | nothing |
 | 3.4 | M3-04 | Rename a shift | nothing |
-| 3.5 | M7-05, M7-08 | Unclaimed give-away alert (24 hours by default, Q-08); tell both people when a trade expires | nothing |
+| 3.5 | M7-05, M7-08 | Unclaimed give-away alert (fixed at 36 hours, no setting, Hoang 2026-11-23); tell both people when a trade expires | nothing |
 
 ### Phase 4: accounts and team extras
 

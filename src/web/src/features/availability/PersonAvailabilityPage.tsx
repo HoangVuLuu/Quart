@@ -85,7 +85,9 @@ export function PersonAvailabilityPage() {
           {byDay(data.shifts)
             .filter((day) => weekOf(data.period, day.date) === week)
             .map((day) => {
-              const names = day.shifts.map((_, index) => t(shiftKindKey(index, day.shifts.length)));
+              const names = day.shifts.map(
+                (shift, index) => shift.name || t(shiftKindKey(index, day.shifts.length)),
+              );
               return (
                 <div key={day.date} className="flex flex-col gap-1.5">
                   <ul aria-label={formatDayShort(day.date, language)} className="flex items-center gap-2">

@@ -165,6 +165,7 @@ internal static class PeriodEndpoints
                     EndTime = block.End,
                     Headcount = block.Headcount,
                     SourceBlockId = block.Id,
+                    Name = block.Name,
                     // AD-028: stored as local date and time; the instant is only for ordering and overlap checks.
                     StartsAt = Support.InstantOf(date, block.Start, template.TimeZone),
                     EndsAt = Support.InstantOf(date, block.End, template.TimeZone),

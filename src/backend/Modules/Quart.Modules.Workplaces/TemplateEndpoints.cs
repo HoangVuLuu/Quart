@@ -30,6 +30,7 @@ internal static class TemplateEndpoints
     public const string ConflictInvalid = "template.conflict_invalid";
     public const string ConflictDuplicate = "template.conflict_duplicate";
     public const string TooManyBlocks = "template.too_many_blocks";
+    public const string NameTooLong = "template.name_too_long";
 
     public const int MaxBlocks = 20;
     public const int MaxHeadcount = 20;
@@ -65,7 +66,8 @@ internal static class TemplateEndpoints
                 TimePattern.Format(block.EndTime),
                 block.Headcount,
                 block.Requirements.OrderBy(x => x.Level).Select(x => new RequirementSetup(x.Level, x.MinCount)).ToList(),
-                block.Conflicts.Select(x => new ConflictSetup(x.MembershipA, x.MembershipB)).ToList())).ToList()));
+                block.Conflicts.Select(x => new ConflictSetup(x.MembershipA, x.MembershipB)).ToList(),
+                block.Name)).ToList()));
     }
 
     /// <summary>
@@ -114,6 +116,7 @@ internal static class TemplateEndpoints
             block.StartTime = start;
             block.EndTime = end;
             block.Headcount = setup.Headcount;
+            block.Name = CleanName(setup.Name);
             // Replaced through the sets, not the block's own lists: a new row that already has its key and is
             // put into the list of a block read from the database is taken for an existing row, and saving
             // the page a second time failed.
@@ -178,6 +181,11 @@ internal static class TemplateEndpoints
                 errors.Add(new FieldError(HeadcountInvalid, $"{path}.headcount"));
             }
 
+            if (CleanName(block.Name)?.Length > ShiftBlock.NameMaxLength)
+            {
+                errors.Add(new FieldError(NameTooLong, $"{path}.name"));
+            }
+
             var requirements = block.Requirements ?? [];
             if (requirements.Any(x => x.Level is < 1 or > 3 || x.MinCount < 1) || requirements.Select(x => x.Level).Distinct().Count() != requirements.Count)
             {
@@ -216,6 +224,9 @@ internal static class TemplateEndpoints
         return seats;
     }
 
+    /// <summary>Trimmed; blank means no custom name (M3-04).</summary>
+    internal static string? CleanName(string? name) => string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+
     private static ConflictSetup Ordered(ConflictSetup pair) =>
         pair.MembershipA.CompareTo(pair.MembershipB) <= 0 ? pair : new ConflictSetup(pair.MembershipB, pair.MembershipA);
 }
@@ -233,6 +244,7 @@ public sealed record GeneratorSetup(
 /// <param name="Id">Null for a new block.</param>
 /// <param name="Days">ISO weekdays, 1 for Monday to 7 for Sunday.</param>
 /// <param name="Start">Local time as "HH:mm", on a 15-minute grid.</param>
+/// <param name="Name">A custom name such as "Rush", 24 characters at most; null or blank for none (M3-04).</param>
 public sealed record BlockSetup(
     Guid? Id,
     IReadOnlyList<int> Days,
@@ -240,7 +252,8 @@ public sealed record BlockSetup(
     string End,
     int Headcount,
     IReadOnlyList<RequirementSetup>? Requirements,
-    IReadOnlyList<ConflictSetup>? Conflicts);
+    IReadOnlyList<ConflictSetup>? Conflicts,
+    string? Name = null);
 
 public sealed record RequirementSetup(int Level, int MinCount);
 

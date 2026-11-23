@@ -831,6 +831,10 @@ BR-033  Under/over hours is reported when the total deviates from the target by
         more than 2 hours over the period.
 BR-034  Opening and closing are identified automatically as the first and last
         shift block of each day. An admin can override the classification.
+        A shift may also have a custom name, such as "Rush" (up to 24
+        characters), shown instead of Opening, Mid or Closing wherever the
+        shift is named. The name never changes the classification, which
+        fairness reads (M3-04, 2026-11-23).
 BR-035  Availability notes (FR-103) and shift notes (FR-103a) inform the
         admin's judgment only. The generator never reads them.
 BR-036  "Cannot work together" pairs. Two employees marked as a conflict pair
@@ -2130,6 +2134,12 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             means after the period ends; the cleanup runs at 03:00 Montreal
             time, on staging too (Hoang: staging data is test data); the
             housekeeping periods are listed under section 13.  (13)
+2026-11-23  Phase 3 plan agreed with Hoang (docs/plans/remaining-work.md
+            3.1 to 3.5): FR-069 (3.2) is dropped, Edit Generator never
+            changes a period already open. M3-04 is built as custom shift
+            names; the opening/closing override is not built. The
+            unclaimed give-away alert is fixed at 36 hours, with no
+            setting (Hoang).  (BR-034, FR-069, FR-183, Q-08)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

@@ -170,7 +170,8 @@
       "requirement_exceeds_headcount": "Une règle demande plus de personnes que le quart n’en a.",
       "requirement_invalid": "Une règle de niveau exige un niveau de 1 à 3 et au moins 1 personne.",
       "time_invalid": "Entre les heures en heures et minutes.",
-      "too_many_blocks": "C’est plus de quarts qu’un modèle peut en contenir."
+      "too_many_blocks": "C’est plus de quarts qu’un modèle peut en contenir.",
+      "name_too_long": "Le nom d’un quart fait au plus 24 caractères."
     },
     "workplace": {
       "already_member": "Tu fais déjà partie de ce lieu de travail.",
@@ -990,7 +991,9 @@
       "addPair": "Ajouter le duo",
       "done": "Terminé",
       "applyAll": "Appliquer ces règles à tous les quarts",
-      "delete": "Supprimer ce quart"
+      "delete": "Supprimer ce quart",
+      "name": "Nom (facultatif)",
+      "nameHint": "Laissez vide pour l’appeler Ouverture, Milieu ou Fermeture."
     }
   },
   "offline": {

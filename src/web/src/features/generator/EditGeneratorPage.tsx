@@ -33,7 +33,11 @@ const newBlock: Block = {
   headcount: 2,
   requirements: [],
   conflicts: [],
+  name: null,
 };
+
+/** M3-04: the same limit as the server. */
+const nameMaxLength = 24;
 
 /** "Mon", "lun.": a weekday's short name, from its ISO number (1 is Monday). */
 function weekdayName(day: number, language: string): string {
@@ -197,6 +201,7 @@ function GeneratorForm({ initial }: { initial: Setup }) {
                     className="w-full rounded-card bg-surface p-4 text-left shadow-card"
                   >
                     <span className="block text-lg font-bold">
+                      {block.name ? `${block.name} · ` : ''}
                       {block.start}–{block.end}
                     </span>
                     <span className="block text-sm text-muted">
@@ -347,6 +352,14 @@ function BlockSheet({ block, isNew, onSave, onDelete, onApplyRulesToAll, onClose
       title={isNew ? t('generator.block.new') : t('generator.block.edit')}
     >
       <div className="flex flex-col gap-4">
+        <TextField
+          label={t('generator.block.name')}
+          hint={t('generator.block.nameHint')}
+          value={value.name ?? ''}
+          maxLength={nameMaxLength}
+          autoComplete="off"
+          onChange={(event) => setValue({ ...value, name: event.target.value })}
+        />
         <div className="grid grid-cols-2 gap-3">
           <TextField
             label={t('generator.block.start')}

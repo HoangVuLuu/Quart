@@ -57,6 +57,7 @@ internal sealed class SchedulingDb(DbContextOptions<SchedulingDb> options) : DbC
             // FR-145: 100 characters, enforced by the database as well as the endpoint.
             shift.Property(x => x.Note).HasMaxLength(Shift.NoteMaxLength);
             shift.Property(x => x.DraftNote).HasMaxLength(Shift.NoteMaxLength);
+            shift.Property(x => x.Name).HasMaxLength(Shift.NameMaxLength);
         });
 
         modelBuilder.Entity<ShiftRequirement>().HasKey(x => x.Id);
@@ -193,6 +194,11 @@ internal sealed class Shift
     public int Headcount { get; set; }
 
     public Guid SourceBlockId { get; set; }
+
+    /// <summary>The custom name copied from the shift block, such as "Rush" (M3-04). Null to be called Opening, Closing or Mid.</summary>
+    public string? Name { get; set; }
+
+    public const int NameMaxLength = 24;
 
     /// <summary>Computed by the application from the local date, time and zone (AD-011).</summary>
     public Instant StartsAt { get; set; }

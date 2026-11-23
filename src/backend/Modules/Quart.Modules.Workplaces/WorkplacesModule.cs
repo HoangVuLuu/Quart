@@ -130,7 +130,8 @@ internal sealed class WorkplaceReader(WorkplacesDb db, IUserDirectory users) : I
                 block.StartTime,
                 block.EndTime,
                 block.Headcount,
-                block.Requirements.OrderBy(x => x.Level).Select(x => new TemplateRequirement(x.Level, x.MinCount)).ToList())).ToList(),
+                block.Requirements.OrderBy(x => x.Level).Select(x => new TemplateRequirement(x.Level, x.MinCount)).ToList(),
+                block.Name)).ToList(),
             blocks.SelectMany(block => block.Conflicts.Select(x => new TemplateConflict(block.Id, x.MembershipA, x.MembershipB))).ToList());
     }
 
