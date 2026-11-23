@@ -67,6 +67,7 @@ describe('changes of 2026-11-18', () => {
     expect(calls.find((call) => call.path.endsWith('/availability/me/send'))?.body).toEqual({
       shiftIds: [],
       desiredWeeklyHours: 22,
+      shiftNotes: [],
     });
     await waitFor(() => expect(router.state.location.pathname).toBe('/'));
   });

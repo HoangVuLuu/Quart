@@ -20,6 +20,7 @@ describe('the push text and where it opens (M8-06)', () => {
     ['claim.approved', { date: '2026-12-09', start: '09:00', end: '15:00', periodId, shiftId }],
     ['shift.offered', { name: 'Marc T.', date: '2026-12-10', start: '16:00', end: '22:00' }],
     ['availability.reminder', { periodStart: '2026-12-14', deadline: '2026-12-01' }],
+    ['shift.note', { date: '2026-12-09', start: '10:00', end: '16:00', periodId, shiftId }],
   ])('%s reads like the alert, in English and French', async (type, parameters) => {
     for (const language of ['en', 'fr']) {
       await i18n.changeLanguage(language);
@@ -48,6 +49,7 @@ describe('the push text and where it opens (M8-06)', () => {
     ['shift.offered', '/trade'],
     ['trade.requested', '/trade'],
     ['claim.declined', '/alerts'],
+    ['shift.note', '/alerts'],
   ])('%s opens %s', (type, to) => {
     const url = new URL(pushNotice(body(type, {})).url, 'https://quart.test');
     expect(url.searchParams.get('to')).toBe(to);
@@ -81,5 +83,16 @@ describe('a bundle of alerts (M8-07, FR-213)', () => {
     expect(
       pushNotice({ ...body('schedule.published', { periodStart: '2026-12-07' }), count: 1 }).url,
     ).toContain('notification=');
+  });
+});
+
+describe('a note from the manager (FR-145)', () => {
+  it('opens the shift on the Schedule tab', () => {
+    const url = new URL(
+      pushNotice(body('shift.note', { date: '2026-12-09', start: '10:00', end: '16:00', periodId, shiftId }))
+        .url,
+      'https://quart.test',
+    );
+    expect(url.searchParams.get('to')).toBe(`/schedule?period=${periodId}&shift=${shiftId}`);
   });
 });

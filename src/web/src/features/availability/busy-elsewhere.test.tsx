@@ -69,6 +69,7 @@ describe('availability with a shift at another workplace', () => {
     expect(calls.find((call) => call.path.endsWith('/availability/me/send'))?.body).toEqual({
       shiftIds: ['mon-close'],
       desiredWeeklyHours: 20,
+      shiftNotes: [],
     });
   });
 });

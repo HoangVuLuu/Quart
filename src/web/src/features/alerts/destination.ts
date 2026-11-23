@@ -21,6 +21,7 @@ export function destinationOf(type: string, parameters: Readonly<Record<string, 
       return periodId && membershipId ? `/availability/people/${periodId}/${membershipId}` : null;
     case 'claim.approved':
     case 'trade.applied':
+    case 'shift.note':
       return periodId && shiftId ? `/schedule?period=${periodId}&shift=${shiftId}` : null;
     default:
       return null;

@@ -72,7 +72,8 @@ internal static class PublishedScheduleEndpoints
                         member.Can(Permission.ManageLevels) ? names.GetValueOrDefault(x.MembershipId)?.Level : null,
                         x.MembershipId == member.MembershipId))
                     .OrderBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase)
-                    .ToList())).ToList()));
+                    .ToList(),
+                shift.Note)).ToList()));
     }
 }
 
@@ -80,6 +81,7 @@ public sealed record ScheduleView(PeriodSummary Period, IReadOnlyList<ScheduleSh
 
 /// <param name="StartsAt">The instant the shift begins, to tell upcoming from completed.</param>
 /// <param name="Part">"opening", "closing", "mid" or "only".</param>
+/// <param name="Note">The manager's note on the shift, for the whole team (FR-145); null for none.</param>
 public sealed record ScheduleShift(
     Guid Id,
     Guid BlockId,
@@ -90,7 +92,8 @@ public sealed record ScheduleShift(
     DateTimeOffset StartsAt,
     int Headcount,
     string Part,
-    IReadOnlyList<SchedulePerson> People);
+    IReadOnlyList<SchedulePerson> People,
+    string? Note = null);
 
 /// <param name="Name">Null for someone who has left the workplace.</param>
 public sealed record SchedulePerson(Guid MembershipId, string? Name, int? Level, bool IsMe);

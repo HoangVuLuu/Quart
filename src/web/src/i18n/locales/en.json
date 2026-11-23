@@ -112,7 +112,9 @@
       "note_empty": "Write something first.",
       "note_too_long": "A note can have 500 characters at most.",
       "too_many_notes": "You have reached the number of notes for this period.",
-      "unknown_shift": "One of these shifts no longer exists. Reload and try again."
+      "unknown_shift": "One of these shifts no longer exists. Reload and try again.",
+      "shift_note_too_long": "A note on one shift can be 60 characters at most.",
+      "shift_note_unselected": "Choose the shift before adding a note to it."
     },
     "marketplace": {
       "already_offered": "You are already giving this shift away.",
@@ -151,7 +153,8 @@
       "publish_needs_confirmation": "Some issues need your confirmation before publishing.",
       "unknown_member": "This person no longer works shifts here.",
       "unknown_shift": "This shift no longer exists.",
-      "visit_ended": "You left the page for a while, so the unsaved changes were dropped."
+      "visit_ended": "You left the page for a while, so the unsaved changes were dropped.",
+      "note_too_long": "A note on one shift can be 100 characters at most."
     },
     "settings": {
       "max_consecutive_invalid": "Choose 1 to 4 shifts in a row, or no limit.",
@@ -712,6 +715,8 @@
       "back": "Go back"
     },
     "editor": {
+      "hasNotes": "Someone left a note on this shift",
+      "weekNotes": "Week notes",
       "onShift": "On this shift",
       "nobody": "Nobody yet.",
       "thisWeek": "{{hours}} this week",
@@ -724,9 +729,7 @@
       "addNamed": "Add {{name}}",
       "available": "Available",
       "unavailable": "Not available",
-      "noAnswer": "No answer",
-      "notes_one": "{{count}} note",
-      "notes_other": "{{count}} notes"
+      "noAnswer": "No answer"
     }
   },
   "teamAvailability": {
@@ -861,7 +864,8 @@
       "shift": {
         "offered": "{{count}} shifts are up for grabs",
         "claimed": "{{count}} shifts were taken",
-        "missing_level": "{{count}} shifts are missing their required level"
+        "missing_level": "{{count}} shifts are missing their required level",
+        "note": "{{count}} of your shifts have new notes"
       },
       "claim": {
         "requested": "{{count}} shift requests are waiting",
@@ -901,7 +905,8 @@
       "shift": {
         "offered": "{{name}} is giving away {{date}}, {{start}}–{{end}}",
         "claimed": "{{name}} took the shift on {{date}}, {{start}}–{{end}}",
-        "missing_level": "A trade or claim left {{date}}, {{start}}–{{end}} without its required level"
+        "missing_level": "A trade or claim left {{date}}, {{start}}–{{end}} without its required level",
+        "note": "New note on your shift {{date}}, {{start}}–{{end}}"
       },
       "claim": {
         "requested": "{{name}} asks for the shift on {{date}}, {{start}}–{{end}}",
@@ -1001,6 +1006,27 @@
     "emailDescription": "Schedule published, requests",
     "emailOn": "Emails are on for this workplace",
     "emailOff": "Emails are off for this workplace"
+  },
+  "shiftNote": {
+    "title": "Note for {{day}} · {{shift}}",
+    "hint": "Your manager will see this.",
+    "label": "Note",
+    "counter": "{{count}}/{{max}}",
+    "placeholder": "Can only stay until 21:00",
+    "selectFirst": "Select this shift first",
+    "remove": "Remove note",
+    "save": "Save note",
+    "add": "Add a note for {{day}} · {{shift}}",
+    "edit": "Change the note for {{day}} · {{shift}}"
+  },
+  "managerNote": {
+    "label": "Note for this shift",
+    "hint": "{{count}}/{{max}}",
+    "placeholder": "Leaving at 5pm",
+    "save": "Save note",
+    "remove": "Remove note",
+    "title": "Note from your manager",
+    "has": "Has a note from the manager"
   },
   "push": {
     "label": "Push on this phone",

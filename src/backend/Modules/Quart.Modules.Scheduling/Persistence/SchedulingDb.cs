@@ -54,6 +54,9 @@ internal sealed class SchedulingDb(DbContextOptions<SchedulingDb> options) : DbC
             shift.HasIndex(x => new { x.PeriodId, x.Date });
             shift.HasMany(x => x.Requirements).WithOne().HasForeignKey(x => x.ShiftId).OnDelete(DeleteBehavior.Cascade);
             shift.HasOne<Period>().WithMany().HasForeignKey(x => x.PeriodId).OnDelete(DeleteBehavior.Cascade);
+            // FR-145: 100 characters, enforced by the database as well as the endpoint.
+            shift.Property(x => x.Note).HasMaxLength(Shift.NoteMaxLength);
+            shift.Property(x => x.DraftNote).HasMaxLength(Shift.NoteMaxLength);
         });
 
         modelBuilder.Entity<ShiftRequirement>().HasKey(x => x.Id);
@@ -73,7 +76,12 @@ internal sealed class SchedulingDb(DbContextOptions<SchedulingDb> options) : DbC
             availability.HasOne<Period>().WithMany().HasForeignKey(x => x.PeriodId).OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<AvailabilityBlock>().HasKey(x => new { x.AvailabilityId, x.ShiftId });
+        modelBuilder.Entity<AvailabilityBlock>(block =>
+        {
+            block.HasKey(x => new { x.AvailabilityId, x.ShiftId });
+            // FR-103a: 60 characters, enforced by the database as well as the endpoint.
+            block.Property(x => x.Note).HasMaxLength(AvailabilityBlock.NoteMaxLength);
+        });
 
         modelBuilder.Entity<AvailabilityNote>(note =>
         {
@@ -193,6 +201,18 @@ internal sealed class Shift
 
     public List<ShiftRequirement> Requirements { get; set; } = [];
 
+    /// <summary>FR-145: the manager's note on a shift, such as "Leaving at 5pm".</summary>
+    public const int NoteMaxLength = 100;
+
+    /// <summary>The manager's note as the team sees it, set by Publish or Update (FR-145). Null for none.</summary>
+    public string? Note { get; set; }
+
+    /// <summary>
+    /// The note as the manager is writing it on Building or Editing Schedule. It is part of the draft: saved and
+    /// dropped with it, and goes live with Publish or Update (FR-145).
+    /// </summary>
+    public string? DraftNote { get; set; }
+
     /// <summary>Hours count the full shift, no break deducted (BR-031).</summary>
     public decimal Hours => (decimal)(EndTime - StartTime).ToDuration().TotalHours;
 }
@@ -258,9 +278,19 @@ internal sealed class Availability
 
 internal sealed class AvailabilityBlock
 {
+    /// <summary>FR-103a: a short note on one shift, such as "Can only stay until 21:00".</summary>
+    public const int NoteMaxLength = 60;
+
     public Guid AvailabilityId { get; set; }
 
     public Guid ShiftId { get; set; }
+
+    /// <summary>
+    /// The person's note on this shift for the admins (FR-103a), or null. Only a shift the person can work has
+    /// one; it goes with the shift when they unselect it. Personal information like the week notes (12.4,
+    /// class B); the generator never reads it (BR-035).
+    /// </summary>
+    public string? Note { get; set; }
 }
 
 /// <summary>A note for the admins only, personal information (FR-103, 12.4 class B). The generator never reads it (BR-035).</summary>

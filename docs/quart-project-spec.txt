@@ -462,6 +462,22 @@ FR-103  An employee may add optional notes about their availability for the
         (section 13). They are rendered as text, never as HTML. Admins are
         notified when a note is added or when availability is sent or
         updated (FR-215); the notification never contains the note text.
+FR-103a An employee may add a short note to one shift they can work (e.g.
+        "Can only stay until 21:00"): plain text, up to 60 characters,
+        enforced on the server, at most one per chosen shift. It is written
+        from a strip on the chosen shift, shows under that day, and is sent
+        with the availability; it locks with it (FR-100) and is removed when
+        the shift is unchosen. "Same as last period" and "Copy week 1" do not
+        copy notes. Admins who may read notes (FR-103) see it on that
+        person's availability (FR-104a) and, on Building Schedule, only on
+        its own shift: a mark on the shift's card when someone who can work
+        it left one, and the note beside that person in the shift panel. The
+        week notes (FR-103) move to a closed "Week notes" section at the
+        bottom of the panel, for the people listed there. Coworkers never
+        see shift notes. They are personal information like FR-103 notes
+        (12.4, class B), follow the same retention, and are rendered as text.
+        When a shift's answers reset because its times changed (FR-069), its
+        notes go with them (2026-11-23).
 FR-104a An admin can open one person's availability, read-only, from their
         name in "Who has sent" or from their alert: the same layout as the
         form, with the shifts they can work, their hours per week and their
@@ -535,6 +551,18 @@ FR-144  Each issue type has an admin setting controlling what happens at publish
         everything else, including a shift above its headcount, = display.
         One issue blocks whatever the setting: a person on two shifts that
         overlap in time, which the database refuses (AD-011).
+FR-145  The admin can leave a note on a shift from its panel, such as
+        "Leaving at 5pm": plain text, up to 100 characters, enforced on the
+        server, one per shift. It is part of the draft: saved and dropped with
+        it, and seen by staff only once published (or updated, FR-161). The
+        whole team reads it: a yellow mark on a shift that has one, on the
+        person's own shift cards, on Home's next shift and in the whole-team
+        view. Tapping the shift shows the note (in its sheet; in the
+        whole-team view, under the shift, and tapping again hides it).
+        A new or changed note in an update notifies the people on that shift
+        (in the app and by push, not by email, never with the note's text);
+        removing a note notifies nobody. The generator ignores it
+        (2026-11-23).
 
 6.7 PUBLISHING
 FR-160  Publishing makes the draft visible to staff as version 1 and notifies
@@ -803,8 +831,8 @@ BR-033  Under/over hours is reported when the total deviates from the target by
         more than 2 hours over the period.
 BR-034  Opening and closing are identified automatically as the first and last
         shift block of each day. An admin can override the classification.
-BR-035  Availability notes (FR-103) inform the admin's judgment only. The
-        generator never reads them.
+BR-035  Availability notes (FR-103) and shift notes (FR-103a) inform the
+        admin's judgment only. The generator never reads them.
 BR-036  "Cannot work together" pairs. Two employees marked as a conflict pair
         on a shift block are never assigned by the generator to the same shift
         instance of that block. If a lock (BR-004) forces both onto the shift,
@@ -1597,6 +1625,7 @@ M4 — Availability  (8 issues)
   M4-06  Helpers: same as last period, copy week 1 to the rest
   M4-07  Lock when building starts, reopen one person
   M4-08  Template changes after answers are collected
+  M4-09  A note on one shift of the availability
 
 M5 — Build and publish  (12 issues)
   M5-01  Generate a draft for a real period
@@ -1611,6 +1640,7 @@ M5 — Build and publish  (12 issues)
   M5-10  Leaving releases future shifts
   M5-11  Cross-workplace conflicts
   M5-12  Audit log for schedule changes
+  M5-13  The manager's note on a shift
 
 M6 — Go live  (12 issues)
   M6-01  Production environment and release-tag deploys
@@ -2037,6 +2067,18 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             email is sent first and its outbox row is then deleted, so no
             table keeps the address. Accounts that never confirmed their
             email are deleted 7 days after sign-up.  (FR-009, 13)
+2026-11-23  Manager notes on shifts (M5-13, Hoang): one note per shift,
+            written on Building or Editing Schedule, read by the whole team
+            once published; the people on the shift are told when an update
+            adds or changes it. Built in the same pull request as M4-09.
+            Shift-note sheet without quick picks.  (FR-145, FR-103a)
+2026-11-23  Shift notes (M4-09, Hoang): a person can leave a short note on
+            one shift they can work, for the managers (FR-103a). Unchoosing
+            the shift deletes its note without asking; notes lock with the
+            availability. On Building Schedule a shift card with a note shows
+            a yellow mark, the shift panel shows only that shift's notes, and
+            the week notes move to a closed "Week notes" section. New colour
+            tokens note / on-note.  (FR-103, FR-103a, BR-035)
 2026-11-22  Notification settings and bundling (M8-07, Hoang): Profile has an
             Email switch per workplace, on by default for everyone, push or
             not (replaces "email only without push"); push stays a choice per

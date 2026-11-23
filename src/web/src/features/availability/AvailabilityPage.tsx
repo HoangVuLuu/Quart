@@ -15,6 +15,8 @@ import { TextArea, TextField } from '../../ui/TextField';
 import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
 import { Pill } from '../schedule/Pill';
+import { shiftKindKey } from './shift-note-rules';
+import { DayNotes, NoteStrip, ShiftNoteSheet } from './shift-notes';
 import {
   byDay,
   useAvailabilityActions,
@@ -55,6 +57,16 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
   const [selected, setSelected] = useState(
     () => new Set(mine.shifts.filter((shift) => shift.selected).map((shift) => shift.id)),
   );
+  // FR-103a: a note per chosen shift, sent with the taps.
+  const [shiftNotes, setShiftNotes] = useState(
+    () =>
+      new Map(
+        mine.shifts.flatMap((shift) =>
+          shift.selected && shift.note ? [[shift.id, shift.note] as const] : [],
+        ),
+      ),
+  );
+  const [noteFor, setNoteFor] = useState<{ shiftId: string; title: string } | null>(null);
   const [week, setWeek] = useState(0);
   // A sideways swipe on the week's card changes the week, like the pills above it.
   const swipeWeeks = useSwipe({
@@ -83,13 +95,26 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
   const busy = new Set(mine.shifts.filter((shift) => shift.busyElsewhere).map((shift) => shift.id));
   const pickable = (ids: Iterable<string>) => new Set([...ids].filter((id) => !busy.has(id)));
 
+  /** The chosen shifts become these; a shift no longer chosen loses its note (FR-103a, Hoang: no question asked). */
+  function choose(next: Set<string>) {
+    setSelected(next);
+    setShiftNotes((current) => new Map([...current].filter(([shiftId]) => next.has(shiftId))));
+  }
+
   function toggle(shiftId: string) {
     if (busy.has(shiftId)) return;
-    setSelected((current) => {
-      const nextSet = new Set(current);
-      if (nextSet.has(shiftId)) nextSet.delete(shiftId);
-      else nextSet.add(shiftId);
-      return nextSet;
+    const nextSet = new Set(selected);
+    if (nextSet.has(shiftId)) nextSet.delete(shiftId);
+    else nextSet.add(shiftId);
+    choose(nextSet);
+  }
+
+  function saveShiftNote(shiftId: string, value: string | undefined) {
+    setShiftNotes((current) => {
+      const next = new Map(current);
+      if (value) next.set(shiftId, value);
+      else next.delete(shiftId);
+      return next;
     });
   }
 
@@ -100,7 +125,8 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
         .filter((shift) => weekOf(mine.period, shift.date) === 0 && selected.has(shift.id))
         .map((shift) => `${new Date(`${shift.date}T00:00:00Z`).getUTCDay()}-${shift.blockId}`),
     );
-    setSelected(
+    // Shift choices only: a note is about one day, so it is not copied.
+    choose(
       pickable(
         mine.shifts
           .filter((shift) =>
@@ -122,7 +148,10 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
     // Not mutate's onSuccess: once the server says "sent", this form is rebuilt (see its key), and React
     // Query skips the callback of a form that is gone. The toast was lost, and so was a note typed
     // before the first Send (found by tests/e2e). Errors show from the mutations themselves.
-    actions.send.mutateAsync({ shiftIds: [...selected], desiredWeeklyHours }).then(
+    const notes = [...shiftNotes]
+      .filter(([shiftId]) => selected.has(shiftId))
+      .map(([shiftId, value]) => ({ shiftId, note: value }));
+    actions.send.mutateAsync({ shiftIds: [...selected], desiredWeeklyHours, shiftNotes: notes }).then(
       () => {
         toast(t('availability.sentToast'));
         if (text !== '')
@@ -172,51 +201,81 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
         <Card className="flex flex-col gap-3 p-4" {...swipeWeeks}>
           {days
             .filter((day) => weekOf(mine.period, day.date) === week)
-            .map((day) => (
-              <div
-                key={day.date}
-                role="group"
-                aria-label={formatDayShort(day.date, language)}
-                className="flex items-center gap-2"
-              >
-                <p className="w-14 shrink-0 text-sm font-bold">{formatDayShort(day.date, language)}</p>
-                {day.shifts.map((shift, index) => {
-                  const on = selected.has(shift.id);
-                  const elsewhere = shift.busyElsewhere;
-                  const name =
-                    day.shifts.length > 1 && index === day.shifts.length - 1
-                      ? t('scheduling.kind.closing')
-                      : index === 0
-                        ? t('scheduling.kind.opening')
-                        : t('scheduling.kind.mid');
-                  return (
-                    <button
-                      key={shift.id}
-                      type="button"
-                      aria-pressed={on}
-                      disabled={locked || elsewhere}
-                      onClick={() => toggle(shift.id)}
-                      className={cx(
-                        'min-h-12 flex-1 rounded-chip px-2 py-1.5 text-center shadow-press disabled:opacity-60',
-                        on ? 'bg-ink text-bg' : 'bg-surface-3 text-ink',
-                      )}
-                    >
-                      {/* Colour is never the only sign (NFR-008): a tick, a plus or a dash, and the pressed state. */}
-                      <span className="block text-sm font-bold">
-                        <span aria-hidden="true">{on ? '✓ ' : elsewhere ? '– ' : '+ '}</span>
-                        {name}
-                      </span>
-                      <span className="block text-[11px]">
-                        {shift.start}–{shift.end}
-                      </span>
-                      {elsewhere && (
-                        <span className="block text-[11px] font-bold">{t('availability.busyElsewhere')}</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
+            .map((day) => {
+              const names = day.shifts.map((_, index) => t(shiftKindKey(index, day.shifts.length)));
+              const dayLabel = formatDayShort(day.date, language);
+              return (
+                <div key={day.date} className="flex flex-col gap-1.5">
+                  <div role="group" aria-label={dayLabel} className="flex items-center gap-2">
+                    <p className="w-14 shrink-0 text-sm font-bold">{dayLabel}</p>
+                    {day.shifts.map((shift, index) => {
+                      const on = selected.has(shift.id);
+                      const elsewhere = shift.busyElsewhere;
+                      const name = names[index] ?? '';
+                      const note = on ? shiftNotes.get(shift.id) : undefined;
+                      // FR-103a: a chosen shift carries the note strip on its right; locked, only a note shows.
+                      const strip = on && (!locked || note !== undefined);
+                      const title = t('shiftNote.title', { day: dayLabel, shift: name });
+                      return (
+                        <div
+                          key={shift.id}
+                          className={cx(
+                            'flex min-h-12 min-w-0 flex-1 overflow-hidden rounded-chip shadow-press',
+                            (locked || elsewhere) && 'opacity-60',
+                          )}
+                        >
+                          <button
+                            type="button"
+                            aria-pressed={on}
+                            disabled={locked || elsewhere}
+                            onClick={() => toggle(shift.id)}
+                            className={cx(
+                              'min-w-0 flex-1 py-1.5 text-center',
+                              strip ? 'px-1' : 'px-2',
+                              on ? 'bg-ink text-bg' : 'bg-surface-3 text-ink',
+                            )}
+                          >
+                            {/* Colour is never the only sign (NFR-008): a plus or a dash, the note strip (or a tick
+                                without one), and the pressed state. The strip leaves no room for a tick in French. */}
+                            <span className="block text-sm font-bold">
+                              <span aria-hidden="true">
+                                {on ? (strip ? '' : '✓ ') : elsewhere ? '– ' : '+ '}
+                              </span>
+                              {name}
+                            </span>
+                            <span className="block text-[11px] whitespace-nowrap">
+                              {shift.start}–{shift.end}
+                            </span>
+                            {elsewhere && (
+                              <span className="block text-[11px] font-bold">
+                                {t('availability.busyElsewhere')}
+                              </span>
+                            )}
+                          </button>
+                          {strip && (
+                            <NoteStrip
+                              note={note}
+                              label={
+                                note
+                                  ? t('shiftNote.edit', { day: dayLabel, shift: name })
+                                  : t('shiftNote.add', { day: dayLabel, shift: name })
+                              }
+                              onOpen={locked ? undefined : () => setNoteFor({ shiftId: shift.id, title })}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <DayNotes
+                    notes={day.shifts.flatMap((shift, index) => {
+                      const note = selected.has(shift.id) ? shiftNotes.get(shift.id) : undefined;
+                      return note ? [{ name: names[index] ?? '', note }] : [];
+                    })}
+                  />
+                </div>
+              );
+            })}
         </Card>
 
         <p role="status" className="text-sm font-bold">
@@ -247,7 +306,7 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
                 loading={actions.previous.isPending}
                 onClick={() =>
                   actions.previous.mutate(undefined, {
-                    onSuccess: (suggested) => setSelected(pickable(suggested.shiftIds)),
+                    onSuccess: (suggested) => choose(pickable(suggested.shiftIds)),
                   })
                 }
               >
@@ -304,6 +363,19 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
           </Button>
         )}
       </div>
+      {noteFor && (
+        <ShiftNoteSheet
+          key={noteFor.shiftId}
+          open
+          onOpenChange={(open) => {
+            if (!open) setNoteFor(null);
+          }}
+          title={noteFor.title}
+          note={shiftNotes.get(noteFor.shiftId)}
+          selected={selected.has(noteFor.shiftId)}
+          onSave={(value) => saveShiftNote(noteFor.shiftId, value)}
+        />
+      )}
     </SubPage>
   );
 }

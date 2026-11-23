@@ -25,6 +25,7 @@ import {
   type ScheduleView,
 } from '../scheduling/data';
 import { flavourOf, useShiftName } from '../scheduling/ShiftName';
+import { ManagerNote, NoteMark } from './manager-note';
 
 export type ScheduleScope = 'mine' | 'team';
 
@@ -103,7 +104,11 @@ function MyShifts({ schedule, onOpen }: { schedule: ScheduleView; onOpen: (shift
           <p className="text-xs font-bold tracking-[0.06em] text-muted uppercase">
             {formatDayHeading(shift.date, i18n.language)}
           </p>
-          <p className="text-xl font-bold">{shiftName(shift.part)}</p>
+          <p className="flex items-center gap-2 text-xl font-bold">
+            {shiftName(shift.part)}
+            {/* FR-145: the manager left a note; it reads in the shift's sheet. */}
+            {shift.note && <NoteMark />}
+          </p>
           <div className="text-sm">
             <span>
               {shift.start}–{shift.end} ·{' '}
@@ -165,6 +170,14 @@ function MyShifts({ schedule, onOpen }: { schedule: ScheduleView; onOpen: (shift
 function WholeTeam({ schedule }: { schedule: ScheduleView }) {
   const { t, i18n } = useTranslation();
   const shiftName = useShiftName();
+  // Shifts whose note is open (FR-145).
+  const [reading, setReading] = useState<ReadonlySet<string>>(new Set());
+  const toggleNote = (shiftId: string) =>
+    setReading((current) => {
+      const next = new Set(current);
+      if (!next.delete(shiftId)) next.add(shiftId);
+      return next;
+    });
   const weeks = Array.from({ length: schedule.period.weeks }, (_, week) =>
     byDay(schedule.shifts.filter((shift) => weekOf(schedule.period, shift.date) === week)),
   );
@@ -192,33 +205,55 @@ function WholeTeam({ schedule }: { schedule: ScheduleView }) {
                 >
                   {formatDayShort(day.date, i18n.language)}
                 </p>
-                <dl className="min-w-0 flex-1">
-                  {day.shifts.map((shift) => (
-                    <div key={shift.id} className="mb-2 last:mb-0">
-                      <dt className="text-xs font-bold tracking-[0.06em] text-muted uppercase">
-                        {shiftName(shift.part)} · {shift.start}–{shift.end}
-                      </dt>
-                      <dd className="flex flex-wrap gap-1.5">
-                        {shift.people.map((person) => (
-                          <span
-                            key={person.membershipId}
-                            className={cx(
-                              'rounded-pill px-2.5 py-0.5 text-sm font-bold',
-                              person.isMe ? 'bg-primary text-on-primary' : 'bg-surface-3',
-                            )}
+                {/* FR-145: a shift with a note has the mark; tapping it opens the note, tapping again closes it. */}
+                <ul className="min-w-0 flex-1">
+                  {day.shifts.map((shift) => {
+                    const open = reading.has(shift.id);
+                    const header = (
+                      <>
+                        <span className="flex items-center gap-1.5 text-xs font-bold tracking-[0.06em] text-muted uppercase">
+                          {shiftName(shift.part)} · {shift.start}–{shift.end}
+                          {shift.note && <NoteMark />}
+                        </span>
+                        <span className="mt-0.5 flex flex-wrap gap-1.5">
+                          {shift.people.map((person) => (
+                            <span
+                              key={person.membershipId}
+                              className={cx(
+                                'rounded-pill px-2.5 py-0.5 text-sm font-bold',
+                                person.isMe ? 'bg-primary text-on-primary' : 'bg-surface-3',
+                              )}
+                            >
+                              {person.isMe ? t('schedule.you') : (person.name ?? t('team.former'))}
+                            </span>
+                          ))}
+                          {shift.people.length < shift.headcount && (
+                            <StatusChip tone="warning">
+                              {t('schedule.openSlots', { count: shift.headcount - shift.people.length })}
+                            </StatusChip>
+                          )}
+                        </span>
+                      </>
+                    );
+                    return (
+                      <li key={shift.id} className="mb-2 last:mb-0">
+                        {shift.note ? (
+                          <button
+                            type="button"
+                            aria-expanded={open}
+                            onClick={() => toggleNote(shift.id)}
+                            className="block w-full text-left"
                           >
-                            {person.isMe ? t('schedule.you') : (person.name ?? t('team.former'))}
-                          </span>
-                        ))}
-                        {shift.people.length < shift.headcount && (
-                          <StatusChip tone="warning">
-                            {t('schedule.openSlots', { count: shift.headcount - shift.people.length })}
-                          </StatusChip>
+                            {header}
+                          </button>
+                        ) : (
+                          <div>{header}</div>
                         )}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
+                        {open && <ManagerNote note={shift.note} compact />}
+                      </li>
+                    );
+                  })}
+                </ul>
               </Card>
             );
           })}
@@ -262,6 +297,7 @@ export function ShiftPeopleSheet({ shift, onClose }: { shift: ScheduleShift; onC
           {t('schedule.sheet.openSpots', { count: open })}
         </StatusChip>
       )}
+      <ManagerNote note={shift.note} />
     </Sheet>
   );
 }
@@ -301,6 +337,7 @@ export function ShiftTradeSheet({
         <Cup flavour={flavourOf(shift.part)} className="w-8 shrink-0" />
         <Coworkers shift={shift} />
       </div>
+      <ManagerNote note={shift.note} />
       {offer && <p className="mt-3 text-sm text-muted">{t('schedule.sheet.offeredText')}</p>}
       <FormError message={error ? t(messageKeyFor(error)) : undefined} />
       {offline && <p className="mt-3 text-sm text-muted">{t('offline.needsConnection')}</p>}

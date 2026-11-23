@@ -112,7 +112,9 @@
       "note_empty": "Écris d’abord quelque chose.",
       "note_too_long": "Une note peut contenir 500 caractères au maximum.",
       "too_many_notes": "Tu as atteint le nombre de notes pour cette période.",
-      "unknown_shift": "Un de ces quarts n’existe plus. Recharge et réessaie."
+      "unknown_shift": "Un de ces quarts n’existe plus. Recharge et réessaie.",
+      "shift_note_too_long": "Une note sur un quart peut faire 60 caractères au plus.",
+      "shift_note_unselected": "Choisis le quart avant d’y ajouter une note."
     },
     "marketplace": {
       "already_offered": "Tu donnes déjà ce quart.",
@@ -151,7 +153,8 @@
       "publish_needs_confirmation": "Des problèmes demandent ta confirmation avant de publier.",
       "unknown_member": "Cette personne ne fait plus de quarts ici.",
       "unknown_shift": "Ce quart n’existe plus.",
-      "visit_ended": "Tu as quitté la page un moment, alors les changements non enregistrés ont été retirés."
+      "visit_ended": "Tu as quitté la page un moment, alors les changements non enregistrés ont été retirés.",
+      "note_too_long": "Une note sur un quart peut faire 100 caractères au plus."
     },
     "settings": {
       "max_consecutive_invalid": "Choisis de 1 à 4 quarts de suite, ou sans limite.",
@@ -712,6 +715,8 @@
       "back": "Revenir"
     },
     "editor": {
+      "hasNotes": "Quelqu’un a laissé une note sur ce quart",
+      "weekNotes": "Notes de la semaine",
       "onShift": "Sur ce quart",
       "nobody": "Personne pour l’instant.",
       "thisWeek": "{{hours}} cette semaine",
@@ -724,9 +729,7 @@
       "addNamed": "Ajouter {{name}}",
       "available": "Disponible",
       "unavailable": "Pas disponible",
-      "noAnswer": "Pas de réponse",
-      "notes_one": "{{count}} note",
-      "notes_other": "{{count}} notes"
+      "noAnswer": "Pas de réponse"
     }
   },
   "teamAvailability": {
@@ -861,7 +864,8 @@
       "shift": {
         "offered": "{{count}} quarts sont offerts",
         "claimed": "{{count}} quarts ont été pris",
-        "missing_level": "{{count}} quarts n’ont plus le niveau requis"
+        "missing_level": "{{count}} quarts n’ont plus le niveau requis",
+        "note": "{{count}} de tes quarts ont de nouvelles notes"
       },
       "claim": {
         "requested": "{{count}} demandes de quart attendent",
@@ -901,7 +905,8 @@
       "shift": {
         "offered": "{{name}} donne son quart du {{date}}, {{start}}–{{end}}",
         "claimed": "{{name}} a pris le quart du {{date}}, {{start}}–{{end}}",
-        "missing_level": "Un échange ou une prise de quart a laissé le {{date}}, {{start}}–{{end}} sans le niveau requis"
+        "missing_level": "Un échange ou une prise de quart a laissé le {{date}}, {{start}}–{{end}} sans le niveau requis",
+        "note": "Nouvelle note sur ton quart du {{date}}, {{start}}–{{end}}"
       },
       "claim": {
         "requested": "{{name}} demande le quart du {{date}}, {{start}}–{{end}}",
@@ -1001,6 +1006,27 @@
     "emailDescription": "Horaire publié, demandes",
     "emailOn": "Les courriels sont activés pour ce lieu de travail",
     "emailOff": "Les courriels sont désactivés pour ce lieu de travail"
+  },
+  "shiftNote": {
+    "title": "Note pour {{day}} · {{shift}}",
+    "hint": "Ton gérant verra cette note.",
+    "label": "Note",
+    "counter": "{{count}}/{{max}}",
+    "placeholder": "Je peux rester jusqu’à 21 h seulement",
+    "selectFirst": "Choisis d’abord ce quart",
+    "remove": "Retirer la note",
+    "save": "Enregistrer la note",
+    "add": "Ajouter une note pour {{day}} · {{shift}}",
+    "edit": "Modifier la note pour {{day}} · {{shift}}"
+  },
+  "managerNote": {
+    "label": "Note pour ce quart",
+    "hint": "{{count}}/{{max}}",
+    "placeholder": "Je pars à 17 h",
+    "save": "Enregistrer la note",
+    "remove": "Retirer la note",
+    "title": "Note de ton gérant",
+    "has": "A une note du gérant"
   },
   "push": {
     "label": "Notifications push sur ce téléphone",

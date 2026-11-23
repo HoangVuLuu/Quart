@@ -232,3 +232,28 @@ spec: AD-016, 12.7
 
 **Done when**
 - [ ] The history for the staging period shows the generation, the manual edits and both published versions.
+
+## M5-13 · The manager's note on a shift
+labels: type:feature, stack:full, area:scheduling, size:M
+depends: M5-02, M5-07
+spec: FR-145, FR-161, FR-216
+
+**Goal.** Philippe can write "Leaving at 5pm" on a shift, and the team reads it on that shift.
+
+Decided by Hoang on 2026-11-23: one note per shift (not per person); the whole team reads it; adding or changing it after publishing tells the people on that shift; staff see a mark on their shift card and the text in the shift's sheet. Built in the same pull request as M4-09.
+
+**Backend**
+- [x] `note` (live) and `draft_note` on `scheduling.shift`, 100 characters. Expand-only migration.
+- [x] `PUT …/draft/shifts/{shiftId}/note`; the note is part of the draft's saved copy, so leaving without saving drops it.
+- [x] Publish and Update copy it live; a changed note alone is something to update; a new or changed one notifies the people on the shift (`shift.note`, in the app and by push, no email, no text).
+
+**Frontend**
+- [x] Building and Editing Schedule: "Note for this shift" in the shift sheet, the note on the card.
+- [x] Schedule: a mark on my shift's card and on Home's next shift, the note in its sheet; in Whole team, a mark on each shift with a note, which opens under the shift on a tap and closes on the next. The alert opens the shift.
+
+**Tests**
+- [x] Server: length, unsaved notes dropped with the visit, live with publish, update tells only the shift's people, removal tells nobody, staff cannot write.
+- [x] App: the field saves, the card shows it, the mark and the sheet, Whole team, the push opens the shift.
+
+**Done when**
+- [ ] On staging, a note written while editing a published schedule reaches the people on that shift after Update.

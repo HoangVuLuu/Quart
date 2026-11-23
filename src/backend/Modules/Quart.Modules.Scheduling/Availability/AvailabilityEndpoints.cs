@@ -31,6 +31,8 @@ internal static class AvailabilityEndpoints
     public const string TooManyNotes = "availability.too_many_notes";
     public const string HoursRequired = "availability.hours_required";
     public const string HoursInvalid = "availability.hours_invalid";
+    public const string ShiftNoteTooLong = "availability.shift_note_too_long";
+    public const string ShiftNoteUnselected = "availability.shift_note_unselected";
 
     /// <summary>A week has 168 hours; anything from 0 up to that is accepted, with no warning (BR-032).</summary>
     private const decimal MaxHours = 168;
@@ -113,9 +115,42 @@ internal static class AvailabilityEndpoints
             return Problems.Validation(new FieldError(UnknownShift, "shiftIds"));
         }
 
+        // FR-103a: a note only on a shift the person can work, plain text, 60 characters at most. An empty note
+        // is no note.
+        Dictionary<Guid, string>? notes = null;
+        if (request.ShiftNotes is { } given)
+        {
+            notes = [];
+            foreach (var item in given)
+            {
+                var text = (item.Note ?? string.Empty).Trim();
+                if (text.Length > AvailabilityBlock.NoteMaxLength)
+                {
+                    return Problems.Validation(new FieldError(ShiftNoteTooLong, "shiftNotes"));
+                }
+                if (!wanted.Contains(item.ShiftId))
+                {
+                    return Problems.Validation(new FieldError(ShiftNoteUnselected, "shiftNotes"));
+                }
+                if (text.Length > 0)
+                {
+                    notes[item.ShiftId] = text;
+                }
+            }
+        }
+
+        // An unselected shift's note goes with it.
         availability.Blocks.RemoveAll(x => !wanted.Contains(x.ShiftId));
         var had = availability.Blocks.Select(x => x.ShiftId).ToHashSet();
         availability.Blocks.AddRange(wanted.Where(id => !had.Contains(id)).Select(id => new AvailabilityBlock { AvailabilityId = availability.Id, ShiftId = id }));
+        // Without the list (an older app), the notes of the shifts that stay are kept as they were.
+        if (notes is not null)
+        {
+            foreach (var block in availability.Blocks)
+            {
+                block.Note = notes.GetValueOrDefault(block.ShiftId);
+            }
+        }
         if (request.DesiredWeeklyHours is { } hours)
         {
             availability.DesiredWeeklyHours = hours;
@@ -324,7 +359,10 @@ internal static class AvailabilityEndpoints
         var sent = answer?.Status == Availability.Sent;
         var selected = sent ? answer!.Blocks.Select(x => x.ShiftId).ToHashSet() : [];
         var shifts = await db.Shifts.AsNoTracking().Where(x => x.PeriodId == periodId).OrderBy(x => x.Date).ThenBy(x => x.StartTime).ToListAsync(cancellationToken);
-        var notes = http.Member().Can(Permission.ViewAvailabilityComments) ? answer?.Notes ?? [] : [];
+        var canReadNotes = http.Member().Can(Permission.ViewAvailabilityComments);
+        var notes = canReadNotes ? answer?.Notes ?? [] : [];
+        // FR-103a: the shift notes follow the same rule as the week notes, and like the shifts, only once sent.
+        var shiftNotes = canReadNotes && sent ? answer!.Blocks.Where(x => x.Note != null).ToDictionary(x => x.ShiftId, x => x.Note!) : [];
         // A shift that overlaps their work at another workplace shows as simply not available: no flag, no reason (FR-094).
         var busy = await BusyElsewhere.LoadAsync(db, period, [person.UserId], cancellationToken);
         return TypedResults.Ok(new PersonAvailability(
@@ -335,7 +373,8 @@ internal static class AvailabilityEndpoints
             sent ? answer!.DesiredWeeklyHours : null,
             shifts.Select(x => new AvailabilityShift(
                 x.Id, x.SourceBlockId, x.Date.ToDateOnly(), Support.Time(x.StartTime), Support.Time(x.EndTime), x.Hours,
-                selected.Contains(x.Id) && !busy.Any(b => b.Overlaps(x)), BusyElsewhere: false)).ToList(),
+                selected.Contains(x.Id) && !busy.Any(b => b.Overlaps(x)), BusyElsewhere: false,
+                busy.Any(b => b.Overlaps(x)) ? null : shiftNotes.GetValueOrDefault(x.Id))).ToList(),
             notes.OrderBy(x => x.CreatedAt).Select(x => new AvailabilityNoteView(x.Id, x.Body, x.CreatedAt.ToDateTimeOffset())).ToList()));
     }
 
@@ -347,6 +386,7 @@ internal static class AvailabilityEndpoints
             .Include(x => x.Notes)
             .SingleOrDefaultAsync(x => x.PeriodId == period.Id && x.MembershipId == membershipId, cancellationToken);
         var selected = availability?.Blocks.Select(x => x.ShiftId).ToHashSet() ?? [];
+        var shiftNotes = availability?.Blocks.Where(x => x.Note != null).ToDictionary(x => x.ShiftId, x => x.Note!) ?? [];
         var shifts = await db.Shifts.AsNoTracking().Where(x => x.PeriodId == period.Id).ToListAsync(cancellationToken);
         // FR-094: blocks that overlap a shift the person holds at another workplace are greyed out. They know where
         // they work; the response still says only "busy", never where.
@@ -371,7 +411,7 @@ internal static class AvailabilityEndpoints
                     var elsewhere = busy.Any(b => b.Overlaps(x));
                     return new AvailabilityShift(
                         x.Id, x.SourceBlockId, x.Date.ToDateOnly(), Support.Time(x.StartTime), Support.Time(x.EndTime), x.Hours,
-                        selected.Contains(x.Id) && !elsewhere, elsewhere);
+                        selected.Contains(x.Id) && !elsewhere, elsewhere, elsewhere ? null : shiftNotes.GetValueOrDefault(x.Id));
                 })
                 .ToList(),
             (availability?.Notes ?? []).OrderBy(x => x.CreatedAt).Select(x => new AvailabilityNoteView(x.Id, x.Body, x.CreatedAt.ToDateTimeOffset())).ToList());
@@ -397,7 +437,14 @@ internal static class AvailabilityEndpoints
 }
 
 /// <param name="DesiredWeeklyHours">Hours per week wanted in this period (BR-032). Required to send; null leaves it as it was.</param>
-public sealed record AvailabilityRequest(IReadOnlyList<Guid>? ShiftIds, decimal? DesiredWeeklyHours = null);
+/// <param name="ShiftNotes">
+/// A note per shift for the admins (FR-103a), each on one of <paramref name="ShiftIds"/>. Given, it replaces all
+/// of them; left out, the notes of the shifts that stay are kept.
+/// </param>
+public sealed record AvailabilityRequest(IReadOnlyList<Guid>? ShiftIds, decimal? DesiredWeeklyHours = null, IReadOnlyList<ShiftNoteRequest>? ShiftNotes = null);
+
+/// <param name="Note">Plain text, 60 characters at most; empty means no note.</param>
+public sealed record ShiftNoteRequest(Guid ShiftId, string? Note);
 
 public sealed record NoteRequest(string? Body);
 
@@ -427,7 +474,10 @@ public sealed record MyAvailability(
 /// Only on the person's own answer: they already hold a shift at another workplace at that time, so the block is
 /// greyed out (FR-094). Always false on the managers' view, which sees only "not available".
 /// </param>
-public sealed record AvailabilityShift(Guid Id, Guid BlockId, DateOnly Date, string Start, string End, decimal Hours, bool Selected, bool BusyElsewhere);
+/// <param name="Note">
+/// The person's note on this shift (FR-103a): to themselves always; to the admins who may read notes, once sent.
+/// </param>
+public sealed record AvailabilityShift(Guid Id, Guid BlockId, DateOnly Date, string Start, string End, decimal Hours, bool Selected, bool BusyElsewhere, string? Note = null);
 
 public sealed record AvailabilityNoteView(Guid Id, string Body, DateTimeOffset CreatedAt);
 

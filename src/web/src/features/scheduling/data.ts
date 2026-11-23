@@ -83,11 +83,20 @@ export function useAvailabilityActions(periodId: string) {
   const path = { workplaceId: id, periodId };
   return {
     send: useMutation({
-      mutationFn: ({ shiftIds, desiredWeeklyHours }: { shiftIds: string[]; desiredWeeklyHours: number }) =>
+      mutationFn: ({
+        shiftIds,
+        desiredWeeklyHours,
+        shiftNotes,
+      }: {
+        shiftIds: string[];
+        desiredWeeklyHours: number;
+        /** FR-103a: the notes of chosen shifts. */
+        shiftNotes: { shiftId: string; note: string }[];
+      }) =>
         unwrap(
           api.POST('/api/workplaces/{workplaceId}/periods/{periodId}/availability/me/send', {
             params: { path },
-            body: { shiftIds, desiredWeeklyHours },
+            body: { shiftIds, desiredWeeklyHours, shiftNotes },
           }),
         ),
       onSuccess: refresh,
@@ -196,6 +205,17 @@ export function useDraftActions(periodId: string) {
         unwrap(
           api.DELETE(`${base}/assignments/{shiftId}/{membershipId}`, {
             params: { path: { ...path, ...target } },
+          }),
+        ),
+      onSuccess: show,
+    }),
+    // FR-145: the manager's note on a shift; the team sees it once published or updated.
+    note: useMutation({
+      mutationFn: ({ shiftId, note }: { shiftId: string; note: string }) =>
+        unwrap(
+          api.PUT(`${base}/shifts/{shiftId}/note`, {
+            params: { path: { ...path, shiftId } },
+            body: { note },
           }),
         ),
       onSuccess: show,

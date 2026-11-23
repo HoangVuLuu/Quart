@@ -134,6 +134,11 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("shift_id");
 
+                    b.Property<string>("Note")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("note");
+
                     b.HasKey("AvailabilityId", "ShiftId")
                         .HasName("pk_availability_block");
 
@@ -234,7 +239,6 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                     b.Property<Instant?>("PublishedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("published_at");
-
 
                     b.Property<string>("Rules")
                         .IsRequired()
@@ -376,6 +380,11 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("date");
 
+                    b.Property<string>("DraftNote")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("draft_note");
+
                     b.Property<LocalTime>("EndTime")
                         .HasColumnType("time")
                         .HasColumnName("end_time");
@@ -387,6 +396,11 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                     b.Property<int>("Headcount")
                         .HasColumnType("integer")
                         .HasColumnName("headcount");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("note");
 
                     b.Property<Guid>("PeriodId")
                         .HasColumnType("uuid")
