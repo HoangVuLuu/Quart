@@ -64,6 +64,12 @@ public static class NotificationTypes
     public const string TradeRejected = "trade.rejected";
     public const string TradeExpired = "trade.expired";
 
+    /// <summary>To managers: a shift given away is still untaken 36 hours before it starts (FR-183, M7-05).</summary>
+    public const string ShiftUnclaimed = "shift.unclaimed";
+
+    /// <summary>To the person giving it away: nobody has taken their shift yet, 36 hours before it (FR-183, M7-05).</summary>
+    public const string ShiftUnclaimedMine = "shift.unclaimed_mine";
+
     // shiftId and periodId: the shift the alert opens on the Schedule tab, when there is one (2026-11-18).
     private static readonly string[] Shift = ["date", "start", "end", "name", "shiftId", "periodId"];
 
@@ -116,5 +122,7 @@ public static class NotificationTypes
             [TradeApplied] = Shift,
             [TradeRejected] = ["date", "start", "end", "name", "reason"],
             [TradeExpired] = Shift,
+            [ShiftUnclaimed] = Shift,
+            [ShiftUnclaimedMine] = Shift,
         };
 }

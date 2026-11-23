@@ -9,6 +9,7 @@ using Quart.Modules.Marketplace.Persistence;
 using Quart.SharedKernel;
 using Quart.SharedKernel.Access;
 using Quart.SharedKernel.Directory;
+using Quart.SharedKernel.Jobs;
 using Quart.SharedKernel.Notifications;
 using Quart.SharedKernel.Scheduling;
 
@@ -194,7 +195,7 @@ internal static class MarketplaceEndpoints
 
     /// <summary>Offers a shift the caller holds, any time before it starts (FR-180, FR-182).</summary>
     private static async Task<Results<NoContent, ProblemHttpResult>> OfferAsync(
-        Guid workplaceId, GiveAwayRequest request, HttpContext http, MarketplaceDb db, IScheduleLedger ledger, IWorkplaceDirectory directory, INotifier notifier, IClock clock, CancellationToken cancellationToken)
+        Guid workplaceId, GiveAwayRequest request, HttpContext http, MarketplaceDb db, IScheduleLedger ledger, IWorkplaceDirectory directory, INotifier notifier, IJobScheduler jobs, IClock clock, CancellationToken cancellationToken)
     {
         var member = http.Member();
         var context = await Context.LoadAsync(workplaceId, db, ledger, directory, notifier, clock, cancellationToken);
@@ -211,7 +212,7 @@ internal static class MarketplaceEndpoints
             return Problems.Conflict(AlreadyOffered);
         }
 
-        db.GiveAways.Add(new GiveAway
+        var offer = new GiveAway
         {
             Id = Guid.NewGuid(),
             WorkplaceId = workplaceId,
@@ -219,8 +220,20 @@ internal static class MarketplaceEndpoints
             FromMembershipId = member.MembershipId,
             Status = GiveAway.Open,
             PostedAt = clock.GetCurrentInstant(),
-        });
+        };
+        db.GiveAways.Add(offer);
         await db.SaveChangesAsync(cancellationToken);
+        if (MarketplaceJobs.UnclaimedCheckAt(shift.Start, offer.PostedAt) is { } checkAt)
+        {
+            await jobs.ScheduleAsync(
+                new JobRequest(MarketplaceJobs.OfferUnclaimed, checkAt)
+                {
+                    Payload = new MarketplaceJobs.OfferPayload(offer.Id),
+                    WorkplaceId = workplaceId,
+                    DedupeKey = $"offer-unclaimed:{offer.Id}",
+                },
+                cancellationToken);
+        }
         await context.NotifyAsync(
             context.Members.Values.Where(x => x.WorksShifts && x.MembershipId != member.MembershipId),
             NotificationTypes.ShiftOffered, shift, member.MembershipId, cancellationToken);
@@ -419,7 +432,7 @@ internal static class MarketplaceEndpoints
 
     /// <summary>Strictly one-for-one: one of my published shifts for one of yours (FR-188).</summary>
     private static async Task<Results<NoContent, ProblemHttpResult>> RequestTradeAsync(
-        Guid workplaceId, TradeRequest request, HttpContext http, MarketplaceDb db, IScheduleLedger ledger, IWorkplaceDirectory directory, INotifier notifier, IClock clock, CancellationToken cancellationToken)
+        Guid workplaceId, TradeRequest request, HttpContext http, MarketplaceDb db, IScheduleLedger ledger, IWorkplaceDirectory directory, INotifier notifier, IJobScheduler jobs, IClock clock, CancellationToken cancellationToken)
     {
         var member = http.Member();
         var context = await Context.LoadAsync(workplaceId, db, ledger, directory, notifier, clock, cancellationToken);
@@ -446,7 +459,7 @@ internal static class MarketplaceEndpoints
         }
 
         var now = clock.GetCurrentInstant();
-        db.Trades.Add(new Trade
+        var trade = new Trade
         {
             Id = Guid.NewGuid(),
             WorkplaceId = workplaceId,
@@ -457,8 +470,18 @@ internal static class MarketplaceEndpoints
             Status = Trade.Requested,
             ExpiresAt = Instant.Min(now + TradeLifetime, Instant.Min(mine.Start, theirs.Start)),
             CreatedAt = now,
-        });
+        };
+        db.Trades.Add(trade);
         await db.SaveChangesAsync(cancellationToken);
+        // M7-08: ends on time even if nobody opens the Trade tab; reading the board still ends it too (jobs can be late).
+        await jobs.ScheduleAsync(
+            new JobRequest(MarketplaceJobs.TradeExpiry, trade.ExpiresAt)
+            {
+                Payload = new MarketplaceJobs.TradePayload(trade.Id),
+                WorkplaceId = workplaceId,
+                DedupeKey = $"trade-expiry:{trade.Id}",
+            },
+            cancellationToken);
         await context.NotifyAsync([coworker], NotificationTypes.TradeRequested, mine, member.MembershipId, cancellationToken);
         return TypedResults.NoContent();
     }
@@ -636,7 +659,7 @@ internal static class MarketplaceEndpoints
         new(shift.Id, shift.PeriodId, shift.Date.ToDateOnly(), TimePattern.Format(shift.StartTime), TimePattern.Format(shift.EndTime));
 
     /// <summary>What every marketplace request starts from: the upcoming published shifts, the people and the approval rules.</summary>
-    private sealed class Context
+    internal sealed class Context
     {
         private readonly INotifier notifier;
         private readonly Guid workplaceId;
@@ -741,6 +764,16 @@ internal static class MarketplaceEndpoints
             if (due.Count + deadTrades.Count + staleOffers.Count + staleClaims.Count > 0)
             {
                 await db.SaveChangesAsync(cancellationToken);
+            }
+            // M7-08: a trade that ran out of time tells both people, like one that could no longer happen.
+            foreach (var trade in due)
+            {
+                if ((Shifts.GetValueOrDefault(trade.AShiftId) ?? Shifts.GetValueOrDefault(trade.BShiftId)) is { } shift)
+                {
+                    await NotifyAsync(
+                        Members.Values.Where(x => x.MembershipId == trade.AMembershipId || x.MembershipId == trade.BMembershipId),
+                        NotificationTypes.TradeExpired, shift, trade.AMembershipId, cancellationToken);
+                }
             }
             // Both people learn their trade is off, as they would had it been refused at the last step.
             foreach (var trade in deadTrades)

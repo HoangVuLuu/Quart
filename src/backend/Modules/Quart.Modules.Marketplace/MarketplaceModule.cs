@@ -22,6 +22,8 @@ public static class MarketplaceModule
         services.AddDbContext<MarketplaceDb>((provider, options) => Configure(options, provider.GetRequiredService<NpgsqlDataSource>()));
         services.TryAddSingleton<IClock>(SystemClock.Instance);
         services.AddScoped<IJobHandler, MarketplaceRetention>();
+        services.AddScoped<IJobHandler, OfferUnclaimedHandler>();
+        services.AddScoped<IJobHandler, TradeExpiryHandler>();
         services.AddSingleton(new NightlyJob(MarketplaceRetention.JobType));
         return services;
     }

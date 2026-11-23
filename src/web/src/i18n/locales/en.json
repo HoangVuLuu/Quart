@@ -895,7 +895,9 @@
         "missing_level": "{{count}} shifts are missing their required level",
         "note": "{{count}} of your shifts have new notes",
         "hours_changed": "The hours of {{count}} of your shifts changed",
-        "removed": "{{count}} of your shifts were removed from the schedule"
+        "removed": "{{count}} of your shifts were removed from the schedule",
+        "unclaimed": "{{count}} shifts given away are still untaken",
+        "unclaimed_mine": "{{count}} of your shifts given away are still untaken"
       },
       "claim": {
         "requested": "{{count}} shift requests are waiting",
@@ -938,7 +940,9 @@
         "missing_level": "A trade or claim left {{date}}, {{start}}–{{end}} without its required level",
         "note": "New note on your shift {{date}}, {{start}}–{{end}}",
         "hours_changed": "Your shift on {{date}} is now {{start}}–{{end}}",
-        "removed": "Your shift on {{date}}, {{start}}–{{end}} was removed from the schedule"
+        "removed": "Your shift on {{date}}, {{start}}–{{end}} was removed from the schedule",
+        "unclaimed": "Nobody has taken {{name}}'s shift on {{date}}, {{start}}–{{end}} yet",
+        "unclaimed_mine": "Nobody has taken your shift on {{date}}, {{start}}–{{end}} yet. It's still yours"
       },
       "claim": {
         "requested": "{{name}} asks for the shift on {{date}}, {{start}}–{{end}}",

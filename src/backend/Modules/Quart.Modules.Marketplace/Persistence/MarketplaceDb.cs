@@ -86,6 +86,9 @@ internal sealed class GiveAway
     public Guid? TakenBy { get; set; }
 
     public Instant PostedAt { get; set; }
+
+    /// <summary>When the managers and the giver heard nobody had taken it yet (FR-183, M7-05); null until then.</summary>
+    public Instant? UnclaimedAlertedAt { get; set; }
 }
 
 /// <summary>A request to take an open slot or an offered shift, waiting for an admin (FR-187).</summary>
