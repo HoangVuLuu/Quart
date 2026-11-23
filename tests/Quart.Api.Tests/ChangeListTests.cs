@@ -103,8 +103,27 @@ public sealed class ChangeListTests(PostgresFixture postgres)
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
         await team.Owner.SendAsync(HttpMethod.Patch, $"{team.Base}/settings", new { claimsNeedApproval = false, tradesNeedApproval = true });
-        var schedule = await team.PublishAsync();
         var paul = team.Staff[4];
+        // The generated schedule depends on random IDs: generate until Paul and Philippe each hold a shift the
+        // other does not, so there is a trade to make (it was flaky with only the first one).
+        await team.OpenPeriodAsync();
+        foreach (var person in team.Everyone)
+        {
+            await team.SendAvailabilityAsync(person);
+        }
+        for (var seed = 1; ; seed++)
+        {
+            var draft = await team.Owner.PostAsync($"{team.Period}/draft/generate", new { seed });
+            var shifts = draft["shifts"]!.AsArray().Select(x => x!).ToList();
+            if (shifts.Any(x => Team.Holds(x, paul) && !Team.Holds(x, team.Owner))
+                && shifts.Count(x => Team.Holds(x, team.Owner) && !Team.Holds(x, paul)) > 0)
+            {
+                break;
+            }
+            Assert.True(seed < 30, "No generated schedule gave Paul and Philippe a shift to trade.");
+        }
+        await team.Owner.PostAsync($"{team.Period}/draft/publish", new { confirmed = true });
+        var schedule = await team.ScheduleAsync();
         var his = Team.ShiftsOf(schedule, paul).First(x => !Team.Holds(x, team.Owner));
         var owners = Team.ShiftsOf(schedule, team.Owner).First(x => !Team.Holds(x, paul) && Team.Id(x) != Team.Id(his));
 
