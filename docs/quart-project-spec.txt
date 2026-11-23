@@ -2042,8 +2042,8 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             not (replaces "email only without push"); push stays a choice per
             browser. Pushes and emails wait five minutes and group alerts of
             the same kind for the same person, so single alerts arrive 5-10
-            minutes after they happen. The setting is
-            Notifications:BundleMinutes.  (FR-211, FR-213)
+            minutes after they happen. The five minutes are fixed in the
+            code, not a setting (Hoang).  (FR-211, FR-213)
 2026-11-22  From testing on staging (Hoang): on Schedule, the period buttons
             share their row equally; My shifts / Whole team is one pill
             across the row; "Edit current period" is a full-width button

@@ -15,12 +15,10 @@ public sealed class NotificationBundlingTests(PostgresFixture postgres)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    private static readonly Dictionary<string, string?> FiveMinutes = new() { ["Notifications:BundleMinutes"] = "5" };
-
     [Fact]
     public async Task Five_changes_within_five_minutes_are_one_push_and_one_email_and_a_later_one_goes_on_its_own()
     {
-        await using var app = await TestApp.StartAsync(postgres, settings: FiveMinutes);
+        await using var app = await TestApp.StartAsync(postgres, bundle: true);
         var team = await Team.CreateAsync(app);
         var lea = team.Staff[0];
         var phone = await SubscribeAsync(lea);
@@ -60,7 +58,7 @@ public sealed class NotificationBundlingTests(PostgresFixture postgres)
     [Fact]
     public async Task Kinds_and_people_are_bundled_apart()
     {
-        await using var app = await TestApp.StartAsync(postgres, settings: FiveMinutes);
+        await using var app = await TestApp.StartAsync(postgres, bundle: true);
         var team = await Team.CreateAsync(app);
         var lea = team.Staff[0];
         var paul = team.Staff[4];
@@ -81,7 +79,7 @@ public sealed class NotificationBundlingTests(PostgresFixture postgres)
     [Fact]
     public async Task Alerts_read_in_the_app_before_the_bundle_goes_are_left_out_and_nothing_goes_when_all_are_read()
     {
-        await using var app = await TestApp.StartAsync(postgres, settings: FiveMinutes);
+        await using var app = await TestApp.StartAsync(postgres, bundle: true);
         var team = await Team.CreateAsync(app);
         var lea = team.Staff[0];
         var phone = await SubscribeAsync(lea);

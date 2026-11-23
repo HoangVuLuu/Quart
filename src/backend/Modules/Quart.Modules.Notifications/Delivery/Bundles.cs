@@ -10,16 +10,14 @@ using Quart.SharedKernel.Notifications;
 
 namespace Quart.Modules.Notifications.Delivery;
 
-/// <summary>How alerts leave the app by push and email (M8-07).</summary>
-public sealed class NotificationOptions
+/// <summary>
+/// How long a new alert waits for others of its kind before its push and email go out (FR-213): five minutes,
+/// fixed in the code, not a setting (Hoang, 2026-11-22). Only the tests replace it, with zero, so most of them
+/// need not wait; zero sends every alert on its own, on the next tick.
+/// </summary>
+public sealed record BundleWait(Duration Value)
 {
-    public const string Section = "Notifications";
-
-    /// <summary>
-    /// How long a new alert waits for others of its kind before going out (FR-213; Hoang, 2026-11-22: five
-    /// minutes). Zero sends every alert on its own, on the next tick.
-    /// </summary>
-    public int BundleMinutes { get; set; } = 5;
+    public static BundleWait FiveMinutes { get; } = new(Duration.FromMinutes(5));
 }
 
 /// <summary>Which bundle to send. IDs only (decision 0012).</summary>

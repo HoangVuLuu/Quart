@@ -8,6 +8,7 @@ using NodaTime;
 using Quart.Api.Migrations;
 using Quart.Modules.Identity;
 using Quart.Modules.Notifications;
+using Quart.Modules.Notifications.Delivery;
 
 namespace Quart.Api.Tests;
 
@@ -44,7 +45,11 @@ public sealed partial class TestApp : IAsyncDisposable
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     /// <param name="now">Defaults to Monday 2 November 2026, 09:00 in Montreal.</param>
-    public static async Task<TestApp> StartAsync(PostgresFixture postgres, Instant? now = null, IReadOnlyDictionary<string, string?>? settings = null)
+    /// <param name="bundle">
+    /// The real five-minute wait before pushes and emails (M8-07). Off by default: every alert goes on its own,
+    /// on the next tick, so tests about something else need not move the clock.
+    /// </param>
+    public static async Task<TestApp> StartAsync(PostgresFixture postgres, Instant? now = null, IReadOnlyDictionary<string, string?>? settings = null, bool bundle = false)
     {
         var clock = new FakeClock(now ?? Instant.FromUtc(2026, 11, 2, 14, 0));
         var emails = new CapturedEmails();
@@ -57,8 +62,6 @@ public sealed partial class TestApp : IAsyncDisposable
             ["Auth:RequestsPerMinute"] = "100000",
             ["Workplaces:JoinsPerMinute"] = "100000",
             ["Email:PublicUrl"] = "https://quart.test",
-            // Every alert on its own, on the next tick; bundling tests ask for the real wait (M8-07).
-            ["Notifications:BundleMinutes"] = "0",
         };
         foreach (var (key, value) in settings ?? new Dictionary<string, string?>())
         {
@@ -72,6 +75,7 @@ public sealed partial class TestApp : IAsyncDisposable
                 services.AddSingleton<IClock>(clock);
                 services.AddSingleton<IEmailTransport>(emails);
                 services.AddSingleton<IPushSender>(pushes);
+                services.AddSingleton(bundle ? BundleWait.FiveMinutes : new BundleWait(Duration.Zero));
                 services.ConfigureAll<HttpClientFactoryOptions>(options =>
                     options.HttpMessageHandlerBuilderActions.Add(builder => builder.PrimaryHandler = new PwnedPasswordsStub()));
             },

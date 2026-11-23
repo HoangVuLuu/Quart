@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
 using NodaTime;
 using Npgsql;
 using Quart.Modules.Notifications.Delivery;
@@ -43,7 +42,7 @@ public static class NotificationsModule
         services.AddSingleton(new NightlyJob(NotificationRetention.JobType));
         services.AddScoped<INotifier, Notifier>();
         // Bundling (M8-07, FR-213): pushes and emails go out a few minutes after the alert, grouped by kind.
-        services.AddOptions<NotificationOptions>().BindConfiguration(NotificationOptions.Section);
+        services.AddSingleton(BundleWait.FiveMinutes);
         services.AddScoped<IJobHandler, DeliverBundleHandler>();
         services.AddScoped<IAccountDeletedHandler, ForgetNotificationsOnAccountDeleted>();
 
@@ -145,7 +144,7 @@ public sealed record NotificationItem(Guid Id, string Type, IReadOnlyDictionary<
 /// Stores each alert for the Alerts tab, then puts the ones that leave the app in bundles (M8-07, FR-213): pushes
 /// and emails go out a few minutes later, one per kind and person for everything that came in meanwhile.
 /// </summary>
-internal sealed class Notifier(NotificationsDbContext db, IJobScheduler jobs, IClock clock, IOptions<NotificationOptions> options) : INotifier
+internal sealed class Notifier(NotificationsDbContext db, IJobScheduler jobs, IClock clock, BundleWait wait) : INotifier
 {
     public async Task NotifyAsync(IReadOnlyCollection<NotificationRequest> notifications, CancellationToken cancellationToken)
     {
@@ -180,8 +179,7 @@ internal sealed class Notifier(NotificationsDbContext db, IJobScheduler jobs, IC
 
         // Saved with the alerts; the deliveries run on a later tick, so the request that caused them never waits
         // on a push service or the mail server.
-        var wait = Duration.FromMinutes(Math.Max(0, options.Value.BundleMinutes));
-        var opened = await Bundles.AssignAsync(db, stored, wait, now, cancellationToken);
+        var opened = await Bundles.AssignAsync(db, stored, wait.Value, now, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         await Bundles.ScheduleAsync(jobs, opened, cancellationToken);
     }
