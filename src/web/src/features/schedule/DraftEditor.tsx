@@ -12,6 +12,7 @@ import { Sheet } from '../../ui/Sheet';
 import { Skeleton } from '../../ui/Skeleton';
 import { StatusChip, type StatusTone } from '../../ui/StatusChip';
 import { useToast } from '../../ui/toast-context';
+import { localToday } from '../day-editor/model';
 import { FormError } from '../identity/FormError';
 import { describer } from '../scheduling/components/describe-issue';
 import {
@@ -56,10 +57,12 @@ type DraftEditorProps = {
   besideGenerate?: ReactNode;
   /** Called once the schedule is published or updated: Building and Editing Schedule then go back (4.3). */
   onPublished?: () => void;
+  /** The pen next to a day's title: change this period's shifts (M4-01, 2026-11-23). */
+  onEditDay?: (date: string) => void;
 };
 
 // Mockup 1l, with the shift editor (1p) and the issues list (1q). Only admins come here (AD-012).
-export function DraftEditor({ periodId, besideGenerate, onPublished }: DraftEditorProps) {
+export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay }: DraftEditorProps) {
   const { t } = useTranslation();
   const toast = useToast();
   const draft = useDraft(periodId);
@@ -145,7 +148,14 @@ export function DraftEditor({ periodId, besideGenerate, onPublished }: DraftEdit
           A sideways swipe changes the week, like the pills above. */}
       <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-x-6" {...swipeWeeks}>
         {byDay(data.shifts.filter((shift) => weekOf(data.period, shift.date) === week)).map((day) => (
-          <DayRow key={day.date} draft={data} date={day.date} shifts={day.shifts} onOpen={setOpenShift} />
+          <DayRow
+            key={day.date}
+            draft={data}
+            date={day.date}
+            shifts={day.shifts}
+            onOpen={setOpenShift}
+            onEdit={onEditDay && day.date >= localToday() ? () => onEditDay(day.date) : undefined}
+          />
         ))}
       </div>
 
@@ -203,11 +213,13 @@ function DayRow({
   date,
   shifts,
   onOpen,
+  onEdit,
 }: {
   draft: DraftView;
   date: string;
   shifts: DraftShift[];
   onOpen: (shiftId: string) => void;
+  onEdit?: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const shiftName = useShiftName();
@@ -215,7 +227,19 @@ function DayRow({
 
   return (
     <section aria-label={formatDayHeading(date, i18n.language)}>
-      <h2 className="mb-2 text-[15px]">{formatDayHeading(date, i18n.language)}</h2>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h2 className="text-[15px]">{formatDayHeading(date, i18n.language)}</h2>
+        {onEdit && (
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={t('dayEditor.editDay', { day: formatDayHeading(date, i18n.language) })}
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-ink text-bg"
+          >
+            <Icon name="pen" className="size-4.5" />
+          </button>
+        )}
+      </div>
       <ul className="grid grid-cols-2 gap-3">
         {shifts.map((shift) => {
           const issues = draft.issues.filter(
@@ -284,6 +308,12 @@ function DayRow({
                     </span>
                   );
                 })}
+                {/* M4-01: nobody gave availability for it, so the generator leaves it to the manager. */}
+                {shift.addedByHand && (
+                  <StatusChip tone="neutral" className="self-start text-[11px]">
+                    {t('dayEditor.addedByHand')}
+                  </StatusChip>
+                )}
                 {/* FR-145: the manager's own note, as drafted. */}
                 {shift.managerNote && (
                   <span className="flex items-start gap-1 text-xs font-bold text-warning">

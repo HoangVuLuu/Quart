@@ -45,6 +45,12 @@ public static class NotificationTypes
     /// <summary>To the people on a published shift: the manager added or changed its note with Update (FR-145).</summary>
     public const string ShiftNoteChanged = "shift.note";
 
+    /// <summary>To the people on a published shift: the manager changed its hours (M4-01, 2026-11-23).</summary>
+    public const string ShiftHoursChanged = "shift.hours_changed";
+
+    /// <summary>To the people on a published shift: the manager removed it from the schedule (M4-01, 2026-11-23).</summary>
+    public const string ShiftRemoved = "shift.removed";
+
     /// <summary>To managers: a claim or trade that needed no approval left a shift without its required level (3.3).</summary>
     public const string ShiftMissingLevel = "shift.missing_level";
     public const string ClaimRequested = "claim.requested";
@@ -97,6 +103,8 @@ public static class NotificationTypes
             [ShiftOffered] = Shift,
             [ShiftClaimed] = Shift,
             [ShiftNoteChanged] = ["date", "start", "end", "shiftId", "periodId"],
+            [ShiftHoursChanged] = ["date", "start", "end", "shiftId", "periodId"],
+            [ShiftRemoved] = ["date", "start", "end"],
             [ShiftMissingLevel] = Shift,
             [ClaimRequested] = Shift,
             [ClaimApproved] = Shift,

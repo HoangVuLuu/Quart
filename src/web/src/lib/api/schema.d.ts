@@ -468,6 +468,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/shifts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetPeriodShifts'];
+    put: operations['SavePeriodShifts'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/workplaces/{workplaceId}/periods/{periodId}/availability/me': {
     parameters: {
       query?: never;
@@ -1349,6 +1365,8 @@ export interface components {
       notes: components['schemas']['DraftShiftNote'][];
       managerNote: null | string;
       name: null | string;
+      /** @default false */
+      addedByHand: boolean;
     };
     DraftShiftNote: {
       /** Format: uuid */
@@ -1626,6 +1644,42 @@ export interface components {
       requested: boolean;
       seen: boolean;
     };
+    PeriodShift: {
+      /** Format: uuid */
+      id: string;
+      /** Format: date */
+      date: string;
+      /** Format: uuid */
+      blockId: string;
+      name: null | string;
+      start: string;
+      end: string;
+      /** Format: int32 */
+      headcount: number;
+      requirements: components['schemas']['DraftRequirement'][];
+      addedByHand: boolean;
+      started: boolean;
+    };
+    PeriodShifts: {
+      period: components['schemas']['PeriodSummary'];
+      shifts: components['schemas']['PeriodShift'][];
+      rules: components['schemas']['RulesShift'][];
+      startedDays: string[];
+    };
+    PeriodShiftSetup: {
+      /** Format: uuid */
+      id: null | string;
+      /** Format: date */
+      date: string;
+      /** Format: uuid */
+      blockId: null | string;
+      name: null | string;
+      start: null | string;
+      end: null | string;
+      /** Format: int32 */
+      headcount: number;
+      requirements: null | components['schemas']['DraftRequirement'][];
+    };
     PeriodSummary: {
       /** Format: uuid */
       id: string;
@@ -1690,6 +1744,21 @@ export interface components {
     ResetPasswordRequest: {
       token: null | string;
       password: null | string;
+    };
+    RulesShift: {
+      /** Format: date */
+      date: string;
+      /** Format: uuid */
+      blockId: string;
+      name: null | string;
+      start: string;
+      end: string;
+      /** Format: int32 */
+      headcount: number;
+      requirements: components['schemas']['DraftRequirement'][];
+    };
+    SavePeriodShifts: {
+      shifts: null | components['schemas']['PeriodShiftSetup'][];
     };
     SchedulePerson: {
       /** Format: uuid */
@@ -2883,6 +2952,86 @@ export interface operations {
     responses: {
       /** @description No Content */
       204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetPeriodShifts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PeriodShifts'];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  SavePeriodShifts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SavePeriodShifts'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not Found */
+      404: {
         headers: {
           [name: string]: unknown;
         };

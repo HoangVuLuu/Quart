@@ -200,6 +200,12 @@ internal sealed class Shift
 
     public const int NameMaxLength = 24;
 
+    /// <summary>
+    /// Added to this period on Building or Editing Schedule (M4-01, 2026-11-23): nobody gives availability for it,
+    /// so the generator leaves it empty and the manager places people by hand.
+    /// </summary>
+    public bool AddedByHand { get; set; }
+
     /// <summary>Computed by the application from the local date, time and zone (AD-011).</summary>
     public Instant StartsAt { get; set; }
 

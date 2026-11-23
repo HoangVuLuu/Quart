@@ -380,6 +380,7 @@ describe('the schedule tab', () => {
           notes: [{ membershipId: kevin, note: 'Until 21:00 only' }],
           managerNote: null,
           name: null,
+          addedByHand: false,
         },
       ],
       people: [
@@ -521,6 +522,7 @@ describe('the schedule tab', () => {
           notes: [],
           managerNote: null,
           name: null,
+          addedByHand: false,
         },
       ],
       people: [person(mine, 'Sophie L.'), person(kevin, 'Kevin T.')],
@@ -1177,6 +1179,7 @@ describe('the manager’s note on a shift (FR-145)', () => {
           notes: [],
           managerNote: 'Bring the keys',
           name: null,
+          addedByHand: false,
         },
       ],
       people: [

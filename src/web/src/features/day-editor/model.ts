@@ -117,3 +117,9 @@ export function newKey(): string {
   counter += 1;
   return `new-${counter}`;
 }
+
+/** Today on this phone, as "yyyy-mm-dd": a day before it has started (the server has the final say). */
+export function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}

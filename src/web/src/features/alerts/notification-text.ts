@@ -17,6 +17,8 @@ export const notificationTypes = [
   'shift.offered',
   'shift.claimed',
   'shift.note',
+  'shift.hours_changed',
+  'shift.removed',
   'shift.missing_level',
   'claim.requested',
   'claim.approved',

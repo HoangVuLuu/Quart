@@ -140,7 +140,11 @@
       "template_empty": "Add your shifts in the Edit Generator page first.",
       "unfinished_exists": "Publish the period you are working on before opening another.",
       "already_started": "This period has already started, so it can't be cancelled.",
-      "old_day_changes": "This period would use day changes from the previous period."
+      "old_day_changes": "This period would use day changes from the previous period.",
+      "shift_started": "A shift has started since you opened this page. Reload it.",
+      "shift_unknown": "A shift was removed meanwhile. Reload the page.",
+      "date_outside": "A shift is outside the period.",
+      "shift_double_booked": "These hours would put someone on two shifts at once. Change the hours or take them off a shift first."
     },
     "schedule": {
       "already_on_shift": "This person is already on the shift.",
@@ -879,7 +883,9 @@
         "offered": "{{count}} shifts are up for grabs",
         "claimed": "{{count}} shifts were taken",
         "missing_level": "{{count}} shifts are missing their required level",
-        "note": "{{count}} of your shifts have new notes"
+        "note": "{{count}} of your shifts have new notes",
+        "hours_changed": "The hours of {{count}} of your shifts changed",
+        "removed": "{{count}} of your shifts were removed from the schedule"
       },
       "claim": {
         "requested": "{{count}} shift requests are waiting",
@@ -920,7 +926,9 @@
         "offered": "{{name}} is giving away {{date}}, {{start}}–{{end}}",
         "claimed": "{{name}} took the shift on {{date}}, {{start}}–{{end}}",
         "missing_level": "A trade or claim left {{date}}, {{start}}–{{end}} without its required level",
-        "note": "New note on your shift {{date}}, {{start}}–{{end}}"
+        "note": "New note on your shift {{date}}, {{start}}–{{end}}",
+        "hours_changed": "Your shift on {{date}} is now {{start}}–{{end}}",
+        "removed": "Your shift on {{date}}, {{start}}–{{end}} was removed from the schedule"
       },
       "claim": {
         "requested": "{{name}} asks for the shift on {{date}}, {{start}}–{{end}}",
@@ -1195,6 +1203,14 @@
     "days": "Days",
     "daysHint": "Pick more days to add the same shift to them in one go.",
     "noDays": "Pick at least one day.",
-    "weekShort": "W{{week}}"
+    "weekShort": "W{{week}}",
+    "addedByHand": "Added · fill by hand",
+    "periodContext": "{{range}} · Changes this period only.",
+    "publishedContext": "{{range}} · published. Changes go live when you save, and the people on them are told.",
+    "reopen": "Reopen",
+    "reopenDay": "Reopen {{day}}",
+    "liveTitle": "Save and tell the team?",
+    "liveText": "The changes go live now. The people on a changed or removed shift get an alert.",
+    "liveConfirm": "Save"
   }
 }

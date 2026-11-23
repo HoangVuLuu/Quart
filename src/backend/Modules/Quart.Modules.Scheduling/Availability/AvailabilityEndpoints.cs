@@ -109,7 +109,7 @@ internal static class AvailabilityEndpoints
         }
 
         var wanted = (request.ShiftIds ?? []).Distinct().ToList();
-        var known = await db.Shifts.Where(x => x.PeriodId == periodId && wanted.Contains(x.Id)).Select(x => x.Id).ToListAsync(cancellationToken);
+        var known = await db.Shifts.Where(x => x.PeriodId == periodId && !x.AddedByHand && wanted.Contains(x.Id)).Select(x => x.Id).ToListAsync(cancellationToken);
         if (known.Count != wanted.Count)
         {
             return Problems.Validation(new FieldError(UnknownShift, "shiftIds"));
@@ -358,7 +358,7 @@ internal static class AvailabilityEndpoints
             .SingleOrDefaultAsync(x => x.PeriodId == periodId && x.MembershipId == membershipId, cancellationToken);
         var sent = answer?.Status == Availability.Sent;
         var selected = sent ? answer!.Blocks.Select(x => x.ShiftId).ToHashSet() : [];
-        var shifts = await db.Shifts.AsNoTracking().Where(x => x.PeriodId == periodId).OrderBy(x => x.Date).ThenBy(x => x.StartTime).ToListAsync(cancellationToken);
+        var shifts = await db.Shifts.AsNoTracking().Where(x => x.PeriodId == periodId && !x.AddedByHand).OrderBy(x => x.Date).ThenBy(x => x.StartTime).ToListAsync(cancellationToken);
         var canReadNotes = http.Member().Can(Permission.ViewAvailabilityComments);
         var notes = canReadNotes ? answer?.Notes ?? [] : [];
         // FR-103a: the shift notes follow the same rule as the week notes, and like the shifts, only once sent.
@@ -387,7 +387,8 @@ internal static class AvailabilityEndpoints
             .SingleOrDefaultAsync(x => x.PeriodId == period.Id && x.MembershipId == membershipId, cancellationToken);
         var selected = availability?.Blocks.Select(x => x.ShiftId).ToHashSet() ?? [];
         var shiftNotes = availability?.Blocks.Where(x => x.Note != null).ToDictionary(x => x.ShiftId, x => x.Note!) ?? [];
-        var shifts = await db.Shifts.AsNoTracking().Where(x => x.PeriodId == period.Id).ToListAsync(cancellationToken);
+        // Shifts added by hand on Building Schedule are filled by hand: nobody gives availability for them (M4-01).
+        var shifts = await db.Shifts.AsNoTracking().Where(x => x.PeriodId == period.Id && !x.AddedByHand).ToListAsync(cancellationToken);
         // FR-094: blocks that overlap a shift the person holds at another workplace are greyed out. They know where
         // they work; the response still says only "busy", never where.
         var busy = await BusyElsewhere.LoadAsync(db, period, [member.UserId], cancellationToken);

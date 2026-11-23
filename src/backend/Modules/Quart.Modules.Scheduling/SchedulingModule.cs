@@ -51,6 +51,7 @@ public static class SchedulingModule
     public static IEndpointRouteBuilder MapSchedulingModule(this IEndpointRouteBuilder endpoints, bool includeLab = false)
     {
         endpoints.MapPeriods();
+        endpoints.MapPeriodShifts();
         endpoints.MapAvailability();
         endpoints.MapDrafts();
         endpoints.MapPublishedSchedule();
