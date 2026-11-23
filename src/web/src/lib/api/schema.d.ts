@@ -1168,6 +1168,7 @@ export interface components {
       selected: boolean;
       busyElsewhere: boolean;
       note?: null | string;
+      name?: null | string;
     };
     BlockSetup: {
       /** Format: uuid */
@@ -1179,6 +1180,7 @@ export interface components {
       headcount: number;
       requirements: null | components['schemas']['RequirementSetup'][];
       conflicts: null | components['schemas']['ConflictSetup'][];
+      name?: null | string;
     };
     BusyTime: {
       memberId: string;
@@ -1306,6 +1308,7 @@ export interface components {
       availableIds: string[];
       notes: components['schemas']['DraftShiftNote'][];
       managerNote: null | string;
+      name: null | string;
     };
     DraftShiftNote: {
       /** Format: uuid */
@@ -1674,6 +1677,7 @@ export interface components {
       part: string;
       people: components['schemas']['SchedulePerson'][];
       note?: null | string;
+      name?: null | string;
     };
     ScheduleView: {
       period: components['schemas']['PeriodSummary'];

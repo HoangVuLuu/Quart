@@ -10,7 +10,7 @@ export function describer(t: TFunction, language: string, shifts: GridShift[], n
   const shiftName = (id: string | undefined) => {
     const shift = id ? byId.get(id) : undefined;
     if (!shift) return id ?? '';
-    return `${formatShortDate(shift.date, language)} · ${t(`scheduling.kind.${kinds.get(shift.id) ?? 'mid'}`)}`;
+    return `${formatShortDate(shift.date, language)} · ${shift.name || t(`scheduling.kind.${kinds.get(shift.id) ?? 'mid'}`)}`;
   };
   const person = (id: string | undefined) => (id ? (names.get(id) ?? id) : '');
   const number = (value: string | undefined) => (value === undefined ? '' : formatNumber(value, language));

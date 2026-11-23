@@ -59,13 +59,15 @@ public sealed record WorkplaceRules(
     IReadOnlyDictionary<string, string> PublishChecks);
 
 /// <param name="Days">ISO weekdays the block runs on.</param>
+/// <param name="Name">The custom name, or null to be called Opening, Closing or Mid (M3-04).</param>
 public sealed record TemplateBlock(
     Guid Id,
     IReadOnlyList<IsoDayOfWeek> Days,
     LocalTime Start,
     LocalTime End,
     int Headcount,
-    IReadOnlyList<TemplateRequirement> Requirements);
+    IReadOnlyList<TemplateRequirement> Requirements,
+    string? Name = null);
 
 public sealed record TemplateRequirement(int Level, int MinCount);
 

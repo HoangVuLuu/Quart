@@ -172,6 +172,11 @@ namespace Quart.Modules.Workplaces.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("headcount");
 
+                    b.Property<string>("Name")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
+                        .HasColumnName("name");
+
                     b.Property<LocalTime>("StartTime")
                         .HasColumnType("time")
                         .HasColumnName("start_time");

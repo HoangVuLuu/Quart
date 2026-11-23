@@ -354,13 +354,17 @@ local folder in Development. Only phase 6 needs the domain and production.
 
 ### Phase 3: scheduling extras
 
+The agreed details and mockups for this phase (2026-11-23) are in
+`docs/plans/phase-3.md` and the design canvas linked from it. They override the notes in
+section 5 where the two differ (for example 3.1 has two pages, Editing Shift and Editing day).
+
 | # | Plan ID | Work | Needs |
 | --- | --- | --- | --- |
 | 3.1 | M4-01 | Edit one period's shifts (closure, longer hours) | nothing |
-| 3.2 | M4-08 | Template changes reach an open period (FR-069) | nothing (D1 answered: build it) |
+| 3.2 | M4-08 | ~~Template changes reach an open period (FR-069)~~ **Dropped by Hoang on 2026-11-23**: Edit Generator never changes an open period. | n/a |
 | 3.3 | M5-08 | Reuse a past schedule | nothing |
 | 3.4 | M3-04 | Rename a shift | nothing |
-| 3.5 | M7-05, M7-08 | Unclaimed give-away alert (24 hours by default, Q-08); tell both people when a trade expires | nothing |
+| 3.5 | M7-05, M7-08 | Unclaimed give-away alert (fixed at 36 hours, no setting, Hoang 2026-11-23); tell both people when a trade expires | nothing |
 
 ### Phase 4: accounts and team extras
 
@@ -877,7 +881,7 @@ are in the spec's decision log (section 17).
 | D5 | Domain name (after the final product name, Q-05); Azure subscription for production; always-on or scale to zero; where backups and files are stored | One always-on replica in production; storage in a Canadian region. Hoang owns no domain yet. | 6.1, 6.3, 6.4 |
 | D6 | A Google Cloud project with OAuth credentials | Created by Hoang (a free test project is enough to build); client ID and secret given as secrets | 4.4, 5.4 |
 | D7 | Whether time-off and payslips are wanted at all, and their rules | **Answered:** after the pilot | 5.6, 5.7 |
-| Q-08 | Hours before an unclaimed give-away alerts the admins | **Answered:** 24 hours by default, a workplace setting | 3.5 |
+| Q-08 | Hours before an unclaimed give-away alerts the admins | **Answered:** 24 hours, a setting; **changed 2026-11-23:** fixed at 36 hours, no setting | 3.5 |
 
 Things only Hoang can do: buy the domain and create DNS records, create accounts (email provider,
 Google Cloud), add secrets in GitHub and Azure, try features on a real iPhone and Android phone,

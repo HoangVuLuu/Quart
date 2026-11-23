@@ -17,6 +17,8 @@ export interface GridShift {
   start: string;
   end: string;
   headcount: number;
+  /** The custom name the manager gave the shift (M3-04); else it is called by its place in the day. */
+  name?: string | null;
   people: GridPerson[];
   /** Levels a requirement on this shift is short of, such as [3] for "no level 3" (BR-011). */
   missingLevels?: number[];

@@ -170,7 +170,8 @@
       "requirement_exceeds_headcount": "A rule asks for more people than the shift has.",
       "requirement_invalid": "A level rule needs a level from 1 to 3 and at least 1 person.",
       "time_invalid": "Enter the times as hours and minutes.",
-      "too_many_blocks": "That is more shifts than a template can hold."
+      "too_many_blocks": "That is more shifts than a template can hold.",
+      "name_too_long": "A shift name is 24 characters at most."
     },
     "workplace": {
       "already_member": "You are already in this workplace.",
@@ -990,7 +991,9 @@
       "addPair": "Add pair",
       "done": "Done",
       "applyAll": "Apply these rules to all shifts",
-      "delete": "Delete this shift"
+      "delete": "Delete this shift",
+      "name": "Name (optional)",
+      "nameHint": "Leave it empty to call it Opening, Mid or Closing."
     }
   },
   "offline": {

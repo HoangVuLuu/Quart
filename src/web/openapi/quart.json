@@ -3496,6 +3496,12 @@
               "null",
               "string"
             ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3552,6 +3558,12 @@
             "items": {
               "$ref": "#/components/schemas/ConflictSetup"
             }
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3989,7 +4001,8 @@
           "people",
           "availableIds",
           "notes",
-          "managerNote"
+          "managerNote",
+          "name"
         ],
         "type": "object",
         "properties": {
@@ -4048,6 +4061,12 @@
             }
           },
           "managerNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
             "type": [
               "null",
               "string"
@@ -5436,6 +5455,12 @@
             }
           },
           "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
             "type": [
               "null",
               "string"

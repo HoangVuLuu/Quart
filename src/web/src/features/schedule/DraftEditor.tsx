@@ -43,6 +43,7 @@ function useIssueText(draft: DraftView) {
       start: shift.start,
       end: shift.end,
       headcount: shift.headcount,
+      name: shift.name,
       people: [],
     })),
     new Map(draft.people.map((person) => [person.membershipId, person.name])),
@@ -239,7 +240,7 @@ function DayRow({
                 <span className="flex items-start gap-1.5">
                   <Cup flavour={flavourOf(shift.part)} className="w-4 shrink-0" />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold">{shiftName(shift.part)}</span>
+                    <span className="block text-sm font-bold">{shiftName(shift)}</span>
                     <span className="block text-xs text-muted">
                       {shift.start}–{shift.end}
                     </span>
@@ -438,7 +439,7 @@ function ShiftEditor({
     <Sheet
       open
       onOpenChange={(open) => !open && onClose()}
-      title={`${formatShortDate(shift.date, i18n.language)} · ${shiftName(shift.part)}`}
+      title={`${formatShortDate(shift.date, i18n.language)} · ${shiftName(shift)}`}
       description={`${shift.start}–${shift.end} · ${t('scheduling.grid.fill', { filled: shift.people.length, headcount: shift.headcount })}`}
     >
       {issues.map((issue, index) => (

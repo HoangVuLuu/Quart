@@ -105,7 +105,7 @@ function MyShifts({ schedule, onOpen }: { schedule: ScheduleView; onOpen: (shift
             {formatDayHeading(shift.date, i18n.language)}
           </p>
           <p className="flex items-center gap-2 text-xl font-bold">
-            {shiftName(shift.part)}
+            {shiftName(shift)}
             {/* FR-145: the manager left a note; it reads in the shift's sheet. */}
             {shift.note && <NoteMark />}
           </p>
@@ -212,7 +212,7 @@ function WholeTeam({ schedule }: { schedule: ScheduleView }) {
                     const header = (
                       <>
                         <span className="flex items-center gap-1.5 text-xs font-bold tracking-[0.06em] text-muted uppercase">
-                          {shiftName(shift.part)} · {shift.start}–{shift.end}
+                          {shiftName(shift)} · {shift.start}–{shift.end}
                           {shift.note && <NoteMark />}
                         </span>
                         <span className="mt-0.5 flex flex-wrap gap-1.5">
@@ -276,7 +276,7 @@ export function ShiftPeopleSheet({ shift, onClose }: { shift: ScheduleShift; onC
     <Sheet
       open
       onOpenChange={(isOpen) => !isOpen && onClose()}
-      title={shiftName(shift.part)}
+      title={shiftName(shift)}
       description={`${formatDayHeading(shift.date, i18n.language)} · ${shift.start}–${shift.end} · ${formatNumber(shift.hours, i18n.language)} h`}
     >
       <h3 className="text-sm font-bold text-muted">{t('schedule.sheet.with')}</h3>
@@ -330,7 +330,7 @@ export function ShiftTradeSheet({
     <Sheet
       open
       onOpenChange={(open) => !open && onClose()}
-      title={shiftName(shift.part)}
+      title={shiftName(shift)}
       description={`${formatDayHeading(shift.date, i18n.language)} · ${shift.start}–${shift.end} · ${formatNumber(shift.hours, i18n.language)} h`}
     >
       <div className="flex items-center gap-3 rounded-field bg-surface-3 px-4 py-3 font-bold">
@@ -409,7 +409,7 @@ function TradeSheet({
       open
       onOpenChange={(open) => !open && onClose()}
       title={t('trade.sheet.title', {
-        shift: `${formatDayShort(mine.date, i18n.language)} · ${shiftName(mine.part)}`,
+        shift: `${formatDayShort(mine.date, i18n.language)} · ${shiftName(mine)}`,
       })}
       description={t('trade.sheet.text')}
     >
@@ -425,8 +425,7 @@ function TradeSheet({
             <div className="min-w-0 flex-1">
               <p className="font-bold">{person.name}</p>
               <p className="text-sm text-muted">
-                {formatShortDate(shift.date, i18n.language)} · {shiftName(shift.part)} {shift.start}–
-                {shift.end}
+                {formatShortDate(shift.date, i18n.language)} · {shiftName(shift)} {shift.start}–{shift.end}
               </p>
             </div>
             <Button

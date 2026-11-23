@@ -55,7 +55,7 @@ export function ClaimSheet({
       <Sheet
         open={!confirming}
         onOpenChange={(isOpen) => !isOpen && onClose()}
-        title={full ? shiftName(full.part) : `${shift.start}–${shift.end}`}
+        title={full ? shiftName(full) : `${shift.start}–${shift.end}`}
         description={`${formatDayHeading(shift.date, i18n.language)} · ${shift.start}–${shift.end}${
           full ? ` · ${formatNumber(full.hours, i18n.language)} h` : ''
         }`}

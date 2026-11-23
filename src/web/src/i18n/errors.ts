@@ -86,6 +86,7 @@ const errorKeys = {
   'template.requirement_invalid': 'errors.template.requirement_invalid',
   'template.time_invalid': 'errors.template.time_invalid',
   'template.too_many_blocks': 'errors.template.too_many_blocks',
+  'template.name_too_long': 'errors.template.name_too_long',
   'workplace.already_member': 'errors.workplace.already_member',
   'workplace.has_upcoming_shifts': 'errors.workplace.has_upcoming_shifts',
   'workplace.hours_invalid': 'errors.workplace.hours_invalid',

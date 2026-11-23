@@ -374,7 +374,7 @@ internal static class AvailabilityEndpoints
             shifts.Select(x => new AvailabilityShift(
                 x.Id, x.SourceBlockId, x.Date.ToDateOnly(), Support.Time(x.StartTime), Support.Time(x.EndTime), x.Hours,
                 selected.Contains(x.Id) && !busy.Any(b => b.Overlaps(x)), BusyElsewhere: false,
-                busy.Any(b => b.Overlaps(x)) ? null : shiftNotes.GetValueOrDefault(x.Id))).ToList(),
+                busy.Any(b => b.Overlaps(x)) ? null : shiftNotes.GetValueOrDefault(x.Id), x.Name)).ToList(),
             notes.OrderBy(x => x.CreatedAt).Select(x => new AvailabilityNoteView(x.Id, x.Body, x.CreatedAt.ToDateTimeOffset())).ToList()));
     }
 
@@ -411,7 +411,7 @@ internal static class AvailabilityEndpoints
                     var elsewhere = busy.Any(b => b.Overlaps(x));
                     return new AvailabilityShift(
                         x.Id, x.SourceBlockId, x.Date.ToDateOnly(), Support.Time(x.StartTime), Support.Time(x.EndTime), x.Hours,
-                        selected.Contains(x.Id) && !elsewhere, elsewhere, elsewhere ? null : shiftNotes.GetValueOrDefault(x.Id));
+                        selected.Contains(x.Id) && !elsewhere, elsewhere, elsewhere ? null : shiftNotes.GetValueOrDefault(x.Id), x.Name);
                 })
                 .ToList(),
             (availability?.Notes ?? []).OrderBy(x => x.CreatedAt).Select(x => new AvailabilityNoteView(x.Id, x.Body, x.CreatedAt.ToDateTimeOffset())).ToList());
@@ -477,7 +477,8 @@ public sealed record MyAvailability(
 /// <param name="Note">
 /// The person's note on this shift (FR-103a): to themselves always; to the admins who may read notes, once sent.
 /// </param>
-public sealed record AvailabilityShift(Guid Id, Guid BlockId, DateOnly Date, string Start, string End, decimal Hours, bool Selected, bool BusyElsewhere, string? Note = null);
+/// <param name="Name">The shift's custom name, or null to be called Opening, Closing or Mid (M3-04).</param>
+public sealed record AvailabilityShift(Guid Id, Guid BlockId, DateOnly Date, string Start, string End, decimal Hours, bool Selected, bool BusyElsewhere, string? Note = null, string? Name = null);
 
 public sealed record AvailabilityNoteView(Guid Id, string Body, DateTimeOffset CreatedAt);
 

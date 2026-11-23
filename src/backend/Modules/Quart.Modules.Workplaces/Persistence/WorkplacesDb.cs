@@ -63,6 +63,7 @@ internal sealed class WorkplacesDb(DbContextOptions<WorkplacesDb> options) : DbC
         {
             block.HasKey(x => x.Id);
             block.HasIndex(x => x.WorkplaceId);
+            block.Property(x => x.Name).HasMaxLength(ShiftBlock.NameMaxLength);
             block.HasMany(x => x.Requirements).WithOne().HasForeignKey(x => x.ShiftBlockId).OnDelete(DeleteBehavior.Cascade);
             block.HasMany(x => x.Conflicts).WithOne().HasForeignKey(x => x.ShiftBlockId).OnDelete(DeleteBehavior.Cascade);
             block.ToTable(table => table.HasCheckConstraint("ck_shift_block_same_day", "end_time > start_time"));
@@ -172,6 +173,11 @@ internal sealed class ShiftBlock
     public LocalTime EndTime { get; set; }
 
     public int Headcount { get; set; }
+
+    /// <summary>A custom name such as "Rush", shown instead of Opening, Closing or Mid (M3-04). Null for none.</summary>
+    public string? Name { get; set; }
+
+    public const int NameMaxLength = 24;
 
     public List<ShiftBlockRequirement> Requirements { get; set; } = [];
 
