@@ -539,6 +539,7 @@ function ShiftEditor({
         periodId={periodId}
         shiftId={shift.id}
         note={shift.managerNote}
+        onSaved={onClose}
       />
 
       <h3 className="mt-3 mb-2 text-[17px]">{t('draft.editor.onShift')}</h3>

@@ -2166,6 +2166,14 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             names; the opening/closing override is not built. The
             unclaimed give-away alert is fixed at 36 hours, with no
             setting (Hoang).  (BR-034, FR-069, FR-183, Q-08)
+2026-11-23  From Hoang's testing: sheets never put the keyboard up when they
+            open and sit above it when it is open; Return saves a shift note
+            and closes the sheet (staff and manager notes); tapping anywhere on
+            Home's next-shift card opens the shift. Cancelling a period tells
+            everyone who works shifts, not only those who answered; if their
+            "availability requested" had not left the app yet (bundling), it
+            is taken back and the cancellation stays in the app.  (FR-145,
+            FR-103a, FR-211)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

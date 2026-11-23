@@ -266,8 +266,9 @@ internal static class CancelPeriod
             ["periodStart"] = Support.IsoDate(period.StartDate),
             ["weeks"] = period.Weeks.ToString(System.Globalization.CultureInfo.InvariantCulture),
         };
+        // Everyone who was asked for availability hears it is off, not only those who answered (Hoang, 2026-11-23).
         await notifier.NotifyAsync(
-            members.Where(x => told.Contains(x.MembershipId))
+            members.Where(x => (told.Contains(x.MembershipId) || x.WorksShifts) && x.MembershipId != http.Member().MembershipId)
                 .Select(x => new NotificationRequest(workplaceId, x.MembershipId, x.UserId, NotificationTypes.PeriodCancelled, parameters))
                 .ToList(),
             cancellationToken);

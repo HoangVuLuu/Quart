@@ -53,15 +53,21 @@ export function ManagerNoteEditor({
   periodId,
   shiftId,
   note,
+  onSaved,
 }: {
   periodId: string;
   shiftId: string;
   note: string | null | undefined;
+  /** Saving the note closes the shift's sheet (2026-11-23). */
+  onSaved?: () => void;
 }) {
   const { t } = useTranslation();
   const actions = useDraftActions(periodId);
   const [text, setText] = useState(note ?? '');
   const changed = text.trim() !== (note ?? '');
+  const save = () => {
+    if (changed) actions.note.mutate({ shiftId, note: text.trim() }, { onSuccess: () => onSaved?.() });
+  };
   return (
     <div className="mb-4 flex flex-col gap-2">
       <TextArea
@@ -71,7 +77,14 @@ export function ManagerNoteEditor({
         maxLength={maxManagerNoteLength}
         rows={2}
         value={text}
+        enterKeyHint="done"
         onChange={(event) => setText(event.target.value)}
+        // Return saves the note; a note is one line.
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
+          event.preventDefault();
+          save();
+        }}
       />
       <FormError message={actions.note.error ? t(messageKeyFor(actions.note.error)) : undefined} />
       <Button
@@ -79,7 +92,7 @@ export function ManagerNoteEditor({
         className="w-full"
         disabled={!changed}
         loading={actions.note.isPending}
-        onClick={() => actions.note.mutate({ shiftId, note: text.trim() })}
+        onClick={save}
       >
         {text.trim() === '' && note ? t('managerNote.remove') : t('managerNote.save')}
       </Button>

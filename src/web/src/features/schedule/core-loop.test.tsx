@@ -740,6 +740,20 @@ describe('changes of 2026-11-19', () => {
     expect(router.state.location.pathname).toBe('/');
   });
 
+  it('opens the same pop-up when tapping anywhere on the next-shift card (2026-11-23)', async () => {
+    signedIn('employee', {
+      [`GET ${base}/periods/current`]: { live: published, next: null, upcoming: [] },
+      [`GET ${base}/periods/${periodId}/schedule`]: schedule,
+    });
+    renderApp('/');
+    await screen.findByRole('button', { name: en.home.viewShift });
+
+    const card = document.querySelector<HTMLButtonElement>('button[aria-hidden="true"][tabindex="-1"]');
+    expect(card).not.toBeNull();
+    await userEvent.click(card!);
+    expect(within(await screen.findByRole('dialog')).getByText(en.schedule.sheet.with)).toBeInTheDocument();
+  });
+
   it('keeps Whole team when switching periods (8)', async () => {
     const laterId = '66666666-6666-4666-8666-666666666666';
     const later = { ...published, id: laterId, startDate: '2099-10-19', endDate: '2099-11-01' };
@@ -1212,11 +1226,13 @@ describe('the manager’s note on a shift (FR-145)', () => {
     await userEvent.click(screen.getByRole('button', { name: /^Closing/ }));
     const editor = await screen.findByRole('dialog', { name: /Closing/ });
     const field = within(editor).getByLabelText(en.managerNote.label);
+    // Opening the shift does not pop the keyboard up; Return saves the note and closes it (2026-11-23).
+    expect(field).not.toHaveFocus();
     expect(field).toHaveValue('Bring the keys');
     expect(field).toHaveAttribute('maxLength', '100');
     await userEvent.clear(field);
-    await userEvent.type(field, 'Leaving at 5pm');
-    await userEvent.click(within(editor).getByRole('button', { name: en.managerNote.save }));
+    await userEvent.type(field, 'Leaving at 5pm{Enter}');
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Closing/ })).not.toBeInTheDocument());
 
     await waitFor(() =>
       expect(calls.find((call) => call.path.endsWith('/draft/shifts/mon-close/note'))?.body).toEqual({

@@ -293,7 +293,7 @@ public sealed class ChangeListTests(PostgresFixture postgres)
     // Cancelling a period ----------------------------------------------------------------------------------
 
     [Fact]
-    public async Task Cancelling_a_period_deletes_it_frees_its_dates_and_tells_who_sent()
+    public async Task Cancelling_a_period_deletes_it_frees_its_dates_and_tells_everyone_it_asked()
     {
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
@@ -309,7 +309,8 @@ public sealed class ChangeListTests(PostgresFixture postgres)
         Assert.Equal(HttpStatusCode.NotFound, (await lea.TryAsync(HttpMethod.Get, $"{team.Period}/availability/me")).Status);
         Assert.Null((await lea.GetAsync($"{team.Base}/periods/current"))["next"]);
         Assert.Contains("period.cancelled", await team.NotificationTypesAsync(lea));
-        Assert.DoesNotContain("period.cancelled", await team.NotificationTypesAsync(marc));
+        // Marc never answered, but he was asked: he hears it too (Hoang, 2026-11-23). Not the one who cancelled.
+        Assert.Contains("period.cancelled", await team.NotificationTypesAsync(marc));
         Assert.DoesNotContain("period.cancelled", await team.NotificationTypesAsync(team.Owner));
 
         // The same dates can be opened again, with the rules as they are now.
