@@ -881,7 +881,7 @@ are in the spec's decision log (section 17).
 | D5 | Domain name (after the final product name, Q-05); Azure subscription for production; always-on or scale to zero; where backups and files are stored | One always-on replica in production; storage in a Canadian region. Hoang owns no domain yet. | 6.1, 6.3, 6.4 |
 | D6 | A Google Cloud project with OAuth credentials | Created by Hoang (a free test project is enough to build); client ID and secret given as secrets | 4.4, 5.4 |
 | D7 | Whether time-off and payslips are wanted at all, and their rules | **Answered:** after the pilot | 5.6, 5.7 |
-| Q-08 | Hours before an unclaimed give-away alerts the admins | **Answered:** 24 hours by default, a workplace setting | 3.5 |
+| Q-08 | Hours before an unclaimed give-away alerts the admins | **Answered:** 24 hours, a setting; **changed 2026-11-23:** fixed at 36 hours, no setting | 3.5 |
 
 Things only Hoang can do: buy the domain and create DNS records, create accounts (email provider,
 Google Cloud), add secrets in GitHub and Azure, try features on a real iPhone and Android phone,
