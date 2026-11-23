@@ -209,6 +209,17 @@ export function useDraftActions(periodId: string) {
         ),
       onSuccess: show,
     }),
+    // FR-145: the manager's note on a shift; the team sees it once published or updated.
+    note: useMutation({
+      mutationFn: ({ shiftId, note }: { shiftId: string; note: string }) =>
+        unwrap(
+          api.PUT(`${base}/shifts/{shiftId}/note`, {
+            params: { path: { ...path, shiftId } },
+            body: { note },
+          }),
+        ),
+      onSuccess: show,
+    }),
     keep: useMutation({
       mutationFn: (target: { shiftId: string; membershipId: string; locked: boolean }) =>
         unwrap(

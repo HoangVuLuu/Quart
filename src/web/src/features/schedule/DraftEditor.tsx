@@ -26,6 +26,7 @@ import {
   type DraftView,
 } from '../scheduling/data';
 import { flavourOf, useShiftName } from '../scheduling/ShiftName';
+import { ManagerNoteEditor } from './manager-note';
 import { Pill } from './Pill';
 
 const severityTone: Record<string, StatusTone> = { block: 'danger', confirm: 'warning', show: 'neutral' };
@@ -282,6 +283,13 @@ function DayRow({
                     </span>
                   );
                 })}
+                {/* FR-145: the manager's own note, as drafted. */}
+                {shift.managerNote && (
+                  <span className="flex items-start gap-1 text-xs font-bold text-warning">
+                    <Icon name="note" className="size-3.5 shrink-0" />
+                    <span className="line-clamp-2 min-w-0 break-words">{shift.managerNote}</span>
+                  </span>
+                )}
                 {missing.map((issue) => (
                   <StatusChip key={issue.parameters.level} tone="danger" className="self-start">
                     {t('scheduling.grid.missingLevel', { level: issue.parameters.level })}
@@ -446,6 +454,14 @@ function ShiftEditor({
         </p>
       ))}
       <FormError message={error ? t(messageKeyFor(error)) : undefined} />
+
+      {/* FR-145: the manager's note for the whole team, live once published. */}
+      <ManagerNoteEditor
+        key={shift.managerNote ?? ''}
+        periodId={periodId}
+        shiftId={shift.id}
+        note={shift.managerNote}
+      />
 
       <h3 className="mt-3 mb-2 text-[17px]">{t('draft.editor.onShift')}</h3>
       {shift.people.length === 0 && <p className="text-sm text-muted">{t('draft.editor.nobody')}</p>}

@@ -1,12 +1,13 @@
 using System.Net;
 using System.Text.Json.Nodes;
+using Quart.Modules.Jobs;
 
 namespace Quart.Api.Tests;
 
 /// <summary>
-/// A short note on one shift of someone's availability (FR-103a): "Can only stay until 21:00". It lives on the
+/// Notes on shifts. A short note on one shift of someone's availability (FR-103a): "Can only stay until 21:00". It lives on the
 /// shift the person can work, goes when they unselect it, locks with the availability, and reaches the admins on
-/// that shift only.
+/// that shift only. And the manager's note on a shift (FR-145), which the whole team reads once published.
 /// </summary>
 [Collection(PostgresCollection.Name)]
 public sealed class ShiftNoteTests(PostgresFixture postgres)
@@ -107,6 +108,81 @@ public sealed class ShiftNoteTests(PostgresFixture postgres)
         var stranger = await app.PersonAsync("Sam Stranger");
         Assert.Equal(HttpStatusCode.NotFound, (await stranger.TryAsync(HttpMethod.Get, $"{team.Period}/availability/{lea.MembershipId}")).Status);
     }
+
+    [Fact]
+    public async Task A_manager_note_goes_live_with_publish_and_update_and_tells_the_people_on_that_shift()
+    {
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        await team.OpenPeriodAsync();
+        foreach (var person in team.Everyone)
+        {
+            await team.SendAvailabilityAsync(person);
+        }
+        var owner = team.Owner;
+        var draft = await owner.PostAsync($"{team.Period}/draft/start");
+        draft = await owner.PostAsync($"{team.Period}/draft/generate", new { seed = 7 });
+        var ids = draft["shifts"]!.AsArray().Select(x => x!["id"]!.GetValue<string>()).ToList();
+        var note = (string shift) => $"{team.Period}/draft/shifts/{shift}/note";
+
+        // Plain text, trimmed, 100 characters at most (FR-145).
+        Assert.Equal("schedule.note_too_long", (await owner.TryAsync(HttpMethod.Put, note(ids[0]), new { note = new string('a', 101) })).Code);
+        draft = await owner.SendAsync(HttpMethod.Put, note(ids[0]), new { note = "  Leaving at 5pm  " });
+        Assert.Equal("Leaving at 5pm", ManagerNoteOf(draft, ids[0]));
+        Assert.True(draft["hasUnsavedChanges"]!.GetValue<bool>());
+
+        // Live with the first publish, for the whole team, whoever works the shift.
+        await owner.PostAsync($"{team.Period}/draft/publish", new { confirmed = true });
+        var paul = team.Staff[4];
+        Assert.Equal("Leaving at 5pm", LiveNoteOf(await team.ScheduleAsync(paul), ids[0]));
+        Assert.Null(LiveNoteOf(await team.ScheduleAsync(paul), ids[1]));
+
+        // On Editing Schedule, an unsaved note is dropped with the visit, like any unsaved change.
+        await owner.PostAsync($"{team.Period}/draft/start");
+        await owner.SendAsync(HttpMethod.Put, note(ids[2]), new { note = "Not saved" });
+        await owner.PostAsync($"{team.Period}/draft/leave");
+        draft = await owner.PostAsync($"{team.Period}/draft/start");
+        Assert.Null(ManagerNoteOf(draft, ids[2]));
+        Assert.False(draft["hasUnpublishedChanges"]!.GetValue<bool>());
+
+        // A changed note alone is something to update, and tells only the people on that shift.
+        draft = await owner.SendAsync(HttpMethod.Put, note(ids[1]), new { note = "Bring the keys" });
+        Assert.True(draft["hasUnpublishedChanges"]!.GetValue<bool>());
+        var onShift = draft["shifts"]!.AsArray().Single(x => x!["id"]!.GetValue<string>() == ids[1])!["people"]!.AsArray()
+            .Select(x => x!["membershipId"]!.GetValue<string>()).ToHashSet();
+        // Everything from the first publish goes out first, so only what this update sends is counted.
+        await app.Factory.Services.RunTickAsync(TestContext.Current.CancellationToken);
+        var emails = app.Emails.Sent.Count;
+        await owner.PostAsync($"{team.Period}/draft/publish", new { confirmed = true });
+        Assert.Equal("Bring the keys", LiveNoteOf(await team.ScheduleAsync(paul), ids[1]));
+        await app.Factory.Services.RunTickAsync(TestContext.Current.CancellationToken);
+        foreach (var person in team.Everyone)
+        {
+            var told = (await team.NotificationTypesAsync(person)).Contains("shift.note");
+            Assert.Equal(onShift.Contains(person.MembershipId.ToString()), told);
+        }
+        // In the app and by push, not by email.
+        Assert.Equal(emails, app.Emails.Sent.Count);
+
+        // Removing a note goes live too, and tells nobody.
+        await owner.PostAsync($"{team.Period}/draft/start");
+        await owner.SendAsync(HttpMethod.Put, note(ids[1]), new { note = "" });
+        await owner.PostAsync($"{team.Period}/draft/publish", new { confirmed = true });
+        Assert.Null(LiveNoteOf(await team.ScheduleAsync(paul), ids[1]));
+        foreach (var person in team.Everyone)
+        {
+            Assert.True((await team.NotificationTypesAsync(person)).Count(x => x == "shift.note") <= 1);
+        }
+
+        // Only managers write them.
+        Assert.Equal(HttpStatusCode.Forbidden, (await paul.TryAsync(HttpMethod.Put, note(ids[0]), new { note = "Mine" })).Status);
+    }
+
+    private static string? ManagerNoteOf(JsonNode draft, string shiftId) =>
+        draft["shifts"]!.AsArray().Single(x => x!["id"]!.GetValue<string>() == shiftId)!["managerNote"]?.GetValue<string>();
+
+    private static string? LiveNoteOf(JsonNode schedule, string shiftId) =>
+        schedule["shifts"]!.AsArray().Single(x => x!["id"]!.GetValue<string>() == shiftId)!["note"]?.GetValue<string>();
 
     private static async Task<(string A, string B, string C)> ThreeShiftsAsync(Team team, TestUser person)
     {

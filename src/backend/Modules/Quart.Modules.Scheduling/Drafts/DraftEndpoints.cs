@@ -29,6 +29,7 @@ internal static class DraftEndpoints
 {
     public const string NotBuilding = "schedule.not_building";
     public const string UnknownShift = "schedule.unknown_shift";
+    public const string NoteTooLong = "schedule.note_too_long";
     public const string UnknownMember = "schedule.unknown_member";
     public const string AlreadyOnShift = "schedule.already_on_shift";
     public const string NotOnShift = "schedule.not_on_shift";
@@ -59,6 +60,7 @@ internal static class DraftEndpoints
         group.MapPost("/assignments", AddAsync).WithName("AddDraftAssignment");
         group.MapDelete("/assignments/{shiftId:guid}/{membershipId:guid}", RemoveAsync).WithName("RemoveDraftAssignment");
         group.MapPut("/assignments/{shiftId:guid}/{membershipId:guid}/lock", SetLockAsync).WithName("LockDraftAssignment");
+        group.MapPut("/shifts/{shiftId:guid}/note", SetNoteAsync).WithName("SetShiftNote");
         group.MapPost("/publish", PublishAsync).WithName("PublishDraft");
     }
 
@@ -263,6 +265,35 @@ internal static class DraftEndpoints
         return TypedResults.Ok(await ViewAsync(db, builder, period, http.Member(), cancellationToken));
     }
 
+    /// <summary>
+    /// The manager's note on a shift, such as "Leaving at 5pm" (FR-145). Part of the draft: the team sees it once
+    /// published or updated. Plain text, 100 characters at most; empty removes it.
+    /// </summary>
+    private static async Task<Results<Ok<DraftView>, ProblemHttpResult>> SetNoteAsync(
+        Guid workplaceId, Guid periodId, Guid shiftId, ShiftNoteChange request, HttpContext http, SchedulingDb db, DraftBuilder builder, CancellationToken cancellationToken)
+    {
+        if (await AvailabilityEndpoints.FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
+        {
+            return Problems.NotFound();
+        }
+        if (period.LockedAt is null)
+        {
+            return Problems.Conflict(NotBuilding);
+        }
+        if (await db.Shifts.SingleOrDefaultAsync(x => x.Id == shiftId && x.PeriodId == period.Id, cancellationToken) is not { } shift)
+        {
+            return Problems.NotFound();
+        }
+        var note = (request.Note ?? string.Empty).Trim();
+        if (note.Length > Shift.NoteMaxLength)
+        {
+            return Problems.Validation(new FieldError(NoteTooLong, "note"));
+        }
+        shift.DraftNote = note.Length == 0 ? null : note;
+        await db.SaveChangesAsync(cancellationToken);
+        return TypedResults.Ok(await ViewAsync(db, builder, period, http.Member(), cancellationToken));
+    }
+
     private static async Task<Results<Ok<DraftView>, ProblemHttpResult>> RemoveAsync(
         Guid workplaceId, Guid periodId, Guid shiftId, Guid membershipId, HttpContext http, SchedulingDb db, DraftBuilder builder, CancellationToken cancellationToken)
     {
@@ -332,7 +363,10 @@ internal static class DraftEndpoints
         var liveKeys = live.Select(x => (x.ShiftId, x.MembershipId)).ToHashSet();
         var added = draft.Where(x => !liveKeys.Contains((x.ShiftId, x.MembershipId))).ToList();
         var removed = live.Where(x => !draftKeys.Contains((x.ShiftId, x.MembershipId))).ToList();
-        if (period.Version > 0 && added.Count == 0 && removed.Count == 0)
+        // FR-145: a changed shift note is a change to publish too.
+        var shifts = await db.Shifts.Where(x => x.PeriodId == period.Id).ToListAsync(cancellationToken);
+        var renoted = shifts.Where(x => x.DraftNote != x.Note).ToList();
+        if (period.Version > 0 && added.Count == 0 && removed.Count == 0 && renoted.Count == 0)
         {
             return Problems.Conflict(NothingToPublish);
         }
@@ -358,6 +392,10 @@ internal static class DraftEndpoints
                 StartsAt = x.StartsAt,
                 EndsAt = x.EndsAt,
             }));
+            foreach (var shift in renoted)
+            {
+                shift.Note = shift.DraftNote;
+            }
             period.Version++;
             period.Status = Period.Published;
             period.PublishedAt = now;
@@ -413,6 +451,23 @@ internal static class DraftEndpoints
                         ["added"] = added.Count(x => x.MembershipId == id).ToString(CultureInfo.InvariantCulture),
                         ["removed"] = removed.Count(x => x.MembershipId == id).ToString(CultureInfo.InvariantCulture),
                     })).ToList(),
+                cancellationToken);
+
+            // FR-145: a new or changed note reaches the people on that shift, without its text (FR-216).
+            var people = draft.ToLookup(x => x.ShiftId);
+            await notifier.NotifyAsync(
+                renoted.Where(x => x.Note != null)
+                    .SelectMany(shift => people[shift.Id].Where(x => byId.ContainsKey(x.MembershipId)).Select(x => new NotificationRequest(
+                        workplaceId, x.MembershipId, byId[x.MembershipId].UserId, NotificationTypes.ShiftNoteChanged,
+                        new Dictionary<string, string>
+                        {
+                            ["date"] = Support.IsoDate(shift.Date),
+                            ["start"] = Support.Time(shift.StartTime),
+                            ["end"] = Support.Time(shift.EndTime),
+                            ["shiftId"] = shift.Id.ToString(),
+                            ["periodId"] = period.Id.ToString(),
+                        })))
+                    .ToList(),
                 cancellationToken);
         }
         return TypedResults.Ok(Support.Summarize(period));
@@ -515,7 +570,8 @@ internal static class DraftEndpoints
                     .Where(x => x.Status == Persistence.Availability.Sent && !DraftBuilder.IsBusyElsewhere(data, x.MembershipId, shift))
                     .SelectMany(x => x.Blocks.Where(b => b.ShiftId == shift.Id && b.Note != null).Select(b => new DraftShiftNote(x.MembershipId, b.Note!)))
                     .ToList()
-                : [])).ToList();
+                : [],
+            shift.DraftNote)).ToList();
 
         var people = data.Members.Select(person => new DraftPerson(
             person.MembershipId,
@@ -534,9 +590,9 @@ internal static class DraftEndpoints
             period.Seed,
             evaluation.Score,
             shifts.Sum(x => Math.Max(0, x.Headcount - x.People.Count)),
-            // FR-161: Update only shows when the draft differs from what is live.
-            period.Version == 0 || !draftKeys.SetEquals(liveKeys),
-            BuildSession.HasUnsavedChanges(period, draft),
+            // FR-161: Update only shows when the draft differs from what is live, shift notes included (FR-145).
+            period.Version == 0 || !draftKeys.SetEquals(liveKeys) || data.Shifts.Any(x => x.DraftNote != x.Note),
+            BuildSession.HasUnsavedChanges(period, draft, data.Shifts),
             shifts,
             people,
             evaluation.Issues.Select(x => new DraftIssue(
@@ -591,6 +647,7 @@ public sealed record DraftView(
 /// <param name="Part">"opening", "closing", "mid", or "only" for a day's single shift (BR-034).</param>
 /// <param name="AvailableIds">Members who sent their availability and can work this shift.</param>
 /// <param name="Notes">Their notes on this shift (FR-103a); empty unless the caller may read notes.</param>
+/// <param name="ManagerNote">The manager's own note on the shift as drafted (FR-145); the team sees it once published.</param>
 public sealed record DraftShift(
     Guid Id,
     Guid BlockId,
@@ -603,7 +660,11 @@ public sealed record DraftShift(
     IReadOnlyList<DraftRequirement> Requirements,
     IReadOnlyList<DraftAssignment> People,
     IReadOnlyList<Guid> AvailableIds,
-    IReadOnlyList<DraftShiftNote> Notes);
+    IReadOnlyList<DraftShiftNote> Notes,
+    string? ManagerNote);
+
+/// <param name="Note">Plain text, 100 characters at most; empty removes the note (FR-145).</param>
+public sealed record ShiftNoteChange(string? Note);
 
 /// <summary>One person's note on one shift (FR-103a). Plain text.</summary>
 public sealed record DraftShiftNote(Guid MembershipId, string Note);

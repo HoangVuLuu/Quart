@@ -380,6 +380,11 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("date");
 
+                    b.Property<string>("DraftNote")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("draft_note");
+
                     b.Property<LocalTime>("EndTime")
                         .HasColumnType("time")
                         .HasColumnName("end_time");
@@ -391,6 +396,11 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                     b.Property<int>("Headcount")
                         .HasColumnType("integer")
                         .HasColumnName("headcount");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("note");
 
                     b.Property<Guid>("PeriodId")
                         .HasColumnType("uuid")

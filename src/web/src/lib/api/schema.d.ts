@@ -724,6 +724,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/shifts/{shiftId}/note': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['SetShiftNote'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/workplaces/{workplaceId}/periods/{periodId}/draft/publish': {
     parameters: {
       query?: never;
@@ -1289,6 +1305,7 @@ export interface components {
       people: components['schemas']['DraftAssignment'][];
       availableIds: string[];
       notes: components['schemas']['DraftShiftNote'][];
+      managerNote: null | string;
     };
     DraftShiftNote: {
       /** Format: uuid */
@@ -1656,6 +1673,7 @@ export interface components {
       headcount: number;
       part: string;
       people: components['schemas']['SchedulePerson'][];
+      note?: null | string;
     };
     ScheduleView: {
       period: components['schemas']['PeriodSummary'];
@@ -1663,6 +1681,9 @@ export interface components {
     };
     SeenRequest: {
       key: null | string;
+    };
+    ShiftNoteChange: {
+      note: null | string;
     };
     ShiftNoteRequest: {
       /** Format: uuid */
@@ -3352,6 +3373,43 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['LockRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DraftView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  SetShiftNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+        shiftId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ShiftNoteChange'];
       };
     };
     responses: {

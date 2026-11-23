@@ -378,6 +378,7 @@ describe('the schedule tab', () => {
           people: [{ membershipId: mine, locked: true }],
           availableIds: [mine, kevin],
           notes: [{ membershipId: kevin, note: 'Until 21:00 only' }],
+          managerNote: null,
         },
       ],
       people: [
@@ -517,6 +518,7 @@ describe('the schedule tab', () => {
           people: [{ membershipId: mine, locked: false }],
           availableIds: [mine, kevin],
           notes: [],
+          managerNote: null,
         },
       ],
       people: [person(mine, 'Sophie L.'), person(kevin, 'Kevin T.')],
@@ -1091,6 +1093,109 @@ describe('changes of 2026-11-22', () => {
     expect(within(views).getByRole('button', { name: en.schedule.team })).toHaveAttribute(
       'aria-pressed',
       'true',
+    );
+  });
+});
+
+describe('the manager’s note on a shift (FR-145)', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  const noted: Schemas['ScheduleView'] = {
+    period: published,
+    shifts: [
+      { ...scheduleShift('mon-open', '2099-10-05', 'opening', [kevinT]), note: 'Bring the keys' },
+      { ...scheduleShift('mon-close', '2099-10-05', 'closing', [sophie, kevinT]), note: 'Leaving at 5pm' },
+    ],
+  };
+
+  it('marks my shift, reads in its sheet, and shows under every shift for the whole team', async () => {
+    signedIn('employee', {
+      [`GET ${base}/periods/current`]: { live: published, next: null, upcoming: [] },
+      [`GET ${base}/periods/${periodId}/schedule`]: noted,
+    });
+    renderApp('/schedule');
+
+    const card = await screen.findByRole('button', { name: new RegExp(en.managerNote.has) });
+    expect(screen.queryByText('Leaving at 5pm')).not.toBeInTheDocument();
+    await userEvent.click(card);
+    const sheet = await screen.findByRole('dialog');
+    expect(within(sheet).getByText(en.managerNote.title)).toBeInTheDocument();
+    expect(within(sheet).getByText('Leaving at 5pm')).toBeInTheDocument();
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Close' }));
+
+    await userEvent.click(screen.getByRole('button', { name: en.schedule.team }));
+    expect(await screen.findByText('Bring the keys')).toBeInTheDocument();
+    expect(screen.getByText('Leaving at 5pm')).toBeInTheDocument();
+  });
+
+  it('is written in the shift sheet on Building Schedule and shows on the card', async () => {
+    const building = { ...period, status: 'building', locked: true, draftSaved: true };
+    const draft: Schemas['DraftView'] = {
+      period: building,
+      seed: 7,
+      score: 0,
+      openSlots: 0,
+      hasUnpublishedChanges: true,
+      hasUnsavedChanges: false,
+      shifts: [
+        {
+          id: 'mon-close',
+          blockId: 'block-close',
+          date: '2099-10-05',
+          start: '16:00',
+          end: '23:00',
+          hours: 7,
+          headcount: 1,
+          part: 'closing',
+          requirements: [],
+          people: [{ membershipId: mine, locked: false }],
+          availableIds: [mine],
+          notes: [],
+          managerNote: 'Bring the keys',
+        },
+      ],
+      people: [
+        {
+          membershipId: mine,
+          name: 'Sophie L.',
+          level: 2,
+          desiredWeeklyHours: 20,
+          maxWeeklyHours: null,
+          availability: 'sent',
+          weeklyHours: [7],
+          noteCount: 0,
+        },
+      ],
+      issues: [],
+    };
+    const calls = signedIn('owner', {
+      [`GET ${base}/periods/current`]: { live: null, next: { ...next, period: building }, upcoming: [] },
+      [`POST ${base}/periods/${periodId}/draft/start`]: draft,
+      [`GET ${base}/periods/${periodId}/draft`]: draft,
+      [`PUT ${base}/periods/${periodId}/draft/shifts/mon-close/note`]: {
+        ...draft,
+        shifts: [{ ...draft.shifts[0]!, managerNote: 'Leaving at 5pm' }],
+      },
+      [`POST ${base}/periods/${periodId}/draft/leave`]: status(204),
+    });
+    renderApp('/schedule/build');
+
+    expect(await screen.findByText('Bring the keys')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^Closing/ }));
+    const editor = await screen.findByRole('dialog', { name: /Closing/ });
+    const field = within(editor).getByLabelText(en.managerNote.label);
+    expect(field).toHaveValue('Bring the keys');
+    expect(field).toHaveAttribute('maxLength', '100');
+    await userEvent.clear(field);
+    await userEvent.type(field, 'Leaving at 5pm');
+    await userEvent.click(within(editor).getByRole('button', { name: en.managerNote.save }));
+
+    await waitFor(() =>
+      expect(calls.find((call) => call.path.endsWith('/draft/shifts/mon-close/note'))?.body).toEqual({
+        note: 'Leaving at 5pm',
+      }),
     );
   });
 });

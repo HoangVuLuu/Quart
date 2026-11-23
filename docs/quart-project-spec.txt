@@ -551,6 +551,16 @@ FR-144  Each issue type has an admin setting controlling what happens at publish
         everything else, including a shift above its headcount, = display.
         One issue blocks whatever the setting: a person on two shifts that
         overlap in time, which the database refuses (AD-011).
+FR-145  The admin can leave a note on a shift from its panel, such as
+        "Leaving at 5pm": plain text, up to 100 characters, enforced on the
+        server, one per shift. It is part of the draft: saved and dropped with
+        it, and seen by staff only once published (or updated, FR-161). The
+        whole team reads it: a mark on the person's own shift card opens it in
+        the shift's sheet, and the whole-team view shows it under the shift.
+        A new or changed note in an update notifies the people on that shift
+        (in the app and by push, not by email, never with the note's text);
+        removing a note notifies nobody. The generator ignores it
+        (2026-11-23).
 
 6.7 PUBLISHING
 FR-160  Publishing makes the draft visible to staff as version 1 and notifies
@@ -1628,6 +1638,7 @@ M5 — Build and publish  (12 issues)
   M5-10  Leaving releases future shifts
   M5-11  Cross-workplace conflicts
   M5-12  Audit log for schedule changes
+  M5-13  The manager's note on a shift
 
 M6 — Go live  (12 issues)
   M6-01  Production environment and release-tag deploys
@@ -2054,6 +2065,11 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             email is sent first and its outbox row is then deleted, so no
             table keeps the address. Accounts that never confirmed their
             email are deleted 7 days after sign-up.  (FR-009, 13)
+2026-11-23  Manager notes on shifts (M5-13, Hoang): one note per shift,
+            written on Building or Editing Schedule, read by the whole team
+            once published; the people on the shift are told when an update
+            adds or changes it. Built in the same pull request as M4-09.
+            Shift-note sheet without quick picks.  (FR-145, FR-103a)
 2026-11-23  Shift notes (M4-09, Hoang): a person can leave a short note on
             one shift they can work, for the managers (FR-103a). Unchoosing
             the shift deletes its note without asking; notes lock with the

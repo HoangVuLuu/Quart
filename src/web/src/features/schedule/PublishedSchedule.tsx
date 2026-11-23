@@ -25,6 +25,7 @@ import {
   type ScheduleView,
 } from '../scheduling/data';
 import { flavourOf, useShiftName } from '../scheduling/ShiftName';
+import { ManagerNote, NoteMark } from './manager-note';
 
 export type ScheduleScope = 'mine' | 'team';
 
@@ -103,7 +104,11 @@ function MyShifts({ schedule, onOpen }: { schedule: ScheduleView; onOpen: (shift
           <p className="text-xs font-bold tracking-[0.06em] text-muted uppercase">
             {formatDayHeading(shift.date, i18n.language)}
           </p>
-          <p className="text-xl font-bold">{shiftName(shift.part)}</p>
+          <p className="flex items-center gap-2 text-xl font-bold">
+            {shiftName(shift.part)}
+            {/* FR-145: the manager left a note; it reads in the shift's sheet. */}
+            {shift.note && <NoteMark />}
+          </p>
           <div className="text-sm">
             <span>
               {shift.start}–{shift.end} ·{' '}
@@ -216,6 +221,12 @@ function WholeTeam({ schedule }: { schedule: ScheduleView }) {
                           </StatusChip>
                         )}
                       </dd>
+                      {/* FR-145: the manager's note, for the whole team. */}
+                      {shift.note && (
+                        <dd>
+                          <ManagerNote note={shift.note} compact />
+                        </dd>
+                      )}
                     </div>
                   ))}
                 </dl>
@@ -262,6 +273,7 @@ export function ShiftPeopleSheet({ shift, onClose }: { shift: ScheduleShift; onC
           {t('schedule.sheet.openSpots', { count: open })}
         </StatusChip>
       )}
+      <ManagerNote note={shift.note} />
     </Sheet>
   );
 }
@@ -301,6 +313,7 @@ export function ShiftTradeSheet({
         <Cup flavour={flavourOf(shift.part)} className="w-8 shrink-0" />
         <Coworkers shift={shift} />
       </div>
+      <ManagerNote note={shift.note} />
       {offer && <p className="mt-3 text-sm text-muted">{t('schedule.sheet.offeredText')}</p>}
       <FormError message={error ? t(messageKeyFor(error)) : undefined} />
       {offline && <p className="mt-3 text-sm text-muted">{t('offline.needsConnection')}</p>}
