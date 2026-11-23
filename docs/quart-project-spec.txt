@@ -412,6 +412,14 @@ FR-092  Starting a period copies the template into real, dated shifts. From that
         these changes until they are cleared ("Clear all"). Opening a period
         whose changes a previous period already used asks first: keep them,
         clear them and open, or return.
+        A period's own shifts are changed from the pen next to each day on
+        Building and Editing Schedule (2026-11-23): new hours, removed, added
+        by hand, or a closed day reopened from the rules. Days that started
+        never change. Availability belongs to the shift, not its hours, so
+        moving a shift keeps the answers. A shift added by hand gets no
+        availability: the generator leaves it empty and the manager fills it.
+        On a published period the change is live on Save: the people on a
+        moved or removed shift are told, and a version is saved (FR-164).
 FR-093  An employee sets availability by tapping the shift blocks they can work,
         for each date in the period. There is no free-form time painting: the
         unit of availability is the shift the shop actually runs.

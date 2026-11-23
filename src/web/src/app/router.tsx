@@ -7,6 +7,7 @@ import { TeamAvailabilityPage } from '../features/availability/TeamAvailabilityP
 import { ForcedErrorPage } from '../features/diagnostics/ForcedErrorPage';
 import { EditGeneratorPage } from '../features/generator/EditGeneratorPage';
 import { SpecificDayPage, SpecificDaysLayout, SpecificDaysPage } from '../features/generator/SpecificDays';
+import { PeriodShiftDayPage, PeriodShiftsLayout, PeriodShiftsPage } from '../features/schedule/PeriodShifts';
 import { HomePage } from '../features/home/HomePage';
 import {
   CheckEmailPage,
@@ -137,6 +138,15 @@ export const routes: RouteObject[] = [
                   { path: 'trade/mine', element: <MyShiftsToTradePage /> },
                   { path: 'schedule/build', element: <BuildingPage mode="build" /> },
                   { path: 'schedule/edit', element: <BuildingPage mode="edit" /> },
+                  // One period's own shifts, from the pen next to a day on Building and Editing Schedule (M4-01).
+                  {
+                    path: 'schedule/shifts',
+                    element: <PeriodShiftsLayout />,
+                    children: [
+                      { index: true, element: <PeriodShiftsPage /> },
+                      { path: ':day', element: <PeriodShiftDayPage /> },
+                    ],
+                  },
                 ],
               },
             ],

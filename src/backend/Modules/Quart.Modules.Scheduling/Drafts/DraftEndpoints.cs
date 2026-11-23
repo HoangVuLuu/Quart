@@ -572,7 +572,8 @@ internal static class DraftEndpoints
                     .ToList()
                 : [],
             shift.DraftNote,
-            shift.Name)).ToList();
+            shift.Name,
+            shift.AddedByHand)).ToList();
 
         var people = data.Members.Select(person => new DraftPerson(
             person.MembershipId,
@@ -650,6 +651,7 @@ public sealed record DraftView(
 /// <param name="Notes">Their notes on this shift (FR-103a); empty unless the caller may read notes.</param>
 /// <param name="ManagerNote">The manager's own note on the shift as drafted (FR-145); the team sees it once published.</param>
 /// <param name="Name">The shift's custom name, or null to be called by its part (M3-04).</param>
+/// <param name="AddedByHand">Added on Building or Editing Schedule: nobody gave availability, filled by hand (M4-01).</param>
 public sealed record DraftShift(
     Guid Id,
     Guid BlockId,
@@ -664,7 +666,8 @@ public sealed record DraftShift(
     IReadOnlyList<Guid> AvailableIds,
     IReadOnlyList<DraftShiftNote> Notes,
     string? ManagerNote,
-    string? Name);
+    string? Name,
+    bool AddedByHand = false);
 
 /// <param name="Note">Plain text, 100 characters at most; empty removes the note (FR-145).</param>
 public sealed record ShiftNoteChange(string? Note);

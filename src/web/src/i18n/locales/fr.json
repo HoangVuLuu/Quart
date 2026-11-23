@@ -140,7 +140,11 @@
       "template_empty": "Ajoute d’abord tes quarts dans la page Modifier le générateur.",
       "unfinished_exists": "Publie la période en cours avant d’en ouvrir une autre.",
       "already_started": "Cette période est déjà commencée, elle ne peut plus être annulée.",
-      "old_day_changes": "Cette période utiliserait des modifications de jours de la période précédente."
+      "old_day_changes": "Cette période utiliserait des modifications de jours de la période précédente.",
+      "shift_started": "Un quart a commencé depuis que vous avez ouvert cette page. Rechargez-la.",
+      "shift_unknown": "Un quart a été retiré entre-temps. Rechargez la page.",
+      "date_outside": "Un quart est en dehors de la période.",
+      "shift_double_booked": "Ces heures mettraient quelqu’un sur deux quarts en même temps. Changez les heures ou retirez-le d’un quart d’abord."
     },
     "schedule": {
       "already_on_shift": "Cette personne est déjà sur le quart.",
@@ -879,7 +883,9 @@
         "offered": "{{count}} quarts sont offerts",
         "claimed": "{{count}} quarts ont été pris",
         "missing_level": "{{count}} quarts n’ont plus le niveau requis",
-        "note": "{{count}} de tes quarts ont de nouvelles notes"
+        "note": "{{count}} de tes quarts ont de nouvelles notes",
+        "hours_changed": "Les heures de {{count}} de tes quarts ont changé",
+        "removed": "{{count}} de tes quarts ont été retirés de l’horaire"
       },
       "claim": {
         "requested": "{{count}} demandes de quart attendent",
@@ -920,7 +926,9 @@
         "offered": "{{name}} donne son quart du {{date}}, {{start}}–{{end}}",
         "claimed": "{{name}} a pris le quart du {{date}}, {{start}}–{{end}}",
         "missing_level": "Un échange ou une prise de quart a laissé le {{date}}, {{start}}–{{end}} sans le niveau requis",
-        "note": "Nouvelle note sur ton quart du {{date}}, {{start}}–{{end}}"
+        "note": "Nouvelle note sur ton quart du {{date}}, {{start}}–{{end}}",
+        "hours_changed": "Ton quart du {{date}} est maintenant {{start}}–{{end}}",
+        "removed": "Ton quart du {{date}}, {{start}}–{{end}} a été retiré de l’horaire"
       },
       "claim": {
         "requested": "{{name}} demande le quart du {{date}}, {{start}}–{{end}}",
@@ -1195,6 +1203,14 @@
     "days": "Jours",
     "daysHint": "Choisissez d’autres jours pour leur ajouter le même quart d’un coup.",
     "noDays": "Choisissez au moins un jour.",
-    "weekShort": "S{{week}}"
+    "weekShort": "S{{week}}",
+    "addedByHand": "Ajouté · à remplir à la main",
+    "periodContext": "{{range}} · Change cette période seulement.",
+    "publishedContext": "{{range}} · publié. Les changements s’appliquent dès l’enregistrement, et les personnes concernées sont avisées.",
+    "reopen": "Rouvrir",
+    "reopenDay": "Rouvrir {{day}}",
+    "liveTitle": "Enregistrer et aviser l’équipe?",
+    "liveText": "Les changements s’appliquent maintenant. Les personnes sur un quart changé ou retiré reçoivent une alerte.",
+    "liveConfirm": "Enregistrer"
   }
 }

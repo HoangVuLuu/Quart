@@ -15,6 +15,7 @@ export function destinationOf(type: string, parameters: Readonly<Record<string, 
       return '/availability';
     case 'schedule.published':
     case 'schedule.changed':
+    case 'shift.removed':
       return '/schedule';
     case 'availability.sent':
     case 'availability.note_added':
@@ -22,6 +23,7 @@ export function destinationOf(type: string, parameters: Readonly<Record<string, 
     case 'claim.approved':
     case 'trade.applied':
     case 'shift.note':
+    case 'shift.hours_changed':
       return periodId && shiftId ? `/schedule?period=${periodId}&shift=${shiftId}` : null;
     default:
       return null;

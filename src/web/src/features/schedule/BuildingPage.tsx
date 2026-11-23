@@ -147,6 +147,15 @@ function BuildingVisit({ periodId, mode }: { periodId: string; mode: 'build' | '
                 </Button>
               )
             }
+            onEditDay={(date) => {
+              // M4-01 (Hoang, 2026-11-23): the draft is saved first, then this period's shifts open.
+              const go = () => {
+                unsavedNow.current = false;
+                void navigate(`/schedule/shifts?period=${periodId}&day=${date}`);
+              };
+              if (unsavedNow.current) actions.save.mutate(undefined, { onSuccess: go });
+              else go();
+            }}
             onPublished={() => {
               // Publishing ends the visit on the server; nothing is left unsaved (4.3: back to Schedule).
               setPublishedNow(true);

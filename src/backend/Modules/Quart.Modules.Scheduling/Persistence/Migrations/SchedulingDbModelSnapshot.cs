@@ -376,6 +376,10 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<bool>("AddedByHand")
+                        .HasColumnType("boolean")
+                        .HasColumnName("added_by_hand");
+
                     b.Property<LocalDate>("Date")
                         .HasColumnType("date")
                         .HasColumnName("date");
