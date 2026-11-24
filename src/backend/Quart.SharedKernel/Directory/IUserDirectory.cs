@@ -15,7 +15,7 @@ public interface IUserDirectory
 /// <param name="DisplayName">The short name, "Jasmine K." (FR-001).</param>
 /// <param name="Language">"fr" or "en" (FR-261).</param>
 /// <param name="EmailConfirmed">Only a confirmed address receives anything but the verification email.</param>
-/// <param name="Shared">The social links, only when the person chose to share them (FR-040); otherwise null.</param>
+/// <param name="Shared">The social links the person added; adding one shares it with their teammates (FR-040).</param>
 public sealed record UserSummary(Guid Id, string FullName, string DisplayName, string Email, string Language, bool EmailConfirmed, SocialLinks? Shared = null);
 
 /// <summary>Handles only, never links: the web app builds each link from a fixed host (M2-18).</summary>

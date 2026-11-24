@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { api, unwrap } from '../../lib/api/client';
+import { forgetOfflineCopies } from '../../lib/connection';
 import { Button } from '../../ui/Button';
 import { buttonClassName } from '../../ui/button-styles';
 import { Card } from '../../ui/Card';
@@ -191,13 +192,21 @@ export function ForgotPasswordPage() {
 export function ResetPasswordPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const client = useQueryClient();
   const [params] = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const reset = useMutation({
     mutationFn: () =>
       unwrap(api.POST('/api/auth/reset-password', { body: { token: params.get('token') ?? '', password } })),
-    onSuccess: () => void navigate('/sign-in', { replace: true }),
+    onSuccess: () => {
+      // The reset ends every session, this browser's too: forget the signed-in state, or the sign-in page
+      // would send the person back into the app with a session that no longer works (2026-11-23).
+      client.clear();
+      forgetOfflineCopies();
+      client.setQueryData(meKey, null);
+      void navigate('/sign-in', { replace: true });
+    },
   });
   const errors = fieldErrors(reset.error, t);
   const tooShort = password !== '' && password.length < minPasswordLength;

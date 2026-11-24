@@ -123,3 +123,14 @@ export function localToday(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
+
+/**
+ * A day can still change until its first shift starts, as the server decides (M4-01). Today counts as started
+ * once the earliest start has passed, so the pen is not offered for a day that would only be refused.
+ */
+export function dayHasStarted(date: string, starts: string[], now = new Date()): boolean {
+  const today = localToday();
+  if (date !== today) return date < today;
+  const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  return starts.some((start) => start <= time);
+}

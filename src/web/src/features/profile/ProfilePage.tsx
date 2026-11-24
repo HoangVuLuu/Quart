@@ -14,11 +14,15 @@ import { Select } from '../../ui/Select';
 import { Switch } from '../../ui/Switch';
 import { TextField } from '../../ui/TextField';
 import { useToast } from '../../ui/toast-context';
-import { Icon } from '../../ui/Icon';
 import { FormError } from '../identity/FormError';
 import { initialsOf, useMe, useSignOut, useUpdateMe } from '../identity/session';
 import { useRefreshWorkplace } from '../scheduling/data';
-import { ChangeEmailSheet, ChangePasswordSheet, DeleteAccountSheet } from './AccountSheets';
+import {
+  ChangeEmailSheet,
+  ChangePasswordSheet,
+  DeleteAccountSheet,
+  ResetPasswordSheet,
+} from './AccountSheets';
 import { SocialLinksSheet } from './SocialLinksSheet';
 import { rememberWorkplace, useWorkplace } from '../workplaces/workplace';
 import { PushRow } from '../push/PushRow';
@@ -45,7 +49,9 @@ export function ProfilePage() {
   const signOutEverywhere = useSignOut(true);
   const refresh = useRefreshWorkplace();
   const [dark, setDark] = useState(currentTheme() === 'dark');
-  const [accountSheet, setAccountSheet] = useState<'email' | 'password' | 'social' | 'delete' | null>(null);
+  const [accountSheet, setAccountSheet] = useState<
+    'email' | 'password' | 'reset' | 'social' | 'delete' | null
+  >(null);
   const [name, setName] = useState(me?.displayName ?? '');
   const [leaving, setLeaving] = useState(false);
   const path = { workplaceId: id };
@@ -179,15 +185,6 @@ export function ProfilePage() {
               </span>
               <span aria-hidden="true">›</span>
             </Link>
-            {can('ManageTemplate') && (
-              <Link to="/generator" className={rowLink}>
-                <span>
-                  {t('schedule.editGenerator')}
-                  <span className="block text-xs text-muted">{t('profile.generatorText')}</span>
-                </span>
-                <Icon name="pen" />
-              </Link>
-            )}
             <Button
               variant="white"
               className="my-2 min-h-11 px-4 text-sm"
@@ -280,14 +277,14 @@ export function ProfilePage() {
           <span>{t('profile.changePassword.row')}</span>
           <span aria-hidden="true">›</span>
         </button>
+        <button type="button" className={`${rowLink} w-full`} onClick={() => setAccountSheet('reset')}>
+          <span>{t('profile.resetPassword.row')}</span>
+          <span aria-hidden="true">›</span>
+        </button>
         <button type="button" className={`${rowLink} w-full`} onClick={() => setAccountSheet('social')}>
           <span>{t('profile.social.row')}</span>
           <span className="min-w-0 truncate text-sm text-muted">
-            {!me.instagram && !me.facebook
-              ? t('profile.social.none')
-              : me.shareSocialLinks
-                ? t('profile.social.shown')
-                : t('profile.social.hidden')}
+            {!me.instagram && !me.facebook ? t('profile.social.none') : t('profile.social.shown')}
           </span>
         </button>
         <button
@@ -319,6 +316,7 @@ export function ProfilePage() {
       </Card>
       <ChangeEmailSheet open={accountSheet === 'email'} onClose={() => setAccountSheet(null)} />
       <ChangePasswordSheet open={accountSheet === 'password'} onClose={() => setAccountSheet(null)} />
+      <ResetPasswordSheet open={accountSheet === 'reset'} onClose={() => setAccountSheet(null)} />
       <SocialLinksSheet me={me} open={accountSheet === 'social'} onClose={() => setAccountSheet(null)} />
       {view.me.role !== 'owner' && (
         <Button variant="danger" onClick={() => setLeaving(true)}>

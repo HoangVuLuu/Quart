@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../ui/Button';
 import { Sheet } from '../../ui/Sheet';
-import { Switch } from '../../ui/Switch';
 import { TextField } from '../../ui/TextField';
 import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
@@ -11,7 +10,7 @@ import { useUpdateMe, type Me } from '../identity/session';
 
 /**
  * Instagram and Facebook for the team page (FR-040, M2-18). Not drawn in the mockups: it reuses the
- * Change password sheet's shape (1g). Nothing shows to teammates until the switch is on.
+ * Change password sheet's shape (1g). A link added here shows to the whole team (Hoang, 2026-11-23).
  */
 export function SocialLinksSheet({ me, open, onClose }: { me: Me; open: boolean; onClose: () => void }) {
   const { t } = useTranslation();
@@ -19,13 +18,11 @@ export function SocialLinksSheet({ me, open, onClose }: { me: Me; open: boolean;
   const update = useUpdateMe();
   const [instagram, setInstagram] = useState(me.instagram ?? '');
   const [facebook, setFacebook] = useState(me.facebook ?? '');
-  const [share, setShare] = useState(me.shareSocialLinks);
   const errors = fieldErrors(update.error, t);
 
   function close() {
     setInstagram(me.instagram ?? '');
     setFacebook(me.facebook ?? '');
-    setShare(me.shareSocialLinks);
     update.reset();
     onClose();
   }
@@ -33,7 +30,7 @@ export function SocialLinksSheet({ me, open, onClose }: { me: Me; open: boolean;
   function submit(event: FormEvent) {
     event.preventDefault();
     update.mutate(
-      { instagram: instagram.trim(), facebook: facebook.trim(), shareSocialLinks: share },
+      { instagram: instagram.trim(), facebook: facebook.trim() },
       {
         onSuccess: (saved) => {
           // The server keeps only the handle, so a pasted link comes back shorter.
@@ -75,12 +72,6 @@ export function SocialLinksSheet({ me, open, onClose }: { me: Me; open: boolean;
           value={facebook}
           onChange={(event) => setFacebook(event.target.value)}
           error={errors.facebook}
-        />
-        <Switch
-          label={t('profile.social.share')}
-          description={t('profile.social.shareText')}
-          checked={share}
-          onCheckedChange={setShare}
         />
         <FormError message={errors.form} />
         <Button type="submit" loading={update.isPending} className="w-full">

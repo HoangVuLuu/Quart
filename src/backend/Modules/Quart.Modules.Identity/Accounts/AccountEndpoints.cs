@@ -368,10 +368,6 @@ internal static class AccountEndpoints
             }
             user.Facebook = handle.Length == 0 ? null : handle;
         }
-        if (request.ShareSocialLinks is { } share)
-        {
-            user.ShareSocialLinks = share;
-        }
         await db.SaveChangesAsync(cancellationToken);
         return TypedResults.Ok(ToMe(user));
     }
@@ -652,7 +648,7 @@ internal static class AccountEndpoints
 
     private static Me ToMe(QuartUser user) =>
         new(user.Id, user.FullName, user.DisplayName, user.Email!, user.Language, user.IsPlatformAdmin,
-            user.Instagram, user.Facebook, user.ShareSocialLinks);
+            user.Instagram, user.Facebook);
 
     private static Task<int> RetireLinksAsync(IdentityDb db, Guid userId, string purpose, Instant now, CancellationToken cancellationToken) =>
         db.AccountLinks.Where(x => x.UserId == userId && x.Purpose == purpose && x.UsedAt == null)
@@ -727,7 +723,7 @@ public sealed record TokenRequest(string? Token);
 public sealed record ResetPasswordRequest(string? Token, string? Password);
 
 /// <param name="Instagram">A handle or a profile link; empty removes it; null leaves it.</param>
-public sealed record UpdateMeRequest(string? DisplayName, string? Language, string? Instagram = null, string? Facebook = null, bool? ShareSocialLinks = null);
+public sealed record UpdateMeRequest(string? DisplayName, string? Language, string? Instagram = null, string? Facebook = null);
 
 public sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
 
@@ -741,4 +737,4 @@ public sealed record DeleteAccountRequest(string? Email);
 /// <summary>The signed-in account. Memberships come from <c>GET /api/workplaces</c>.</summary>
 public sealed record Me(
     Guid Id, string FullName, string DisplayName, string Email, string Language, bool IsPlatformAdmin,
-    string? Instagram, string? Facebook, bool ShareSocialLinks);
+    string? Instagram, string? Facebook);

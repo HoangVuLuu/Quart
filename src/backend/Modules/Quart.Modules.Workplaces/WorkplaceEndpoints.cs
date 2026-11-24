@@ -401,7 +401,7 @@ public sealed record MyMembership(
 
 /// <param name="Level">Null unless the caller manages levels (3.1, 2026-11-18).</param>
 /// <param name="WorksShifts">Null when the caller may not see it (FR-040).</param>
-/// <param name="Instagram">A handle, only when that person chose to share their links (FR-040, M2-18).</param>
+/// <param name="Instagram">The handle that person added, if any (FR-040, M2-18).</param>
 public sealed record MemberView(
     Guid MembershipId,
     string DisplayName,

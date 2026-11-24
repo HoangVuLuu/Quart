@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { api, unwrap } from '../../lib/api/client';
 import { Button } from '../../ui/Button';
 import { Sheet } from '../../ui/Sheet';
@@ -246,6 +246,71 @@ export function DeleteAccountSheet({
           {t('team.remove.cancel')}
         </Button>
       </form>
+    </Sheet>
+  );
+}
+
+/**
+ * "Reset password" in Account (Hoang, 2026-11-23): the same link as "Forgot password?" on the sign-in page,
+ * to the address typed here. The link opens the reset page, where the new password is typed twice.
+ */
+export function ResetPasswordSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
+  const [email, setEmail] = useState('');
+  const send = useMutation({
+    mutationFn: () => unwrap(api.POST('/api/auth/forgot-password', { body: { email: email.trim() } })),
+  });
+
+  function close() {
+    setEmail('');
+    send.reset();
+    onClose();
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (email.trim() !== '' && !send.isPending) send.mutate();
+  }
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(next) => !next && close()}
+      title={t('profile.resetPassword.title')}
+      description={send.isSuccess ? undefined : t('profile.resetPassword.text')}
+    >
+      {send.isSuccess ? (
+        <div className="flex flex-col gap-4">
+          <p role="status" className="text-[15px]">
+            <Trans
+              i18nKey="auth.forgot.sent"
+              values={{ email: email.trim() }}
+              components={{ strong: <strong /> }}
+            />
+          </p>
+          <Button variant="white" className="w-full" onClick={close}>
+            {t('profile.changeEmail.close')}
+          </Button>
+        </div>
+      ) : (
+        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+          <TextField
+            label={t('auth.email')}
+            type="email"
+            name="email"
+            autoComplete="email"
+            inputMode="email"
+            enterKeyHint="send"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+          <FormError message={fieldErrors(send.error, t).form} />
+          <Button type="submit" loading={send.isPending} disabled={email.trim() === ''} className="w-full">
+            {t('auth.forgot.submit')}
+          </Button>
+        </form>
+      )}
     </Sheet>
   );
 }
