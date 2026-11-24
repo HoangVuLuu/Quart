@@ -895,7 +895,9 @@
         "missing_level": "{{count}} shifts are missing their required level",
         "note": "{{count}} of your shifts have new notes",
         "hours_changed": "The hours of {{count}} of your shifts changed",
-        "removed": "{{count}} of your shifts were removed from the schedule"
+        "removed": "{{count}} of your shifts were removed from the schedule",
+        "unclaimed": "{{count}} shifts given away are still untaken",
+        "unclaimed_mine": "{{count}} of your shifts given away are still untaken"
       },
       "claim": {
         "requested": "{{count}} shift requests are waiting",
@@ -909,7 +911,8 @@
         "awaiting_approval": "{{count}} trades wait for your approval",
         "applied": "{{count}} trades are done",
         "rejected": "{{count}} trades were not applied",
-        "expired": "{{count}} trades expired"
+        "expired": "{{count}} trades expired",
+        "cancelled": "{{count}} trades were cancelled: a manager changed the hours"
       },
       "period": {
         "cancelled": "{{count}} periods were cancelled"
@@ -938,7 +941,9 @@
         "missing_level": "A trade or claim left {{date}}, {{start}}–{{end}} without its required level",
         "note": "New note on your shift {{date}}, {{start}}–{{end}}",
         "hours_changed": "Your shift on {{date}} is now {{start}}–{{end}}",
-        "removed": "Your shift on {{date}}, {{start}}–{{end}} was removed from the schedule"
+        "removed": "Your shift on {{date}}, {{start}}–{{end}} was removed from the schedule",
+        "unclaimed": "Nobody has taken {{name}}'s shift on {{date}}, {{start}}–{{end}} yet",
+        "unclaimed_mine": "Nobody has taken your shift on {{date}}, {{start}}–{{end}} yet. It's still yours"
       },
       "claim": {
         "requested": "{{name}} asks for the shift on {{date}}, {{start}}–{{end}}",
@@ -952,7 +957,8 @@
         "awaiting_approval": "A trade for {{date}}, {{start}}–{{end}} waits for your approval",
         "applied": "The trade for {{date}}, {{start}}–{{end}} is done",
         "rejected": "The trade for {{date}}, {{start}}–{{end}} was not applied",
-        "expired": "The trade for {{date}}, {{start}}–{{end}} expired"
+        "expired": "The trade for {{date}}, {{start}}–{{end}} expired",
+        "cancelled": "The trade for {{date}}, {{start}}–{{end}} was cancelled: a manager changed the shift's hours"
       },
       "period": {
         "cancelled": "The period starting {{periodStart}} was cancelled"

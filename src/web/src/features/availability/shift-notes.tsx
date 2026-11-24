@@ -114,7 +114,14 @@ export function ShiftNoteSheet({
           rows={2}
           value={text}
           error={error ? t('shiftNote.selectFirst') : undefined}
+          enterKeyHint="done"
           onChange={(event) => setText(event.target.value)}
+          // Return saves the note and closes the sheet; a note is one line (2026-11-23).
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
+            event.preventDefault();
+            if (text.trim() !== '') save(text.trim());
+          }}
         />
         <div className="grid grid-cols-2 gap-2">
           <Button

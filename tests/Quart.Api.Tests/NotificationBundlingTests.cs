@@ -56,6 +56,47 @@ public sealed class NotificationBundlingTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task A_period_cancelled_before_its_request_left_the_app_takes_it_back_and_sends_nothing()
+    {
+        await using var app = await TestApp.StartAsync(postgres, bundle: true);
+        var team = await Team.CreateAsync(app);
+        var lea = team.Staff[0];
+        var phone = await SubscribeAsync(lea);
+        var before = app.Emails.To(lea.Email).Count;
+
+        await team.OpenPeriodAsync();
+        app.Clock.Advance(Duration.FromMinutes(1));
+        await team.Owner.SendAsync(HttpMethod.Delete, team.Period);
+        app.Clock.Advance(Duration.FromMinutes(10));
+        await app.Factory.Services.RunTickAsync(Cancellation);
+
+        // Neither the request nor the cancellation leaves the app: Léa never heard of the period.
+        Assert.Empty(app.Pushes.To(phone.Endpoint));
+        Assert.Equal(before, app.Emails.To(lea.Email).Count);
+        var types = await team.NotificationTypesAsync(lea);
+        Assert.DoesNotContain("availability.requested", types);
+        Assert.Contains("period.cancelled", types);
+    }
+
+    [Fact]
+    public async Task A_period_cancelled_after_its_request_went_out_is_pushed_too()
+    {
+        await using var app = await TestApp.StartAsync(postgres, bundle: true);
+        var team = await Team.CreateAsync(app);
+        var lea = team.Staff[0];
+        var phone = await SubscribeAsync(lea);
+
+        await team.OpenPeriodAsync();
+        app.Clock.Advance(Duration.FromMinutes(6));
+        await app.Factory.Services.RunTickAsync(Cancellation);
+        await team.Owner.SendAsync(HttpMethod.Delete, team.Period);
+        app.Clock.Advance(Duration.FromMinutes(6));
+        await app.Factory.Services.RunTickAsync(Cancellation);
+
+        Assert.Equal(["availability.requested", "period.cancelled"], app.Pushes.To(phone.Endpoint).Select(x => x["type"]!.GetValue<string>()));
+    }
+
+    [Fact]
     public async Task Kinds_and_people_are_bundled_apart()
     {
         await using var app = await TestApp.StartAsync(postgres, bundle: true);

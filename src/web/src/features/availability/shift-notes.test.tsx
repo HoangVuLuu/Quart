@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import i18n from '../../i18n';
@@ -82,6 +82,8 @@ describe('a note on one shift (FR-103a)', () => {
     });
     expect(within(sheet).getByText(en.shiftNote.hint)).toBeInTheDocument();
     const field = within(sheet).getByLabelText(en.shiftNote.label);
+    // Opening the sheet does not pop the keyboard up (2026-11-23).
+    expect(field).not.toHaveFocus();
     expect(field).toHaveAttribute('maxLength', '60');
     await user.type(field, 'Until 21:00 only');
     expect(within(sheet).getByText('16/60')).toBeInTheDocument();
@@ -98,6 +100,19 @@ describe('a note on one shift (FR-103a)', () => {
       desiredWeeklyHours: 20,
       shiftNotes: [{ shiftId: 'mon-close', note: 'Until 21:00 only' }],
     });
+  });
+
+  it('Return saves the note and closes the sheet (2026-11-23)', async () => {
+    await openForm(mine([shift('mon-open', '10:00', '16:00'), shift('mon-close', '16:00', '22:00')]));
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Closing/, pressed: false }));
+    await user.click(screen.getByRole('button', { name: strip('add', 'Closing') }));
+    const sheet = await screen.findByRole('dialog');
+
+    await user.type(within(sheet).getByLabelText(en.shiftNote.label), 'Until 21:00 only{Enter}');
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(await screen.findByText('Closing: Until 21:00 only')).toBeInTheDocument();
   });
 
   it('unselecting the shift removes its note without asking, and the sheet can remove it too', async () => {

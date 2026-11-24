@@ -895,7 +895,9 @@
         "missing_level": "{{count}} quarts n’ont plus le niveau requis",
         "note": "{{count}} de tes quarts ont de nouvelles notes",
         "hours_changed": "Les heures de {{count}} de tes quarts ont changé",
-        "removed": "{{count}} de tes quarts ont été retirés de l’horaire"
+        "removed": "{{count}} de tes quarts ont été retirés de l’horaire",
+        "unclaimed": "{{count}} quarts donnés ne sont toujours pas pris",
+        "unclaimed_mine": "{{count}} de tes quarts donnés ne sont toujours pas pris"
       },
       "claim": {
         "requested": "{{count}} demandes de quart attendent",
@@ -909,7 +911,8 @@
         "awaiting_approval": "{{count}} échanges attendent ton approbation",
         "applied": "{{count}} échanges sont faits",
         "rejected": "{{count}} échanges n’ont pas été appliqués",
-        "expired": "{{count}} échanges ont expiré"
+        "expired": "{{count}} échanges ont expiré",
+        "cancelled": "{{count}} échanges ont été annulés : un gérant a changé les heures"
       },
       "period": {
         "cancelled": "{{count}} périodes ont été annulées"
@@ -938,7 +941,9 @@
         "missing_level": "Un échange ou une prise de quart a laissé le {{date}}, {{start}}–{{end}} sans le niveau requis",
         "note": "Nouvelle note sur ton quart du {{date}}, {{start}}–{{end}}",
         "hours_changed": "Ton quart du {{date}} est maintenant {{start}}–{{end}}",
-        "removed": "Ton quart du {{date}}, {{start}}–{{end}} a été retiré de l’horaire"
+        "removed": "Ton quart du {{date}}, {{start}}–{{end}} a été retiré de l’horaire",
+        "unclaimed": "Personne n’a encore pris le quart de {{name}} du {{date}}, {{start}}–{{end}}",
+        "unclaimed_mine": "Personne n’a encore pris ton quart du {{date}}, {{start}}–{{end}}. Il est encore à toi"
       },
       "claim": {
         "requested": "{{name}} demande le quart du {{date}}, {{start}}–{{end}}",
@@ -952,7 +957,8 @@
         "awaiting_approval": "Un échange pour le {{date}}, {{start}}–{{end}} attend ton approbation",
         "applied": "L’échange du {{date}}, {{start}}–{{end}} est fait",
         "rejected": "L’échange du {{date}}, {{start}}–{{end}} n’a pas été appliqué",
-        "expired": "L’échange du {{date}}, {{start}}–{{end}} a expiré"
+        "expired": "L’échange du {{date}}, {{start}}–{{end}} a expiré",
+        "cancelled": "L’échange du {{date}}, {{start}}–{{end}} a été annulé : un gérant a changé les heures du quart"
       },
       "period": {
         "cancelled": "La période du {{periodStart}} a été annulée"

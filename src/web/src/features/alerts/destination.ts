@@ -17,6 +17,10 @@ export function destinationOf(type: string, parameters: Readonly<Record<string, 
     case 'schedule.changed':
     case 'shift.removed':
       return '/schedule';
+    // M7-05: still untaken, 36 hours before: the Trade tab, where the offer is.
+    case 'shift.unclaimed':
+    case 'shift.unclaimed_mine':
+      return '/trade';
     case 'availability.sent':
     case 'availability.note_added':
       return periodId && membershipId ? `/availability/people/${periodId}/${membershipId}` : null;

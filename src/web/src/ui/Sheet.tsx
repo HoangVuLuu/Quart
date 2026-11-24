@@ -1,5 +1,5 @@
 import { Dialog as RadixDialog } from 'radix-ui';
-import { useRef, useState, type ReactNode, type TouchEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type TouchEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cx } from './cx';
 
@@ -38,6 +38,16 @@ export function Sheet({ trigger, open, onOpenChange, title, description, childre
   const [swipedAway, setSwipedAway] = useState(false);
   const startY = useRef<number | null>(null);
 
+  const keyboard = useKeyboardHeight(isOpen);
+  // Where the sheet sits: following the finger, and above the phone keyboard while it is open, so a note being
+  // typed stays in sight. Positions only; colours and sizes come from the tokens.
+  const placement: CSSProperties | undefined =
+    drag > 0 || keyboard > 0
+      ? {
+          ...(drag > 0 ? { translate: `0 ${drag}px` } : {}),
+          ...(keyboard > 0 ? { bottom: keyboard, maxHeight: `calc(100dvh - ${keyboard}px - 1.5rem)` } : {}),
+        }
+      : undefined;
   const onTouchStart = (event: TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
     // Only when the sheet's own content is at its top: further down, a downward drag is a scroll.
@@ -77,13 +87,18 @@ export function Sheet({ trigger, open, onOpenChange, title, description, childre
         <RadixDialog.Overlay className="fixed inset-0 z-30 bg-scrim data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
         <RadixDialog.Content
           {...(description ? {} : { 'aria-describedby': undefined })}
+          // Focus the sheet itself, not its first field: opening a sheet never pops the keyboard up (2026-11-23).
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            (event.currentTarget as HTMLElement | null)?.focus();
+          }}
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
           onTouchCancel={onTouchEnd}
           // The sheet follows the finger. `translate` is separate from the `transform` the slide-in
           // animation uses, so the two never fight.
-          style={drag > 0 ? { translate: `0 ${drag}px` } : undefined}
+          style={placement}
           className={cx(
             'fixed inset-x-0 bottom-0 z-40 mx-auto max-h-[86%] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-sheet bg-surface-2 px-6 pt-3.5 pb-[calc(2rem+env(safe-area-inset-bottom))] shadow-float data-[state=open]:animate-sheet-in',
             !swipedAway && 'data-[state=closed]:animate-sheet-out',
@@ -108,4 +123,35 @@ export function Sheet({ trigger, open, onOpenChange, title, description, childre
       </RadixDialog.Portal>
     </RadixDialog.Root>
   );
+}
+
+/**
+ * How much of the screen the phone keyboard covers, from the visual viewport (iOS does not resize the page for
+ * it). 0 with no keyboard, and on browsers without a visual viewport.
+ */
+function useKeyboardHeight(active: boolean): number {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!active || !viewport) return;
+    const update = () => {
+      const covered = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setHeight(covered < 80 ? 0 : covered);
+      // Keep the field being typed in on screen once the sheet has moved up.
+      if (covered >= 80 && document.activeElement instanceof HTMLElement) {
+        window.requestAnimationFrame(() =>
+          (document.activeElement as HTMLElement | null)?.scrollIntoView({ block: 'nearest' }),
+        );
+      }
+    };
+    update();
+    viewport.addEventListener('resize', update);
+    viewport.addEventListener('scroll', update);
+    return () => {
+      viewport.removeEventListener('resize', update);
+      viewport.removeEventListener('scroll', update);
+      setHeight(0);
+    };
+  }, [active]);
+  return height;
 }

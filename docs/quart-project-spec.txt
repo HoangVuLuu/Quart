@@ -607,8 +607,11 @@ FR-180  An employee can offer a published shift they hold. The shift is
 FR-181  The person giving the shift away remains responsible for it until
         somebody else actually takes it. Offering does not remove them.
 FR-182  There is no cutoff. A shift may be offered at any time before it starts.
-FR-183  If an offered shift is still unclaimed X hours before it starts, the
-        admins are notified. X is a workplace setting, 24 hours by default.
+FR-183  If an offered shift is still unclaimed 36 hours before it starts, the
+        admins and the person giving it away are notified, once. Always 36
+        hours, with no setting (Hoang, 2026-11-23; was a setting, 24 hours by
+        default). A shift offered later than that is checked 2 hours after the
+        offer, if it has not started by then.
 FR-184  An employee can claim an open slot or an offered shift.
 FR-185  Claims are not restricted by desired hours, by level, or by whether the
         person marked themselves available. Workers see no level warning.
@@ -630,6 +633,9 @@ FR-190  The requester can cancel a trade at any time until it is approved.
 FR-191  A pending trade expires after 14 days, or when either shift starts,
         whichever comes first. It is also cancelled automatically if the admin
         edits either of the two shifts.
+        Built 2026-11-23 (M7-08): changing a published shift's hours cancels
+        its pending trades; removing the shift or taking someone off it ends
+        them too. Both people are told in every case.
 FR-192  At the moment of approval the app re-validates: both people still hold
         those shifts and nobody ends up double-booked. A trade that no longer
         makes sense is rejected with an explanation, never applied blindly. A
@@ -1737,7 +1743,7 @@ Q-06  ANSWERED 2026-11-17. Amazon SES in its Montreal region, so email stays
 Q-07  Retired 2026-09-21. With chat removed there is no real-time delivery to
       decide (AD-031).
 Q-08  ANSWERED 2026-11-17. 24 hours by default; each workplace can change it
-      (FR-183).
+      (FR-183). CHANGED 2026-11-23: always 36 hours, no setting (Hoang).
 Q-09  Should recipe photos be viewable offline at the shop? Default is no, for
       confidentiality (FR-239). Revisit if the shop's signal is poor.
 Q-10  Which payroll service does Philippe use, and does it already give
@@ -2160,6 +2166,14 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             names; the opening/closing override is not built. The
             unclaimed give-away alert is fixed at 36 hours, with no
             setting (Hoang).  (BR-034, FR-069, FR-183, Q-08)
+2026-11-23  From Hoang's testing: sheets never put the keyboard up when they
+            open and sit above it when it is open; Return saves a shift note
+            and closes the sheet (staff and manager notes); tapping anywhere on
+            Home's next-shift card opens the shift. Cancelling a period tells
+            everyone who works shifts, not only those who answered; if their
+            "availability requested" had not left the app yet (bundling), it
+            is taken back and the cancellation stays in the app.  (FR-145,
+            FR-103a, FR-211)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

@@ -13,6 +13,7 @@ using Quart.SharedKernel;
 using Quart.SharedKernel.Access;
 using Quart.SharedKernel.Directory;
 using Quart.SharedKernel.Notifications;
+using Quart.SharedKernel.Scheduling;
 
 namespace Quart.Modules.Scheduling.Periods;
 
@@ -92,8 +93,8 @@ internal static class PeriodShiftEndpoints
     }
 
     private static async Task<Results<NoContent, NotFound, ProblemHttpResult>> SaveAsync(
-        Guid workplaceId, Guid periodId, SavePeriodShifts request, SchedulingDb db, IWorkplaceDirectory directory, INotifier notifier, IClock clock,
-        CancellationToken cancellationToken)
+        Guid workplaceId, Guid periodId, SavePeriodShifts request, SchedulingDb db, IWorkplaceDirectory directory, INotifier notifier,
+        IEnumerable<IShiftsChangedHandler> shiftsChanged, IClock clock, CancellationToken cancellationToken)
     {
         var period = await db.Periods.SingleOrDefaultAsync(x => x.Id == periodId && x.WorkplaceId == workplaceId, cancellationToken);
         if (period is null)
@@ -203,6 +204,17 @@ internal static class PeriodShiftEndpoints
             // New hours would put someone on two shifts at once (BR-002).
             await transaction.RollbackAsync(cancellationToken);
             return Problems.Conflict(DoubleBooked);
+        }
+
+        // FR-191: a pending trade on a shift whose hours changed is cancelled, and both people are told. Trades on a
+        // removed shift end when the board is next read, as for any shift its holders no longer have.
+        if (period.Version > 0 && moved.Count > 0)
+        {
+            var movedIds = moved.Select(x => x.Id).ToList();
+            foreach (var handler in shiftsChanged)
+            {
+                await handler.HandleAsync(workplaceId, movedIds, cancellationToken);
+            }
         }
 
         if (holders.Count > 0)

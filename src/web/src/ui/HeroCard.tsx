@@ -16,6 +16,9 @@ type HeroCardProps = {
   // 'done' turns the card green once its step is complete (2026-11-21).
   tone?: 'primary' | 'done';
   className?: string;
+  // Tapping anywhere on the card does this, the same as its own button (2026-11-23). The card's button stays
+  // the way keyboards and screen readers reach it, so the tap area is hidden from them.
+  onPress?: () => void;
 };
 
 // The card in the brand colour with a large pale circle bleeding off one corner. It is where "next
@@ -30,6 +33,7 @@ export function HeroCard({
   wide,
   tone = 'primary',
   className,
+  onPress,
 }: HeroCardProps) {
   const Heading = headingLevel === 1 ? 'h1' : 'h2';
 
@@ -55,6 +59,15 @@ export function HeroCard({
         {title}
       </Heading>
       {children && <div className={cx('relative mt-2 text-sm', !wide && 'max-w-sm')}>{children}</div>}
+      {onPress && (
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={onPress}
+          className="absolute inset-0 z-10"
+        />
+      )}
     </div>
   );
 }

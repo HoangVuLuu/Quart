@@ -92,6 +92,7 @@ export function HomePage() {
 
       {next && !manages && (
         <HeroCard
+          onPress={() => setShowing(true)}
           eyebrow={t('home.nextShift')}
           title={dayLabel(next, now, t, language)}
           headingLevel={2}

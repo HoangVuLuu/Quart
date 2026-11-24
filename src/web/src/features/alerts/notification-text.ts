@@ -19,6 +19,8 @@ export const notificationTypes = [
   'shift.note',
   'shift.hours_changed',
   'shift.removed',
+  'shift.unclaimed',
+  'shift.unclaimed_mine',
   'shift.missing_level',
   'claim.requested',
   'claim.approved',
@@ -30,6 +32,7 @@ export const notificationTypes = [
   'trade.applied',
   'trade.rejected',
   'trade.expired',
+  'trade.cancelled',
 ] as const;
 
 type NotificationType = (typeof notificationTypes)[number];

@@ -177,11 +177,48 @@ internal sealed class Notifier(NotificationsDbContext db, IJobScheduler jobs, IC
             stored.Add(notification);
         }
 
+        // A period cancelled before its "availability requested" left the app takes that alert back, and the
+        // cancellation stays in the app: the person never heard of the period by push or email (2026-11-23).
+        var inAppOnly = await WithdrawAsync(stored, cancellationToken);
+
         // Saved with the alerts; the deliveries run on a later tick, so the request that caused them never waits
         // on a push service or the mail server.
-        var opened = await Bundles.AssignAsync(db, stored, wait.Value, now, cancellationToken);
+        var opened = await Bundles.AssignAsync(db, stored.Except(inAppOnly).ToList(), wait.Value, now, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         await Bundles.ScheduleAsync(jobs, opened, cancellationToken);
+    }
+
+    /// <summary>
+    /// For each "period cancelled": the same person's alerts about that period still waiting to leave the app
+    /// (requested, reminder), unread, are removed. Returns the cancellations that took one back.
+    /// </summary>
+    private async Task<List<Notification>> WithdrawAsync(List<Notification> stored, CancellationToken cancellationToken)
+    {
+        var cancelled = stored.Where(x => x.Type == NotificationTypes.PeriodCancelled).ToList();
+        if (cancelled.Count == 0)
+        {
+            return [];
+        }
+        var people = cancelled.Select(x => x.UserId).ToList();
+        var workplaces = cancelled.Select(x => x.WorkplaceId).Distinct().ToList();
+        string[] about = [NotificationTypes.AvailabilityRequested, NotificationTypes.AvailabilityReminder];
+        var waiting = await db.Notifications
+            .Where(x => people.Contains(x.UserId) && workplaces.Contains(x.WorkplaceId) && about.Contains(x.Type)
+                && x.BundleId != null && x.DeliveredAt == null && x.ReadAt == null)
+            .ToListAsync(cancellationToken);
+        static string? PeriodOf(Notification x) =>
+            JsonSerializer.Deserialize<Dictionary<string, string>>(x.Parameters)?.GetValueOrDefault("periodStart");
+        var inAppOnly = new List<Notification>();
+        foreach (var cancel in cancelled)
+        {
+            var taken = waiting.Where(x => x.UserId == cancel.UserId && x.WorkplaceId == cancel.WorkplaceId && PeriodOf(x) == PeriodOf(cancel)).ToList();
+            if (taken.Count > 0)
+            {
+                db.Notifications.RemoveRange(taken);
+                inAppOnly.Add(cancel);
+            }
+        }
+        return inAppOnly;
     }
 }
 

@@ -106,6 +106,10 @@ namespace Quart.Modules.Marketplace.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("taken_by");
 
+                    b.Property<Instant?>("UnclaimedAlertedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("unclaimed_alerted_at");
+
                     b.Property<Guid>("WorkplaceId")
                         .HasColumnType("uuid")
                         .HasColumnName("workplace_id");
