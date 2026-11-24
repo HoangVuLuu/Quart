@@ -78,7 +78,6 @@ export const me: Schemas['Me'] = {
   isPlatformAdmin: false,
   instagram: null,
   facebook: null,
-  shareSocialLinks: false,
 };
 
 export function workplace(

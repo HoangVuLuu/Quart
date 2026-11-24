@@ -41,7 +41,6 @@ export function HoursSheet({ shift, title, description, onSave, onDelete, onClos
             onChange={(event) => setEnd(event.target.value)}
           />
         </div>
-        <p className="text-sm text-muted">{t('dayEditor.hoursHint')}</p>
         <FormError message={problem ? t(`errors.template.${problem}`) : undefined} />
         <Button disabled={problem !== null} onClick={() => onSave(start, end)}>
           {t('generator.block.done')}

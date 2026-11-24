@@ -112,42 +112,19 @@ function Editor({ view, firstDay }: { view: Schemas['PeriodShifts']; firstDay: s
   return <Outlet context={context} />;
 }
 
-/** Editing Shift for one period: its days with real dates, a pen on each that has not started, Save. */
-export function PeriodShiftsPage() {
+/**
+ * Save for one period's shifts, with the "goes live" question on a published period (2026-11-23), and the
+ * leave question when going back with changes. Shared by Editing Shift and Editing <date>.
+ */
+function useSaveAndLeave() {
   const { t } = useTranslation();
   const shifts = usePeriodShifts();
-  const navigate = useNavigate();
   const goBack = useGoBack('/schedule');
   const [leaving, setLeaving] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  return (
-    <SubPage
-      backTo="/schedule"
-      title={shifts.title}
-      context={shifts.context}
-      onBack={() => (shifts.dirty ? setLeaving(true) : goBack())}
-    >
-      <DayList
-        days={shifts.days}
-        state={shifts.state}
-        changed={shifts.changed}
-        label={shifts.label}
-        week={shifts.week}
-        onWeek={shifts.setWeek}
-        onEdit={(day) => void navigate(`/schedule/shifts/${day}?period=${shifts.periodId}`)}
-        closedAction={(day) =>
-          !day.locked && (
-            <button
-              type="button"
-              aria-label={t('dayEditor.reopenDay', { day: day.long })}
-              onClick={() => shifts.reopen(day.key)}
-              className="min-h-10 px-1 text-sm font-bold text-link"
-            >
-              {t('dayEditor.reopen')}
-            </button>
-          )
-        }
-      />
+  const onBack = () => (shifts.dirty ? setLeaving(true) : goBack());
+  const footer = (
+    <>
       <FormError message={shifts.saveError ? t(messageKeyFor(shifts.saveError)) : undefined} />
       <Button
         className="mt-4 w-full"
@@ -192,21 +169,62 @@ export function PeriodShiftsPage() {
           </Button>
         </div>
       </Dialog>
+    </>
+  );
+  return { onBack, footer };
+}
+
+/** Editing Shift for one period: its days with real dates, a pen on each that has not started, Save. */
+export function PeriodShiftsPage() {
+  const { t } = useTranslation();
+  const shifts = usePeriodShifts();
+  const navigate = useNavigate();
+  const { onBack, footer } = useSaveAndLeave();
+  return (
+    <SubPage backTo="/schedule" title={shifts.title} context={shifts.context} onBack={onBack}>
+      <DayList
+        days={shifts.days}
+        state={shifts.state}
+        changed={shifts.changed}
+        label={shifts.label}
+        week={shifts.week}
+        onWeek={shifts.setWeek}
+        onEdit={(day) => void navigate(`/schedule/shifts/${day}?period=${shifts.periodId}`)}
+        closedAction={(day) =>
+          !day.locked && (
+            <button
+              type="button"
+              aria-label={t('dayEditor.reopenDay', { day: day.long })}
+              onClick={() => shifts.reopen(day.key)}
+              className="min-h-10 px-1 text-sm font-bold text-link"
+            >
+              {t('dayEditor.reopen')}
+            </button>
+          )
+        }
+      />
+      {footer}
     </SubPage>
   );
 }
 
-/** Editing <date>: the day view of one date of the period. */
+/**
+ * Editing <date>. The pen next to a day on Building and Editing Schedule opens it straight away (Hoang,
+ * 2026-11-23), so it has its own Save; back returns to the schedule, asking first when something changed.
+ */
 export function PeriodShiftDayPage() {
   const { t } = useTranslation();
   const shifts = usePeriodShifts();
   const { day: key } = useParams();
+  const { onBack, footer } = useSaveAndLeave();
   const day = shifts.days.find((item) => item.key === key);
   if (!day || day.locked) return <Navigate to={`/schedule/shifts?period=${shifts.periodId}`} replace />;
   return (
     <SubPage
-      backTo={`/schedule/shifts?period=${shifts.periodId}`}
+      backTo="/schedule"
       title={t('dayEditor.dayTitle', { day: day.long })}
+      context={shifts.context}
+      onBack={onBack}
     >
       <DayView
         day={day}
@@ -217,6 +235,7 @@ export function PeriodShiftDayPage() {
         onChange={(list) => shifts.setDay(day.key, list)}
         onAdd={shifts.add}
       />
+      {footer}
     </SubPage>
   );
 }

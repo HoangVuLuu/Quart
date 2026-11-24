@@ -39,8 +39,9 @@ export function endsTheSession(method: string, url: URL, origin: string): boolea
   return (
     method !== 'GET' &&
     url.origin === origin &&
-    // Typing the password again (step-up) keeps the same session.
+    // Typing the password again (step-up), or asking for a reset link from Profile, keeps the same session.
     url.pathname !== '/api/auth/confirm-password' &&
+    url.pathname !== '/api/auth/forgot-password' &&
     (url.pathname.startsWith('/api/auth/') || url.pathname === '/api/me/delete')
   );
 }

@@ -52,6 +52,7 @@ describe('the offline allowlist', () => {
     }
     expect(endsTheSession('GET', new URL('/api/me', origin), origin)).toBe(false);
     expect(endsTheSession('POST', new URL('/api/auth/confirm-password', origin), origin)).toBe(false);
+    expect(endsTheSession('POST', new URL('/api/auth/forgot-password', origin), origin)).toBe(false);
     expect(endsTheSession('PATCH', new URL('/api/me', origin), origin)).toBe(false);
   });
 

@@ -100,8 +100,8 @@ describe('Building Schedule extras', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /^Edit Monday/ }));
 
-    await waitFor(() => expect(router.state.location.pathname).toBe('/schedule/shifts'));
-    expect(router.state.location.search).toBe(`?period=${periodId}&day=2099-10-05`);
+    await waitFor(() => expect(router.state.location.pathname).toBe('/schedule/shifts/2099-10-05'));
+    expect(router.state.location.search).toBe(`?period=${periodId}`);
     expect(calls.some((call) => call.path.endsWith('/draft/save'))).toBe(true);
   });
 });

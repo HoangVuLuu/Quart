@@ -23,7 +23,7 @@ describe('Instagram and Facebook on the team page (FR-040, M2-18, mockup 1w)', (
     await i18n.changeLanguage('en');
   });
 
-  it('shows a link only for what each person shared, to that site only', async () => {
+  it('shows a link only for what each person added, to that site only', async () => {
     signedIn('employee', {
       [`GET ${base}/members`]: [
         person('Jasmine K.', { instagram: 'jasmine.k', facebook: '100012345678' }),
@@ -42,7 +42,7 @@ describe('Instagram and Facebook on the team page (FR-040, M2-18, mockup 1w)', (
     expect(screen.queryByRole('link', { name: /Marc D\./ })).not.toBeInTheDocument();
   });
 
-  it('adds the links from Profile, with sharing chosen there', async () => {
+  it('adds the links from Profile, shown to the team once saved', async () => {
     const calls = signedIn('employee', {
       'PATCH /api/me': (call: ApiCall) => ({ ...me, ...(call.body as object), instagram: 'sophie.l' }),
     });
@@ -52,7 +52,6 @@ describe('Instagram and Facebook on the team page (FR-040, M2-18, mockup 1w)', (
     await user.click(await screen.findByRole('button', { name: new RegExp(en.profile.social.row) }));
     const sheet = within(await screen.findByRole('dialog', { name: en.profile.social.title }));
     await user.type(sheet.getByLabelText(en.profile.social.instagram), 'https://instagram.com/sophie.l');
-    await user.click(sheet.getByRole('switch', { name: new RegExp(en.profile.social.share) }));
     await user.click(sheet.getByRole('button', { name: en.profile.save }));
 
     await waitFor(() =>
@@ -61,7 +60,6 @@ describe('Instagram and Facebook on the team page (FR-040, M2-18, mockup 1w)', (
         language: null,
         instagram: 'https://instagram.com/sophie.l',
         facebook: '',
-        shareSocialLinks: true,
       }),
     );
   });

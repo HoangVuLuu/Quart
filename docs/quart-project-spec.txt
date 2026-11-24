@@ -321,9 +321,9 @@ FR-039  One user can be a member of several workplaces at once.
 FR-040  Members can see each other's name, role, level, contact email, and the
         full team schedule on a read-only team page opened from the icon at
         the top right of Home. A member may optionally add Instagram and
-        Facebook links to their own profile and choose whether teammates see
-        them; nothing is shown unless they opt in. No other personal
-        information is exposed. Availability
+        Facebook links to their own profile; once added, the whole team
+        sees them (2026-11-23: there is no separate sharing switch). No
+        other personal information is exposed. Availability
         comments are never shown to coworkers.
 FR-041  Ownership can be transferred to another admin of the same workplace.
         The transfer requires confirmation from the current owner. Not built
@@ -2194,6 +2194,15 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             account, no Connect Google row, and a password-less account
             confirms a step-up by signing in with Google again.  (AD-043,
             AD-044, FR-006, FR-041)
+2026-11-23  From Hoang's testing on staging: Instagram and Facebook links
+            show to the team as soon as they are added, with no "Show to my
+            team" switch. Edit generator rules is reached from the Schedule
+            tab only, not from Profile. The pen next to a day on Building
+            and Editing Schedule opens Editing <that date> directly, with its
+            own Save; it is not offered once the day's first shift started.
+            Account has "Reset password": it emails the same link as
+            "Forgot password?" to the address typed, and the link's page
+            asks for the new password twice.  (FR-005, FR-040, FR-092)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES

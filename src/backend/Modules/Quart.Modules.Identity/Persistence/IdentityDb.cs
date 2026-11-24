@@ -65,13 +65,16 @@ internal sealed class QuartUser : IdentityUser<Guid>
     /// <summary>Hoang only. Set by the <c>grant-platform-admin</c> command, never through the app (5.2).</summary>
     public bool IsPlatformAdmin { get; set; }
 
-    /// <summary>Instagram handle, without "@" (FR-040, M2-18). Shown to teammates only with <see cref="ShareSocialLinks"/>.</summary>
+    /// <summary>Instagram handle, without "@" (FR-040, M2-18). Once added, teammates see it (Hoang, 2026-11-23).</summary>
     public string? Instagram { get; set; }
 
     /// <summary>Facebook username or numeric profile ID (FR-040, M2-18).</summary>
     public string? Facebook { get; set; }
 
-    /// <summary>The person chose to show the two links on the team page. Off by default: nothing shows unless they opt in.</summary>
+    /// <summary>
+    /// No longer used: adding a link now shares it (Hoang, 2026-11-23). The column stays until a later migration
+    /// drops it, so the version still running during a deploy keeps working (docs/runbooks/migrations.md).
+    /// </summary>
     public bool ShareSocialLinks { get; set; }
 
     public Instant CreatedAt { get; set; }

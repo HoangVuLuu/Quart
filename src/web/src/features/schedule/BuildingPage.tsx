@@ -149,10 +149,10 @@ function BuildingVisit({ periodId, mode }: { periodId: string; mode: 'build' | '
             }
             reuse={mode === 'build'}
             onEditDay={(date) => {
-              // M4-01 (Hoang, 2026-11-23): the draft is saved first, then this period's shifts open.
+              // M4-01 (Hoang, 2026-11-23): the draft is saved first, then Editing <that date> opens.
               const go = () => {
                 unsavedNow.current = false;
-                void navigate(`/schedule/shifts?period=${periodId}&day=${date}`);
+                void navigate(`/schedule/shifts/${date}?period=${periodId}`);
               };
               if (unsavedNow.current) actions.save.mutate(undefined, { onSuccess: go });
               else go();

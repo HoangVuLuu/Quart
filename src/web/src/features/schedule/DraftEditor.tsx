@@ -12,7 +12,7 @@ import { Sheet } from '../../ui/Sheet';
 import { Skeleton } from '../../ui/Skeleton';
 import { StatusChip, type StatusTone } from '../../ui/StatusChip';
 import { useToast } from '../../ui/toast-context';
-import { localToday } from '../day-editor/model';
+import { dayHasStarted } from '../day-editor/model';
 import { FormError } from '../identity/FormError';
 import { describer } from '../scheduling/components/describe-issue';
 import {
@@ -201,7 +201,15 @@ export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay, 
             date={day.date}
             shifts={day.shifts}
             onOpen={setOpenShift}
-            onEdit={onEditDay && day.date >= localToday() ? () => onEditDay(day.date) : undefined}
+            onEdit={
+              onEditDay &&
+              !dayHasStarted(
+                day.date,
+                day.shifts.map((shift) => shift.start),
+              )
+                ? () => onEditDay(day.date)
+                : undefined
+            }
           />
         ))}
       </div>

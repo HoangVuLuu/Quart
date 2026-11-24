@@ -1555,7 +1555,6 @@ export interface components {
       isPlatformAdmin: boolean;
       instagram: null | string;
       facebook: null | string;
-      shareSocialLinks: boolean;
     };
     MemberAvailability: {
       memberId: string;
@@ -1937,7 +1936,6 @@ export interface components {
       language: null | string;
       instagram?: null | string;
       facebook?: null | string;
-      shareSocialLinks?: null | boolean;
     };
     UpdateSettingsRequest: {
       claimsNeedApproval: null | boolean;

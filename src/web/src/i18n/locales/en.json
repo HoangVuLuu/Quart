@@ -1105,7 +1105,6 @@
     "codeChanged": "New code. The old one no longer works.",
     "newCode": "Get a new code",
     "members": "Members and levels",
-    "generatorText": "Shifts, people needed, scheduling rules",
     "claimsApproval": "Approve claims",
     "claimsApprovalText": "Taking an open or offered shift waits for a manager",
     "tradesApproval": "Approve trades",
@@ -1160,14 +1159,16 @@
       "row": "Instagram and Facebook",
       "none": "Not added",
       "shown": "Shown to your team",
-      "hidden": "Hidden",
       "title": "Instagram and Facebook",
-      "text": "Add your profiles so teammates can find you. They show on the team page only if you turn on sharing.",
+      "text": "Add your profiles so teammates can find you. Everyone on your team sees them on the team page.",
       "instagram": "Instagram",
       "facebook": "Facebook",
-      "placeholder": "@yourname or a profile link",
-      "share": "Show to my team",
-      "shareText": "Everyone in your workplaces sees these on the team page."
+      "placeholder": "@yourname or a profile link"
+    },
+    "resetPassword": {
+      "row": "Reset password",
+      "title": "Reset your password",
+      "text": "Type the email to send the link to. The link opens a page where you choose a new password; it works for 45 minutes."
     }
   },
   "install": {
@@ -1237,7 +1238,6 @@
     "shiftLabel": "{{name}}, {{start}} to {{end}}",
     "people_one": "{{count}} person",
     "people_other": "{{count}} people",
-    "hoursHint": "Times move in 15-minute steps. Overlapping another shift is fine.",
     "delete": "Delete this shift",
     "newTitle": "New shift",
     "name": "Name",

@@ -3,12 +3,12 @@ using System.Text.Json.Nodes;
 
 namespace Quart.Api.Tests;
 
-/// <summary>Instagram and Facebook on the team page, only for people who chose to share them (FR-040, M2-18).</summary>
+/// <summary>Instagram and Facebook on the team page: adding one shows it to the team (FR-040, M2-18).</summary>
 [Collection(PostgresCollection.Name)]
 public sealed class SocialLinkTests(PostgresFixture postgres)
 {
     [Fact]
-    public async Task Links_show_on_the_team_page_only_while_their_owner_shares_them()
+    public async Task Added_links_show_to_every_teammate_and_go_when_removed()
     {
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
@@ -16,22 +16,17 @@ public sealed class SocialLinkTests(PostgresFixture postgres)
         var coworker = team.Staff[1];
 
         await jasmine.SendAsync(HttpMethod.Patch, "/api/me", new { instagram = "@jasmine.k", facebook = "jasmine.kim" });
-        var hidden = Row(await coworker.GetAsync($"{team.Base}/members"), jasmine);
-        await jasmine.SendAsync(HttpMethod.Patch, "/api/me", new { shareSocialLinks = true });
         var shown = Row(await coworker.GetAsync($"{team.Base}/members"), jasmine);
         var toOwner = Row(await team.Owner.GetAsync($"{team.Base}/members"), jasmine);
-        await jasmine.SendAsync(HttpMethod.Patch, "/api/me", new { shareSocialLinks = false });
-        var hiddenAgain = Row(await coworker.GetAsync($"{team.Base}/members"), jasmine);
+        await jasmine.SendAsync(HttpMethod.Patch, "/api/me", new { instagram = "", facebook = "" });
+        var removed = Row(await coworker.GetAsync($"{team.Base}/members"), jasmine);
 
-        Assert.Null(hidden["instagram"]);
-        Assert.Null(hidden["facebook"]);
         Assert.Equal("jasmine.k", shown["instagram"]!.GetValue<string>());
         Assert.Equal("jasmine.kim", shown["facebook"]!.GetValue<string>());
         Assert.Equal("jasmine.k", toOwner["instagram"]!.GetValue<string>());
-        Assert.Null(hiddenAgain["instagram"]);
-        var me = await jasmine.GetAsync("/api/me");
-        Assert.Equal("jasmine.k", me["instagram"]!.GetValue<string>());
-        Assert.False(me["shareSocialLinks"]!.GetValue<bool>());
+        Assert.Null(removed["instagram"]);
+        Assert.Null(removed["facebook"]);
+        Assert.Null(Row(await coworker.GetAsync($"{team.Base}/members"), coworker)["instagram"]);
     }
 
     [Theory]
@@ -83,7 +78,7 @@ public sealed class SocialLinkTests(PostgresFixture postgres)
     {
         await using var app = await TestApp.StartAsync(postgres);
         var team = await Team.CreateAsync(app);
-        await team.Staff[0].SendAsync(HttpMethod.Patch, "/api/me", new { instagram = "jasmine.k", shareSocialLinks = true });
+        await team.Staff[0].SendAsync(HttpMethod.Patch, "/api/me", new { instagram = "jasmine.k" });
         var stranger = await app.PersonAsync("Marc Dubé");
 
         Assert.Equal(HttpStatusCode.NotFound, (await stranger.TryAsync(HttpMethod.Get, $"{team.Base}/members")).Status);

@@ -1105,7 +1105,6 @@
     "codeChanged": "Nouveau code. L’ancien ne fonctionne plus.",
     "newCode": "Obtenir un nouveau code",
     "members": "Membres et niveaux",
-    "generatorText": "Quarts, personnes requises, règles d’horaire",
     "claimsApproval": "Approuver les prises de quart",
     "claimsApprovalText": "Prendre un quart libre ou offert attend l’accord d’un gérant",
     "tradesApproval": "Approuver les échanges",
@@ -1160,14 +1159,16 @@
       "row": "Instagram et Facebook",
       "none": "Pas ajoutés",
       "shown": "Visibles par ton équipe",
-      "hidden": "Cachés",
       "title": "Instagram et Facebook",
-      "text": "Ajoute tes profils pour que tes collègues te trouvent. Ils paraissent sur la page d’équipe seulement si tu actives le partage.",
+      "text": "Ajoute tes profils pour que tes collègues te trouvent. Toute ton équipe les voit sur la page d’équipe.",
       "instagram": "Instagram",
       "facebook": "Facebook",
-      "placeholder": "@tonnom ou un lien de profil",
-      "share": "Montrer à mon équipe",
-      "shareText": "Tout le monde dans tes lieux de travail les voit sur la page d’équipe."
+      "placeholder": "@tonnom ou un lien de profil"
+    },
+    "resetPassword": {
+      "row": "Réinitialiser le mot de passe",
+      "title": "Réinitialise ton mot de passe",
+      "text": "Écris le courriel où envoyer le lien. Le lien ouvre une page où tu choisis un nouveau mot de passe; il fonctionne pendant 45 minutes."
     }
   },
   "install": {
@@ -1237,7 +1238,6 @@
     "shiftLabel": "{{name}}, de {{start}} à {{end}}",
     "people_one": "{{count}} personne",
     "people_other": "{{count}} personnes",
-    "hoursHint": "Les heures avancent par 15 minutes. Chevaucher un autre quart, c’est correct.",
     "delete": "Supprimer ce quart",
     "newTitle": "Nouveau quart",
     "name": "Nom",

@@ -57,7 +57,14 @@ export function useUpdateMe() {
   return useMutation({
     mutationFn: (body: Partial<Schemas['UpdateMeRequest']>) =>
       unwrap(api.PATCH('/api/me', { body: { displayName: null, language: null, ...body } })),
-    onSuccess: (me) => client.setQueryData(meKey, me),
+    onSuccess: (me, body) => {
+      client.setQueryData(meKey, me);
+      // Teammates' views show the name and the links: the team page and schedules would keep the old ones
+      // until they went stale (2026-11-23).
+      if (body.displayName != null || body.instagram != null || body.facebook != null) {
+        void client.invalidateQueries({ queryKey: ['workplace'] });
+      }
+    },
   });
 }
 

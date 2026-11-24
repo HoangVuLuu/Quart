@@ -5107,8 +5107,7 @@
           "language",
           "isPlatformAdmin",
           "instagram",
-          "facebook",
-          "shareSocialLinks"
+          "facebook"
         ],
         "type": "object",
         "properties": {
@@ -5142,9 +5141,6 @@
               "null",
               "string"
             ]
-          },
-          "shareSocialLinks": {
-            "type": "boolean"
           }
         }
       },
@@ -6607,12 +6603,6 @@
             "type": [
               "null",
               "string"
-            ]
-          },
-          "shareSocialLinks": {
-            "type": [
-              "null",
-              "boolean"
             ]
           }
         }

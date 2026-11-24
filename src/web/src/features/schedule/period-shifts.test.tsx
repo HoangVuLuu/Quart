@@ -72,8 +72,8 @@ describe("a period's own shifts (M4-01)", () => {
     await userEvent.click(await screen.findByRole('button', { name: /^Closing, 16:00 to 22:00/ }));
     const sheet = await screen.findByRole('dialog', { name: 'Closing' });
     await userEvent.click(within(sheet).getByRole('button', { name: en.dayEditor.delete }));
-    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
 
+    // Editing <date> has its own Save (2026-11-23): it saves every day changed, Thursday's reopening too.
     await userEvent.click(await screen.findByRole('button', { name: en.dayEditor.save }));
     const dialog = await screen.findByRole('dialog', { name: en.dayEditor.liveTitle });
     await userEvent.click(within(dialog).getByRole('button', { name: en.dayEditor.liveConfirm }));
@@ -90,5 +90,18 @@ describe("a period's own shifts (M4-01)", () => {
     expect(sent.find((item) => item.id === 'o06')).toEqual(
       expect.objectContaining({ blockId: null, end: '16:00' }),
     );
+  });
+
+  it('going back from a changed day asks before leaving', async () => {
+    signedIn('owner', { [`GET ${base}/periods/${periodId}/shifts`]: view });
+    renderApp(`/schedule/shifts/2099-10-06?period=${periodId}`);
+
+    expect(await screen.findByRole('heading', { name: 'Editing Tue, Oct 6' })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: /^Closing, 16:00 to 22:00/ }));
+    const sheet = await screen.findByRole('dialog', { name: 'Closing' });
+    await userEvent.click(within(sheet).getByRole('button', { name: en.dayEditor.delete }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+    expect(await screen.findByRole('dialog', { name: en.generator.leave.title })).toBeInTheDocument();
   });
 });

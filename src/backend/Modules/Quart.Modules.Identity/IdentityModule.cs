@@ -218,7 +218,7 @@ internal sealed class UserDirectory(IdentityDb db) : IUserDirectory
                 x => x.Id,
                 x => new UserSummary(
                     x.Id, x.FullName, x.DisplayName, x.Email!, x.Language, x.EmailConfirmed,
-                    x.ShareSocialLinks ? new SocialLinks(x.Instagram, x.Facebook) : null),
+                    new SocialLinks(x.Instagram, x.Facebook)),
                 cancellationToken);
 
     public Task<bool> IsPlatformAdminAsync(Guid userId, CancellationToken cancellationToken) =>
