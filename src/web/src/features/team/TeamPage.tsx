@@ -1,6 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import facebookLogo from '../../assets/brand/facebook.png';
+import instagramLogo from '../../assets/brand/instagram.png';
 import { SubPage } from '../../app/SubPage';
 import { messageKeyFor } from '../../i18n/errors';
 import { api, unwrap, type Schemas } from '../../lib/api/client';
@@ -96,16 +98,17 @@ export function TeamPage() {
 }
 
 // Each link is built from a fixed host and a handle the server already checked (M2-18), so a teammate can
-// only ever be sent to that person's profile. Letters rather than the two brands' logos.
+// only ever be sent to that person's profile. The logos are the official files from Meta's brand
+// resources, only scaled down: their guidelines forbid recolouring or reshaping them.
 const socialSites = [
   {
     key: 'instagram',
-    short: 'IG',
+    logo: instagramLogo,
     url: (handle: string) => `https://www.instagram.com/${encodeURIComponent(handle)}/`,
   },
   {
     key: 'facebook',
-    short: 'FB',
+    logo: facebookLogo,
     url: (handle: string) => `https://www.facebook.com/${encodeURIComponent(handle)}`,
   },
 ] as const;
@@ -126,9 +129,9 @@ function SocialLinks({ member, className }: { member: Member; className?: string
           target="_blank"
           rel="noopener noreferrer"
           aria-label={t(`team.social.${link.key}`, { name: member.displayName })}
-          className="flex size-11 items-center justify-center rounded-full bg-bg text-sm font-bold text-primary"
+          className="flex size-11 items-center justify-center rounded-full bg-bg"
         >
-          <span aria-hidden="true">{link.short}</span>
+          <img src={link.logo} alt="" className="size-6" />
         </a>
       ))}
     </div>
