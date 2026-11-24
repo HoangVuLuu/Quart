@@ -85,6 +85,12 @@ internal sealed class Session
     public Instant CreatedAt { get; set; }
 
     public Instant ExpiresAt { get; set; }
+
+    /// <summary>
+    /// When the password was last typed in this browser: at sign-in, then on each step-up (AD-044, M2-06).
+    /// Null for sessions from before this column existed, which then simply ask for it.
+    /// </summary>
+    public Instant? ConfirmedAt { get; set; }
 }
 
 /// <summary>A link emailed to someone: it works once and expires (FR-004, FR-005). Only its hash is stored.</summary>

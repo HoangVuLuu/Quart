@@ -27,6 +27,7 @@ public sealed class AccountDeletionTests(PostgresFixture postgres)
         Assert.Contains(before, x => Start(x) < now);
         Assert.Contains(before, x => Start(x) > now);
 
+        await paul.ConfirmPasswordAsync();
         await paul.PostAsync("/api/me/delete", new { email = paul.Email.ToUpperInvariant() });
 
         var after = await team.ScheduleAsync();

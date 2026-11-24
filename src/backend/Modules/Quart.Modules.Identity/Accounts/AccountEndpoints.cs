@@ -77,13 +77,14 @@ internal static class AccountEndpoints
         auth.MapPost("/sign-out-everywhere", SignOutEverywhereAsync).RequireUser().WithName("SignOutEverywhere");
         auth.MapPost("/forgot-password", ForgotPasswordAsync).WithName("ForgotPassword");
         auth.MapPost("/reset-password", ResetPasswordAsync).WithName("ResetPassword");
+        auth.MapPost("/confirm-password", ConfirmPasswordAsync).RequireUser().WithName("ConfirmPassword");
 
         endpoints.MapGet("/api/me", GetMeAsync).RequireUser().WithName("GetMe");
         endpoints.MapPatch("/api/me", UpdateMeAsync).RequireUser().WithName("UpdateMe");
         // Both ask for the current password, so they share the sign-in limit and count towards lockout (M2-07).
         endpoints.MapPost("/api/me/password", ChangePasswordAsync).RequireUser().RequireRateLimiting(RateLimitPolicy).WithName("ChangePassword");
         endpoints.MapPost("/api/me/email", ChangeEmailAsync).RequireUser().RequireRateLimiting(RateLimitPolicy).WithName("ChangeEmail");
-        endpoints.MapPost("/api/me/delete", DeleteAccountAsync).RequireUser().RequireRateLimiting(RateLimitPolicy).WithName("DeleteAccount");
+        endpoints.MapPost("/api/me/delete", DeleteAccountAsync).RequireUser().RequireRecentConfirmation().RequireRateLimiting(RateLimitPolicy).WithName("DeleteAccount");
         // Public on purpose: the link may open in a browser that is not signed in. The single-use token sent to
         // the new address, after the current password was given, is the proof (section 1.6).
         endpoints.MapPost("/api/me/email/confirm", ConfirmEmailChangeAsync).RequireRateLimiting(RateLimitPolicy).WithName("ConfirmEmailChange");
@@ -534,7 +535,7 @@ internal static class AccountEndpoints
         {
             return Problems.Validation(new FieldError(DeleteEmailMismatch, "email"));
         }
-        // Until ownership can be handed over (M2-13), the owner asks the platform admin.
+        // Ownership cannot be handed over in the app (M2-13 dropped, 2026-11-23): the owner asks the platform admin.
         var memberships = await workplaces.GetMembershipsOfAsync(user.Id, cancellationToken);
         if (memberships.Any(x => x.Active && x.Role == Roles.Owner))
         {
@@ -560,8 +561,37 @@ internal static class AccountEndpoints
         return TypedResults.NoContent();
     }
 
+    /// <summary>
+    /// Step-up (AD-044, M2-06): the password, typed again, marks this browser's session as confirmed for the
+    /// next ten minutes. A wrong one counts towards the lockout like any other.
+    /// </summary>
+    private static async Task<Results<NoContent, ProblemHttpResult>> ConfirmPasswordAsync(
+        ConfirmPasswordRequest request,
+        HttpContext http,
+        UserManager<QuartUser> users,
+        IdentityDb db,
+        IClock clock,
+        CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(http.CurrentUserId().ToString());
+        if (user is null)
+        {
+            return Problems.Unauthorized();
+        }
+        if (await CheckCurrentPasswordAsync(users, user, request.Password, "password") is { } refused)
+        {
+            return refused;
+        }
+        var id = await RecentConfirmation.CurrentSessionIdAsync(http);
+        var now = clock.GetCurrentInstant();
+        await db.Sessions.Where(x => x.Id == id && x.UserId == user.Id)
+            .ExecuteUpdateAsync(update => update.SetProperty(x => x.ConfirmedAt, now), cancellationToken);
+        return TypedResults.NoContent();
+    }
+
     /// <summary>Null when the password is right; otherwise the refusal. A wrong one counts towards the lockout (FR-007).</summary>
-    private static async Task<ProblemHttpResult?> CheckCurrentPasswordAsync(UserManager<QuartUser> users, QuartUser user, string? password)
+    private static async Task<ProblemHttpResult?> CheckCurrentPasswordAsync(
+        UserManager<QuartUser> users, QuartUser user, string? password, string field = "currentPassword")
     {
         if (await users.IsLockedOutAsync(user))
         {
@@ -575,7 +605,7 @@ internal static class AccountEndpoints
         await users.AccessFailedAsync(user);
         return await users.IsLockedOutAsync(user)
             ? Problems.Forbidden(LockedOut)
-            : Problems.Validation(new FieldError(CurrentPasswordWrong, "currentPassword"));
+            : Problems.Validation(new FieldError(CurrentPasswordWrong, field));
     }
 
     /// <summary>Ends every session of the account except this browser's, when this browser is that person's.</summary>
@@ -584,8 +614,7 @@ internal static class AccountEndpoints
         string? current = null;
         if (http.User.UserId() == user.Id)
         {
-            var result = await http.AuthenticateAsync(IdentityConstants.ApplicationScheme);
-            current = result.Properties?.Items.TryGetValue(SessionTicketStore.SessionItem, out var id) == true ? id : null;
+            current = await RecentConfirmation.CurrentSessionIdAsync(http);
         }
         // A session from before its row ID was remembered cannot be told apart: it ends too, and the person signs in again.
         await db.Sessions.Where(x => x.UserId == user.Id && x.Id != current).ExecuteDeleteAsync(cancellationToken);
@@ -678,6 +707,8 @@ public sealed record ResetPasswordRequest(string? Token, string? Password);
 public sealed record UpdateMeRequest(string? DisplayName, string? Language);
 
 public sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
+
+public sealed record ConfirmPasswordRequest(string? Password);
 
 public sealed record ChangeEmailRequest(string? Email, string? CurrentPassword);
 

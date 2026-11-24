@@ -27,6 +27,7 @@ const errorKeys = {
   'auth.owns_workplace': 'errors.auth.owns_workplace',
   'auth.password_breached': 'errors.auth.password_breached',
   'auth.password_too_short': 'errors.auth.password_too_short',
+  'auth.step_up_required': 'errors.auth.step_up_required',
   'availability.hours_invalid': 'errors.availability.hours_invalid',
   'availability.hours_required': 'errors.availability.hours_required',
   'availability.locked': 'errors.availability.locked',

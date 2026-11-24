@@ -268,7 +268,11 @@ FR-006  Sign in and sign up with Google are offered alongside email and
         Matching is by verified email address. A new account created through
         Google must confirm its full name before continuing, since Google's
         profile name may be missing or not what the person goes by. Calendar
-        import (FR-097) later reuses this sign-in.
+        import (FR-097) later reuses this sign-in. When Google's verified
+        email already has a Quart account, the person is signed in to it
+        and it then works both ways; there is no "Connect Google" row in
+        Profile. An account with no password confirms a step-up (AD-044)
+        by signing in with Google again.
 FR-007  Login is rate limited and the account locks temporarily after repeated
         failures. Rate limits also apply to password reset requests and to join
         code attempts.
@@ -322,7 +326,9 @@ FR-040  Members can see each other's name, role, level, contact email, and the
         information is exposed. Availability
         comments are never shown to coworkers.
 FR-041  Ownership can be transferred to another admin of the same workplace.
-        The transfer requires confirmation from the current owner.
+        The transfer requires confirmation from the current owner. Not built
+        for now (M2-13 dropped 2026-11-23): the platform admin handles a
+        change of owner.
 FR-042  Creating a workplace produces a single-use owner invitation link, valid
         7 days, which the platform admin sends to the future owner. Whoever
         signs in and accepts it becomes the owner. The platform admin never
@@ -1074,11 +1080,16 @@ AD-042  Authorisation is by named permission (section 5.5), never by comparing
 AD-043  Two-factor authentication with an authenticator app (time-based codes),
         using ASP.NET Core Identity's built-in support, plus one-time recovery
         codes. Built in M2 and optional for everyone. Mandatory for anyone
-        holding ManagePayslips before payslips launch.
+        holding ManagePayslips before payslips launch. Not built for now
+        (M2-08 dropped 2026-11-23); it returns before payslips, if they are
+        ever built.
 AD-044  Step-up authentication: sensitive actions require the password to have
-        been confirmed within the last 10 minutes. Applies to changing email,
-        transferring ownership, regenerating the join code, granting
-        permissions, turning off two-factor, and (backlog) opening payslips.
+        been confirmed within the last 10 minutes, in the same browser.
+        Signing in counts as confirming. Applies to regenerating the join
+        code, deleting the account, and (backlog) opening payslips. Changing
+        the email or the password asks for the current password in the form
+        itself, which is stronger. Ownership transfer, permission grants and
+        two-factor were on this list until they were dropped (2026-11-23).
 AD-045  Session cookies are HttpOnly, Secure and SameSite=Lax. Sessions are
         stored server-side so signing out, a password reset, or "sign out of all
         devices" revokes them immediately. ASP.NET Core Data Protection keys are
@@ -2174,6 +2185,15 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             "availability requested" had not left the app yet (bundling), it
             is taken back and the cancellation stays in the app.  (FR-145,
             FR-103a, FR-211)
+2026-11-23  Phase 4 with Hoang: two-factor (M2-08) and admins, permission
+            grants and ownership transfer (M2-13) are dropped for now, "not
+            that much security needed yet". Step-up (M2-06) applies to the
+            join code and account deletion; a sign-in counts as a
+            confirmation. Sign in with Google (M2-17) waits; its rules are
+            settled: a verified Google email signs in to the existing
+            account, no Connect Google row, and a password-less account
+            confirms a step-up by signing in with Google again.  (AD-043,
+            AD-044, FR-006, FR-041)
 
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES
