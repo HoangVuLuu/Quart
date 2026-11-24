@@ -23,3 +23,6 @@ stores a new piece of personal data adds a line here, so 6.2 picks it up (remain
   availability and notes, and every email to their address in the outbox; the goodbye email's row goes once sent.
 - Accounts whose email was never confirmed are deleted 7 days after sign-up. What stays: bare IDs on past schedules (shown as
   "Former employee"), and for up to 60 days the short name inside other people's alerts ("Paul C. left").
+- Instagram and Facebook (FR-040, M2-18): optional, typed by the person in Profile. Only the username is kept, never
+  a link. Teammates in the person's workplaces see them on the team page only while "Show to my team" is on (off by
+  default). They are part of the profile, so deleting the account deletes them; removing the text removes them at once.

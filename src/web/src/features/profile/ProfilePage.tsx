@@ -19,6 +19,7 @@ import { FormError } from '../identity/FormError';
 import { initialsOf, useMe, useSignOut, useUpdateMe } from '../identity/session';
 import { useRefreshWorkplace } from '../scheduling/data';
 import { ChangeEmailSheet, ChangePasswordSheet, DeleteAccountSheet } from './AccountSheets';
+import { SocialLinksSheet } from './SocialLinksSheet';
 import { rememberWorkplace, useWorkplace } from '../workplaces/workplace';
 import { PushRow } from '../push/PushRow';
 import { EmailRow } from './EmailRow';
@@ -44,7 +45,7 @@ export function ProfilePage() {
   const signOutEverywhere = useSignOut(true);
   const refresh = useRefreshWorkplace();
   const [dark, setDark] = useState(currentTheme() === 'dark');
-  const [accountSheet, setAccountSheet] = useState<'email' | 'password' | 'delete' | null>(null);
+  const [accountSheet, setAccountSheet] = useState<'email' | 'password' | 'social' | 'delete' | null>(null);
   const [name, setName] = useState(me?.displayName ?? '');
   const [leaving, setLeaving] = useState(false);
   const path = { workplaceId: id };
@@ -279,6 +280,16 @@ export function ProfilePage() {
           <span>{t('profile.changePassword.row')}</span>
           <span aria-hidden="true">›</span>
         </button>
+        <button type="button" className={`${rowLink} w-full`} onClick={() => setAccountSheet('social')}>
+          <span>{t('profile.social.row')}</span>
+          <span className="min-w-0 truncate text-sm text-muted">
+            {!me.instagram && !me.facebook
+              ? t('profile.social.none')
+              : me.shareSocialLinks
+                ? t('profile.social.shown')
+                : t('profile.social.hidden')}
+          </span>
+        </button>
         <button
           type="button"
           className={`${rowLink} w-full`}
@@ -308,6 +319,7 @@ export function ProfilePage() {
       </Card>
       <ChangeEmailSheet open={accountSheet === 'email'} onClose={() => setAccountSheet(null)} />
       <ChangePasswordSheet open={accountSheet === 'password'} onClose={() => setAccountSheet(null)} />
+      <SocialLinksSheet me={me} open={accountSheet === 'social'} onClose={() => setAccountSheet(null)} />
       {view.me.role !== 'owner' && (
         <Button variant="danger" onClick={() => setLeaving(true)}>
           {t('profile.leave')}

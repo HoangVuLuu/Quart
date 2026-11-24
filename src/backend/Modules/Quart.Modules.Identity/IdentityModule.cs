@@ -214,7 +214,12 @@ internal sealed class UserDirectory(IdentityDb db) : IUserDirectory
     public async Task<IReadOnlyDictionary<Guid, UserSummary>> GetAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken) =>
         await db.Users.AsNoTracking()
             .Where(x => userIds.Contains(x.Id))
-            .ToDictionaryAsync(x => x.Id, x => new UserSummary(x.Id, x.FullName, x.DisplayName, x.Email!, x.Language, x.EmailConfirmed), cancellationToken);
+            .ToDictionaryAsync(
+                x => x.Id,
+                x => new UserSummary(
+                    x.Id, x.FullName, x.DisplayName, x.Email!, x.Language, x.EmailConfirmed,
+                    x.ShareSocialLinks ? new SocialLinks(x.Instagram, x.Facebook) : null),
+                cancellationToken);
 
     public Task<bool> IsPlatformAdminAsync(Guid userId, CancellationToken cancellationToken) =>
         db.Users.AsNoTracking().AnyAsync(x => x.Id == userId && x.IsPlatformAdmin, cancellationToken);

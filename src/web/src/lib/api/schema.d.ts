@@ -1553,6 +1553,9 @@ export interface components {
       email: string;
       language: string;
       isPlatformAdmin: boolean;
+      instagram: null | string;
+      facebook: null | string;
+      shareSocialLinks: boolean;
     };
     MemberAvailability: {
       memberId: string;
@@ -1587,6 +1590,8 @@ export interface components {
       worksShifts: null | boolean;
       /** Format: double */
       maxWeeklyHours: null | number;
+      instagram: null | string;
+      facebook: null | string;
     };
     MetaResponse: {
       name: string;
@@ -1930,6 +1935,9 @@ export interface components {
     UpdateMeRequest: {
       displayName: null | string;
       language: null | string;
+      instagram?: null | string;
+      facebook?: null | string;
+      shareSocialLinks?: null | boolean;
     };
     UpdateSettingsRequest: {
       claimsNeedApproval: null | boolean;
