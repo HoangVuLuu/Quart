@@ -103,7 +103,9 @@
       "owns_workplace": "Tu es propriétaire d’un lieu de travail, alors ton compte ne peut pas encore être supprimé. Demande d’abord à l’administrateur de la plateforme de le confier à quelqu’un d’autre.",
       "password_breached": "Ce mot de passe figure dans une fuite de données. Choisis-en un autre.",
       "password_too_short": "Utilise au moins 8 caractères.",
-      "step_up_required": "Confirme ton mot de passe pour faire ceci."
+      "step_up_required": "Confirme ton mot de passe pour faire ceci.",
+      "instagram_invalid": "Ce n’est pas un nom d’utilisateur Instagram.",
+      "facebook_invalid": "Ce n’est pas un nom d’utilisateur ou un lien de profil Facebook."
     },
     "availability": {
       "hours_invalid": "Indique un nombre d’heures de 0 à 168.",
@@ -804,6 +806,10 @@
       "text": "La personne perd l’accès tout de suite et ses prochains quarts deviennent libres.",
       "confirm": "Retirer",
       "cancel": "Annuler"
+    },
+    "social": {
+      "instagram": "{{name}} sur Instagram",
+      "facebook": "{{name}} sur Facebook"
     }
   },
   "marketplace": {
@@ -1149,6 +1155,19 @@
       "sentTitle": "Regarde ta nouvelle boîte de réception",
       "sentText": "Si {{email}} peut être utilisé, un lien est en route. Il fonctionne pendant 24 heures. Ton courriel reste le même tant que tu ne l’as pas ouvert.",
       "close": "Fermer"
+    },
+    "social": {
+      "row": "Instagram et Facebook",
+      "none": "Pas ajoutés",
+      "shown": "Visibles par ton équipe",
+      "hidden": "Cachés",
+      "title": "Instagram et Facebook",
+      "text": "Ajoute tes profils pour que tes collègues te trouvent. Ils paraissent sur la page d’équipe seulement si tu actives le partage.",
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "placeholder": "@tonnom ou un lien de profil",
+      "share": "Montrer à mon équipe",
+      "shareText": "Tout le monde dans tes lieux de travail les voit sur la page d’équipe."
     }
   },
   "install": {

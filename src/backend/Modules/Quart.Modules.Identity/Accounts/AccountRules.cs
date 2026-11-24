@@ -19,6 +19,8 @@ internal static partial class AccountRules
     public const string PasswordTooShort = "auth.password_too_short";
     public const string PasswordBreached = "auth.password_breached";
     public const string LanguageInvalid = "auth.language_invalid";
+    public const string InstagramInvalid = "auth.instagram_invalid";
+    public const string FacebookInvalid = "auth.facebook_invalid";
 
     public static readonly string[] Languages = ["fr", "en"];
 
@@ -28,6 +30,51 @@ internal static partial class AccountRules
 
     [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
     private static partial Regex EmailPattern();
+
+    // Instagram usernames: letters, digits, dots and underscores, at most 30. Facebook: letters, digits and
+    // dots (a numeric profile ID is digits), at most 50 (M2-18).
+    [GeneratedRegex(@"^[A-Za-z0-9._]{1,30}$")]
+    private static partial Regex InstagramPattern();
+
+    [GeneratedRegex(@"^[A-Za-z0-9.]{1,50}$")]
+    private static partial Regex FacebookPattern();
+
+    /// <summary>
+    /// A handle as people paste it: "@jasmine.k", "jasmine.k" or a whole profile link. Only the handle is
+    /// kept; the link is built from a fixed host when shown, so nobody can point teammates elsewhere.
+    /// Empty means "remove it". Null when it is not a valid handle.
+    /// </summary>
+    public static string? CleanInstagram(string raw) => CleanHandle(raw, ["instagram.com"], InstagramPattern());
+
+    /// <inheritdoc cref="CleanInstagram"/>
+    public static string? CleanFacebook(string raw)
+    {
+        var text = raw.Trim();
+        // facebook.com/profile.php?id=1000123: the number alone opens the same profile.
+        var id = Regex.Match(text, @"profile\.php\?id=(\d{1,30})");
+        return CleanHandle(id.Success ? id.Groups[1].Value : text, ["facebook.com", "fb.com"], FacebookPattern());
+    }
+
+    private static string? CleanHandle(string raw, string[] hosts, Regex valid)
+    {
+        var text = raw.Trim();
+        if (text.Length > 200)
+        {
+            return null;
+        }
+        foreach (var host in hosts)
+        {
+            var at = text.IndexOf(host + "/", StringComparison.OrdinalIgnoreCase);
+            if (at >= 0)
+            {
+                text = text[(at + host.Length + 1)..];
+                text = text.Split('?', '#')[0].Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
+                break;
+            }
+        }
+        text = text.TrimStart('@');
+        return text.Length == 0 ? string.Empty : valid.IsMatch(text) ? text : null;
+    }
 
     public static string CleanName(string? name) => Regex.Replace((name ?? string.Empty).Trim(), @"\s+", " ");
 

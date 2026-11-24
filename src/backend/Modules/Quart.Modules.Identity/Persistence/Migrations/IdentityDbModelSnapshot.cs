@@ -215,10 +215,18 @@ namespace Quart.Modules.Identity.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("email_confirmed");
 
+                    b.Property<string>("Facebook")
+                        .HasColumnType("text")
+                        .HasColumnName("facebook");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("full_name");
+
+                    b.Property<string>("Instagram")
+                        .HasColumnType("text")
+                        .HasColumnName("instagram");
 
                     b.Property<bool>("IsPlatformAdmin")
                         .HasColumnType("boolean")
@@ -262,6 +270,10 @@ namespace Quart.Modules.Identity.Persistence.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text")
                         .HasColumnName("security_stamp");
+
+                    b.Property<bool>("ShareSocialLinks")
+                        .HasColumnType("boolean")
+                        .HasColumnName("share_social_links");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean")

@@ -103,7 +103,9 @@
       "owns_workplace": "You own a workplace, so your account can’t be deleted yet. Ask the platform admin to hand the workplace over to someone else first.",
       "password_breached": "This password appeared in a data breach. Choose a different one.",
       "password_too_short": "Use at least 8 characters.",
-      "step_up_required": "Confirm your password to do this."
+      "step_up_required": "Confirm your password to do this.",
+      "instagram_invalid": "That is not an Instagram username.",
+      "facebook_invalid": "That is not a Facebook username or profile link."
     },
     "availability": {
       "hours_invalid": "Enter a number of hours from 0 to 168.",
@@ -804,6 +806,10 @@
       "text": "They lose access at once and their future shifts become open shifts.",
       "confirm": "Remove",
       "cancel": "Cancel"
+    },
+    "social": {
+      "instagram": "{{name}} on Instagram",
+      "facebook": "{{name}} on Facebook"
     }
   },
   "marketplace": {
@@ -1149,6 +1155,19 @@
       "sentTitle": "Check your new inbox",
       "sentText": "If {{email}} can be used, a link is on its way. It works for 24 hours. Your email stays the same until you open it.",
       "close": "Close"
+    },
+    "social": {
+      "row": "Instagram and Facebook",
+      "none": "Not added",
+      "shown": "Shown to your team",
+      "hidden": "Hidden",
+      "title": "Instagram and Facebook",
+      "text": "Add your profiles so teammates can find you. They show on the team page only if you turn on sharing.",
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "placeholder": "@yourname or a profile link",
+      "share": "Show to my team",
+      "shareText": "Everyone in your workplaces sees these on the team page."
     }
   },
   "install": {

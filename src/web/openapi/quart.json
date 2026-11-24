@@ -5105,7 +5105,10 @@
           "displayName",
           "email",
           "language",
-          "isPlatformAdmin"
+          "isPlatformAdmin",
+          "instagram",
+          "facebook",
+          "shareSocialLinks"
         ],
         "type": "object",
         "properties": {
@@ -5126,6 +5129,21 @@
             "type": "string"
           },
           "isPlatformAdmin": {
+            "type": "boolean"
+          },
+          "instagram": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "facebook": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "shareSocialLinks": {
             "type": "boolean"
           }
         }
@@ -5210,7 +5228,9 @@
           "level",
           "isMe",
           "worksShifts",
-          "maxWeeklyHours"
+          "maxWeeklyHours",
+          "instagram",
+          "facebook"
         ],
         "type": "object",
         "properties": {
@@ -5249,6 +5269,18 @@
               "number"
             ],
             "format": "double"
+          },
+          "instagram": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "facebook": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -6563,6 +6595,24 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "instagram": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "facebook": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "shareSocialLinks": {
+            "type": [
+              "null",
+              "boolean"
             ]
           }
         }

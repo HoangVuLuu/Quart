@@ -17,6 +17,8 @@ const errorKeys = {
   'auth.email_invalid': 'errors.auth.email_invalid',
   'auth.email_not_verified': 'errors.auth.email_not_verified',
   'auth.email_same': 'errors.auth.email_same',
+  'auth.facebook_invalid': 'errors.auth.facebook_invalid',
+  'auth.instagram_invalid': 'errors.auth.instagram_invalid',
   'auth.invalid_credentials': 'errors.auth.invalid_credentials',
   'auth.language_invalid': 'errors.auth.language_invalid',
   'auth.link_expired': 'errors.auth.link_expired',

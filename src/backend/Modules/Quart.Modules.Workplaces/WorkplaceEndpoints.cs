@@ -246,7 +246,9 @@ internal static class WorkplaceEndpoints
                     manages ? x.Level : null,
                     x.Id == member.MembershipId,
                     detailed ? x.WorksShifts : null,
-                    detailed ? x.MaxWeeklyHours : null);
+                    detailed ? x.MaxWeeklyHours : null,
+                    names[x.UserId].Shared?.Instagram,
+                    names[x.UserId].Shared?.Facebook);
             })
             .OrderBy(x => x.Role == Roles.Employee).ThenBy(x => x.DisplayName, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
@@ -399,6 +401,7 @@ public sealed record MyMembership(
 
 /// <param name="Level">Null unless the caller manages levels (3.1, 2026-11-18).</param>
 /// <param name="WorksShifts">Null when the caller may not see it (FR-040).</param>
+/// <param name="Instagram">A handle, only when that person chose to share their links (FR-040, M2-18).</param>
 public sealed record MemberView(
     Guid MembershipId,
     string DisplayName,
@@ -407,6 +410,8 @@ public sealed record MemberView(
     int? Level,
     bool IsMe,
     bool? WorksShifts,
-    decimal? MaxWeeklyHours);
+    decimal? MaxWeeklyHours,
+    string? Instagram,
+    string? Facebook);
 
 public sealed record UpdateMemberRequest(int? Level, bool? WorksShifts, decimal? MaxWeeklyHours, bool? ClearMaxWeeklyHours);

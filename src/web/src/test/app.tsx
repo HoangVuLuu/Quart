@@ -76,6 +76,9 @@ export const me: Schemas['Me'] = {
   email: 'sophie@quart.test',
   language: 'en',
   isPlatformAdmin: false,
+  instagram: null,
+  facebook: null,
+  shareSocialLinks: false,
 };
 
 export function workplace(

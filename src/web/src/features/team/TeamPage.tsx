@@ -40,7 +40,7 @@ export function Avatar({ name, className }: { name: string; className?: string }
 }
 
 // Mockups 1w (everyone) and 1x, 1z (admins get Edit). Coworkers see a name, a role and a level, nothing
-// else (FR-040). The optional social links arrive with the rest of M2-18.
+// else (FR-040), plus Instagram and Facebook for those who chose to share them (M2-18).
 export function TeamPage() {
   const { t } = useTranslation();
   const { view, can } = useWorkplace();
@@ -73,7 +73,10 @@ export function TeamPage() {
                       ? t('team.barista', { level: member.level })
                       : `${t(`roles.${member.role as 'owner' | 'admin'}`)} · ${t('scheduling.level', { level: member.level })}`}
                 </p>
+                {/* Beside an Edit button there is no room at 390 px, in French above all: under the name. */}
+                {can('ManageLevels') && <SocialLinks member={member} className="mt-2" />}
               </div>
+              {!can('ManageLevels') && <SocialLinks member={member} />}
               {can('ManageLevels') && (
                 <Button
                   className="min-h-11 px-4 text-sm"
@@ -89,6 +92,46 @@ export function TeamPage() {
       </ul>
       {editing && <EditMember member={editing} onClose={() => setEditing(null)} />}
     </SubPage>
+  );
+}
+
+// Each link is built from a fixed host and a handle the server already checked (M2-18), so a teammate can
+// only ever be sent to that person's profile. Letters rather than the two brands' logos.
+const socialSites = [
+  {
+    key: 'instagram',
+    short: 'IG',
+    url: (handle: string) => `https://www.instagram.com/${encodeURIComponent(handle)}/`,
+  },
+  {
+    key: 'facebook',
+    short: 'FB',
+    url: (handle: string) => `https://www.facebook.com/${encodeURIComponent(handle)}`,
+  },
+] as const;
+
+function SocialLinks({ member, className }: { member: Member; className?: string }) {
+  const { t } = useTranslation();
+  const links = socialSites.flatMap((site) => {
+    const handle = member[site.key];
+    return handle ? [{ ...site, handle }] : [];
+  });
+  if (links.length === 0) return null;
+  return (
+    <div className={cx('flex shrink-0 gap-2', className)}>
+      {links.map((link) => (
+        <a
+          key={link.key}
+          href={link.url(link.handle)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={t(`team.social.${link.key}`, { name: member.displayName })}
+          className="flex size-11 items-center justify-center rounded-full bg-bg text-sm font-bold text-primary"
+        >
+          <span aria-hidden="true">{link.short}</span>
+        </a>
+      ))}
+    </div>
   );
 }
 
