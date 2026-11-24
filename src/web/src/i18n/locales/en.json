@@ -159,7 +159,8 @@
       "unknown_member": "This person no longer works shifts here.",
       "unknown_shift": "This shift no longer exists.",
       "visit_ended": "You left the page for a while, so the unsaved changes were dropped.",
-      "note_too_long": "A note on one shift can be 100 characters at most."
+      "note_too_long": "A note on one shift can be 100 characters at most.",
+      "reuse_unknown": "That schedule cannot be reused here."
     },
     "settings": {
       "max_consecutive_invalid": "Choose 1 to 4 shifts in a row, or no limit.",
@@ -748,6 +749,15 @@
       "available": "Available",
       "unavailable": "Not available",
       "noAnswer": "No answer"
+    },
+    "reuse": {
+      "button": "Reuse a past schedule",
+      "title": "Reuse a past schedule",
+      "text": "Copies who worked each shift onto the same week, weekday and shift here. People you kept stay put. People who left are skipped.",
+      "none": "No schedule has been published before this one.",
+      "done": "Copied. The issues show who is not available this time.",
+      "weeks_one": "{{count}} week",
+      "weeks_other": "{{count}} weeks"
     }
   },
   "teamAvailability": {

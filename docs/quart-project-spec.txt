@@ -525,6 +525,10 @@ FR-123  The admin can lock individual assignments. Locked assignments survive
 FR-124  "Reuse a past schedule" copies assignments from a previous period into
         the current one, then re-checks every assignment against the current
         availability and flags the conflicts.
+        Built 2026-11-23 (M5-08): Building Schedule lists the published periods
+        before this one; each shift gets the people of the shift with the same
+        week (counted round the past period's weeks), weekday and generator
+        shift. People who left are skipped; people kept stay, as with Generate.
 FR-125  If a shift cannot be filled, the generator leaves the slot empty and
         reports it. It never fills a slot by breaking a hard rule.
 

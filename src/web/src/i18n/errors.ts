@@ -78,6 +78,7 @@ const errorKeys = {
   'schedule.publish_needs_confirmation': 'errors.schedule.publish_needs_confirmation',
   'schedule.unknown_member': 'errors.schedule.unknown_member',
   'schedule.unknown_shift': 'errors.schedule.unknown_shift',
+  'schedule.reuse_unknown': 'errors.schedule.reuse_unknown',
   'schedule.visit_ended': 'errors.schedule.visit_ended',
   'settings.max_consecutive_invalid': 'errors.settings.max_consecutive_invalid',
   'settings.period_weeks_invalid': 'errors.settings.period_weeks_invalid',

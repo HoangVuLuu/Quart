@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { useSwipe } from '../../lib/gestures';
 import { useTranslation } from 'react-i18next';
 import { messageKeyFor } from '../../i18n/errors';
-import { formatDayHeading, formatNumber, formatShortDate } from '../../i18n/format';
+import { formatDateRange, formatDayHeading, formatNumber, formatShortDate } from '../../i18n/format';
 import { Button } from '../../ui/Button';
 import { Cup } from '../../ui/Cup';
 import { cx } from '../../ui/cx';
@@ -19,6 +19,7 @@ import {
   byDay,
   useDraft,
   useDraftActions,
+  useReuseSources,
   useTeamAvailability,
   weekOf,
   type DraftIssue,
@@ -29,6 +30,49 @@ import {
 import { flavourOf, useShiftName } from '../scheduling/ShiftName';
 import { ManagerNoteEditor } from './manager-note';
 import { Pill } from './Pill';
+
+/** "Reuse a past schedule" (FR-124, M5-08): a sheet of past published periods; picking one fills the draft. */
+function ReuseButton({ periodId }: { periodId: string }) {
+  const { t, i18n } = useTranslation();
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const sources = useReuseSources(periodId, open);
+  const { reuse } = useDraftActions(periodId);
+  return (
+    <>
+      <Button variant="white" className="w-full" onClick={() => setOpen(true)}>
+        {t('draft.reuse.button')}
+      </Button>
+      {open && (
+        <Sheet open onOpenChange={setOpen} title={t('draft.reuse.title')} description={t('draft.reuse.text')}>
+          <div className="flex flex-col gap-2">
+            {sources.data?.length === 0 && <p className="text-sm text-muted">{t('draft.reuse.none')}</p>}
+            {(sources.data ?? []).map((past) => (
+              <Button
+                key={past.id}
+                variant="white"
+                className="justify-between"
+                loading={reuse.isPending && reuse.variables === past.id}
+                onClick={() =>
+                  reuse.mutate(past.id, {
+                    onSuccess: () => {
+                      setOpen(false);
+                      toast(t('draft.reuse.done'));
+                    },
+                  })
+                }
+              >
+                <span>{formatDateRange(past.startDate, past.endDate, i18n.language)}</span>
+                <span className="text-sm text-muted">{t('draft.reuse.weeks', { count: past.weeks })}</span>
+              </Button>
+            ))}
+            <FormError message={reuse.error ? t(messageKeyFor(reuse.error)) : undefined} />
+          </div>
+        </Sheet>
+      )}
+    </>
+  );
+}
 
 const severityTone: Record<string, StatusTone> = { block: 'danger', confirm: 'warning', show: 'neutral' };
 
@@ -59,10 +103,12 @@ type DraftEditorProps = {
   onPublished?: () => void;
   /** The pen next to a day's title: change this period's shifts (M4-01, 2026-11-23). */
   onEditDay?: (date: string) => void;
+  /** Under Generate, on Building Schedule only: "Reuse a past schedule" (FR-124). */
+  reuse?: boolean;
 };
 
 // Mockup 1l, with the shift editor (1p) and the issues list (1q). Only admins come here (AD-012).
-export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay }: DraftEditorProps) {
+export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay, reuse }: DraftEditorProps) {
   const { t } = useTranslation();
   const toast = useToast();
   const draft = useDraft(periodId);
@@ -120,6 +166,7 @@ export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay }
         </Button>
         {besideGenerate}
       </div>
+      {reuse && <ReuseButton periodId={periodId} />}
       <Button
         variant={blocking.length > 0 ? 'danger' : asking.length > 0 ? 'warning' : 'white'}
         className="w-full"

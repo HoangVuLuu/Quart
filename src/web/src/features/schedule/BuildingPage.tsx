@@ -147,6 +147,7 @@ function BuildingVisit({ periodId, mode }: { periodId: string; mode: 'build' | '
                 </Button>
               )
             }
+            reuse={mode === 'build'}
             onEditDay={(date) => {
               // M4-01 (Hoang, 2026-11-23): the draft is saved first, then this period's shifts open.
               const go = () => {

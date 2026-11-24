@@ -69,6 +69,22 @@ export function useClearOldDayChanges() {
   });
 }
 
+/** "Reuse a past schedule" (FR-124): the published periods before this one, newest first. */
+export function useReuseSources(periodId: string, enabled: boolean) {
+  const { id } = useWorkplace();
+  return useQuery({
+    queryKey: ['workplace', id, 'reuse', periodId],
+    queryFn: ({ signal }) =>
+      unwrap(
+        api.GET('/api/workplaces/{workplaceId}/periods/{periodId}/draft/reuse', {
+          params: { path: { workplaceId: id, periodId } },
+          signal,
+        }),
+      ),
+    enabled,
+  });
+}
+
 export function usePublishedSchedule(periodId: string | undefined) {
   const { id } = useWorkplace();
   return useQuery({
@@ -212,6 +228,15 @@ export function useDraftActions(periodId: string) {
     generate: useMutation({
       mutationFn: (seed: number | null) =>
         unwrap(api.POST(`${base}/generate`, { params: { path }, body: { seed } })),
+      onSuccess: async (draft) => {
+        await refresh();
+        show(draft);
+      },
+    }),
+    // FR-124: a past period's people as the starting point, like Generate.
+    reuse: useMutation({
+      mutationFn: (sourcePeriodId: string) =>
+        unwrap(api.POST(`${base}/reuse`, { params: { path }, body: { sourcePeriodId } })),
       onSuccess: async (draft) => {
         await refresh();
         show(draft);
