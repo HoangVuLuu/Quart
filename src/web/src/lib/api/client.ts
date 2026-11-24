@@ -1,5 +1,6 @@
 import createClient from 'openapi-fetch';
 import { noteResponse, noteUnreachable } from '../connection';
+import { askForPassword } from '../step-up';
 import type { components, paths } from './schema';
 
 // The typed API client. Paths, parameters and response types come from src/lib/api/schema.d.ts,
@@ -49,20 +50,37 @@ function antiforgeryToken(): string | undefined {
   return match?.[1] ? decodeURIComponent(match[1]) : undefined;
 }
 
+/** The code the API answers when an action needs the password typed again (AD-044, M2-06). */
+export const stepUpRequired = 'auth.step_up_required';
+
+// A copy of each change as it was sent, so it can be sent again once the password is confirmed.
+const sent = new WeakMap<Request, Request>();
+
 // Another site can make the browser send our cookies, but it can neither read this cookie nor set this
 // header, so the API refuses any change that arrives without it.
 api.use({
   onRequest({ request }) {
     const token = antiforgeryToken();
-    if (token && !['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
-      request.headers.set('X-XSRF-TOKEN', token);
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+      if (token) request.headers.set('X-XSRF-TOKEN', token);
+      sent.set(request, request.clone());
     }
     return request;
   },
-  // A copy kept by the service worker says when it was saved; the offline banner shows it (M8-05).
-  onResponse({ response }) {
+  async onResponse({ request, response }) {
+    // A copy kept by the service worker says when it was saved; the offline banner shows it (M8-05).
     noteResponse(response);
-    return response;
+    if (response.status !== 403 || !sent.has(request)) return response;
+    // Step-up, in one place rather than in every page: ask for the password, then try once more.
+    const body: unknown = await response
+      .clone()
+      .json()
+      .catch(() => undefined);
+    if ((body as { code?: unknown } | undefined)?.code !== stepUpRequired) return response;
+    if (!(await askForPassword())) return response;
+    const again = await globalThis.fetch(sent.get(request)!);
+    noteResponse(again);
+    return again;
   },
 });
 

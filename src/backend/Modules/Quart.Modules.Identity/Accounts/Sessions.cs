@@ -3,6 +3,8 @@ using System.Xml.Linq;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection.Repositories;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,6 +49,8 @@ internal sealed class SessionTicketStore(IServiceScopeFactory scopes, IClock clo
             Ticket = TicketSerializer.Default.Serialize(ticket),
             CreatedAt = now,
             ExpiresAt = now + Lifetime,
+            // A new session only comes from typing the password, so it starts confirmed (AD-044).
+            ConfirmedAt = now,
         });
         await db.SaveChangesAsync();
         return id;
@@ -79,6 +83,30 @@ internal sealed class SessionTicketStore(IServiceScopeFactory scopes, IClock clo
         var db = scope.ServiceProvider.GetRequiredService<IdentityDb>();
         var id = Hash(key);
         await db.Sessions.Where(x => x.Id == id).ExecuteDeleteAsync();
+    }
+}
+
+/// <summary>
+/// Step-up (AD-044, M2-06): reads this browser's session row. The row's ID is in the ticket, never the
+/// cookie's key, so the check needs no secret.
+/// </summary>
+internal sealed class RecentConfirmation(IdentityDb db, IClock clock) : IRecentConfirmation
+{
+    public async Task<bool> IsRecentAsync(HttpContext http, CancellationToken cancellationToken)
+    {
+        if (await CurrentSessionIdAsync(http) is not { } id)
+        {
+            return false;
+        }
+        var since = clock.GetCurrentInstant() - Duration.FromTimeSpan(StepUp.Window);
+        return await db.Sessions.AnyAsync(x => x.Id == id && x.ConfirmedAt != null && x.ConfirmedAt >= since, cancellationToken);
+    }
+
+    /// <summary>The row ID of this browser's session, or null when it has none (or predates remembering it).</summary>
+    public static async Task<string?> CurrentSessionIdAsync(HttpContext http)
+    {
+        var result = await http.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+        return result.Properties?.Items.TryGetValue(SessionTicketStore.SessionItem, out var id) == true ? id : null;
     }
 }
 

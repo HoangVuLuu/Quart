@@ -47,7 +47,7 @@ internal static class WorkplaceEndpoints
         var one = endpoints.MapGroup("/api/workplaces/{workplaceId:guid}");
         one.MapGet("/", GetAsync).AllowAnyMember().WithName("GetWorkplace");
         one.MapPatch("/settings", UpdateSettingsAsync).RequirePermission(Permission.ManageWorkplace).WithName("UpdateWorkplaceSettings");
-        one.MapPost("/join-code/regenerate", RegenerateJoinCodeAsync).RequirePermission(Permission.ManageWorkplace).WithName("RegenerateJoinCode");
+        one.MapPost("/join-code/regenerate", RegenerateJoinCodeAsync).RequirePermission(Permission.ManageWorkplace).RequireRecentConfirmation().WithName("RegenerateJoinCode");
         one.MapGet("/members", ListMembersAsync).AllowAnyMember().WithName("ListMembers");
         one.MapPatch("/members/{membershipId:guid}", UpdateMemberAsync).RequirePermission(Permission.ManageLevels).WithName("UpdateMember");
         one.MapDelete("/members/{membershipId:guid}", RemoveMemberAsync).RequirePermission(Permission.ManageMembers).WithName("RemoveMember");

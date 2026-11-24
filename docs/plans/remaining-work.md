@@ -370,10 +370,10 @@ section 5 where the two differ (for example 3.1 has two pages, Editing Shift and
 
 | # | Plan ID | Work | Needs |
 | --- | --- | --- | --- |
-| 4.1 | M2-06 | Step-up: confirm the password before sensitive actions | nothing |
-| 4.2 | M2-08 | Two-factor authentication | nothing |
-| 4.3 | M2-13 | Admins, permission grants, ownership transfer | nothing |
-| 4.4 | M2-17 | Sign in with Google (Google's app verification waits for 6.3) | D6 |
+| 4.1 | M2-06 | Step-up: confirm the password before sensitive actions. Join code and account deletion (2026-11-23). | nothing |
+| 4.2 | M2-08 | ~~Two-factor authentication~~ **Dropped by Hoang on 2026-11-23** (not needed yet). | n/a |
+| 4.3 | M2-13 | ~~Admins, permission grants, ownership transfer~~ **Dropped by Hoang on 2026-11-23**. | n/a |
+| 4.4 | M2-17 | Sign in with Google (Google's app verification waits for 6.3). **Later** (Hoang, 2026-11-23); rules already decided, see 4.4 below. | D6 |
 | 4.5 | M2-18 | Social links on the team page | nothing |
 
 ### Phase 5: later milestones
@@ -729,6 +729,11 @@ toward the lockout. Never show the secret again after setup.
 - Then let 1.6 (delete account) offer the transfer instead of "contact support".
 
 ### 4.4 Sign in with Google (M2-17). Size M
+
+**Decided with Hoang (2026-11-23), before it is built.** A verified Google email that already has a
+Quart account signs in to that account, which then works both ways. No "Connect Google" row in
+Profile. An account with no password confirms a step-up (4.1) by signing in with Google again.
+Two-factor (4.2) is dropped, so the sign-in has no second step.
 
 - Authorization code flow with PKCE, handled on the server; the browser never sees tokens. Identity
   already has an `AccountLink` table: use it for (provider, subject) to user.

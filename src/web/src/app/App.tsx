@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router';
+import { StepUpSheet } from '../features/identity/StepUpSheet';
 import { UpdatePrompt } from '../features/offline/UpdatePrompt';
 import { PullToRefresh } from './PullToRefresh';
 import { router } from './router';
@@ -30,6 +31,7 @@ export function App() {
         <RouterProvider router={router} />
       </PullToRefresh>
       <UpdatePrompt />
+      <StepUpSheet />
     </QueryClientProvider>
   );
 }

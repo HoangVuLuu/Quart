@@ -2,6 +2,7 @@ import { PullToRefresh } from '../app/PullToRefresh';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
+import { StepUpSheet } from '../features/identity/StepUpSheet';
 import { vi } from 'vitest';
 import { routes } from '../app/router';
 import type { Schemas } from '../lib/api/client';
@@ -153,6 +154,7 @@ export function renderApp(path: string) {
       <PullToRefresh>
         <RouterProvider router={router} />
       </PullToRefresh>
+      <StepUpSheet />
     </QueryClientProvider>,
   );
   return router;

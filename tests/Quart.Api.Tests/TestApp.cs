@@ -180,6 +180,9 @@ public sealed class TestUser(HttpClient client, Guid userId, string email, strin
 
     public Task<JsonNode> PostAsync(string path, object? body = null) => SendAsync(HttpMethod.Post, path, body);
 
+    /// <summary>Step-up (AD-044): types the password again, so sensitive actions work for ten minutes.</summary>
+    public Task<JsonNode> ConfirmPasswordAsync() => PostAsync("/api/auth/confirm-password", new { password = TestApp.Password });
+
     /// <summary>Sends and expects success; the answer's body, or an empty object when it has none.</summary>
     public async Task<JsonNode> SendAsync(HttpMethod method, string path, object? body = null)
     {

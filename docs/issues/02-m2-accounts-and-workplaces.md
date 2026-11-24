@@ -125,6 +125,8 @@ labels: type:feature, stack:full, area:auth, area:security, payslip-readiness, s
 depends: M2-04
 spec: AD-044, 12.7
 
+> **Scope 2026-11-23.** Applies to regenerating the join code and deleting the account. Signing in counts as confirming. Email and password changes keep asking the current password in their form.
+
 **Goal.** Sensitive actions require the password to have been confirmed within the last 10 minutes.
 
 **Backend**
@@ -163,6 +165,8 @@ spec: FR-008, FR-261, FR-262, AD-044
 labels: type:feature, stack:full, area:auth, area:security, payslip-readiness, size:M
 depends: M2-06
 spec: AD-043, 12.7
+
+> **Dropped for now (Hoang, 2026-11-23).** Not needed yet. It returns before payslips, if those are ever built (AD-043).
 
 **Goal.** Optional two-factor for everyone now; mandatory later for anyone handling payslips.
 
@@ -277,6 +281,8 @@ labels: type:feature, stack:full, area:workplace, area:security, size:M
 depends: M2-12, M2-06
 spec: FR-041, 5.3, 5.5, AD-044
 
+> **Dropped for now (Hoang, 2026-11-23).** The platform admin handles a change of owner (FR-041).
+
 **Goal.** More than one admin, individual permission grants, and a safe handover of ownership.
 
 **Backend**
@@ -319,6 +325,8 @@ spec: FR-210, FR-215, FR-216, FR-261, FR-263, 12.7
 labels: type:feature, stack:full, area:auth, size:M
 depends: M2-04
 spec: FR-006, AD-024
+
+> **Decided 2026-11-23 (Hoang), built later.** A verified Google email that has a Quart account signs in to it; no Connect Google row in Profile; an account with no password confirms a step-up by signing in with Google again. Two-factor is dropped.
 
 **Goal.** One-tap sign-in and sign-up, as on the mockups' login and create-account screens.
 

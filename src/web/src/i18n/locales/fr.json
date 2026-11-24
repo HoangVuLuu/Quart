@@ -102,7 +102,8 @@
       "name_invalid": "Entre ton nom avec des lettres, des espaces, des traits d’union et des apostrophes.",
       "owns_workplace": "Tu es propriétaire d’un lieu de travail, alors ton compte ne peut pas encore être supprimé. Demande d’abord à l’administrateur de la plateforme de le confier à quelqu’un d’autre.",
       "password_breached": "Ce mot de passe figure dans une fuite de données. Choisis-en un autre.",
-      "password_too_short": "Utilise au moins 8 caractères."
+      "password_too_short": "Utilise au moins 8 caractères.",
+      "step_up_required": "Confirme ton mot de passe pour faire ceci."
     },
     "availability": {
       "hours_invalid": "Indique un nombre d’heures de 0 à 168.",
@@ -678,6 +679,11 @@
       "doneText": "Ton compte utilise maintenant cette adresse. Tes autres appareils ont été déconnectés.",
       "failed": "Ce lien n’a pas fonctionné",
       "continue": "Continuer"
+    },
+    "stepUp": {
+      "title": "Confirme ton mot de passe",
+      "text": "Par sécurité, entre de nouveau ton mot de passe pour continuer.",
+      "confirm": "Confirmer"
     }
   },
   "workplaces": {

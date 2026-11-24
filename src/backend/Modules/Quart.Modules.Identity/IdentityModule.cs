@@ -19,6 +19,7 @@ using Microsoft.Extensions.Options;
 using NodaTime;
 using Npgsql;
 using Quart.Modules.Identity.Accounts;
+using Quart.SharedKernel.Access;
 using Quart.Modules.Identity.Persistence;
 using Quart.SharedKernel;
 using Quart.SharedKernel.Directory;
@@ -66,6 +67,7 @@ public static class IdentityModule
 
         // AD-045: the cookie holds a session key only; the ticket lives in the database.
         services.AddSingleton<ITicketStore, SessionTicketStore>();
+        services.AddScoped<IRecentConfirmation, RecentConfirmation>();
         services.AddAuthentication(IdentityConstants.ApplicationScheme)
             .AddCookie(IdentityConstants.ApplicationScheme, options =>
             {

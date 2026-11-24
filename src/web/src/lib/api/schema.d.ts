@@ -244,6 +244,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/auth/confirm-password': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ConfirmPassword'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/workplaces': {
     parameters: {
       query?: never;
@@ -1263,6 +1279,9 @@ export interface components {
       name: string;
       fromName: null | string;
       wouldMissLevel: boolean;
+    };
+    ConfirmPasswordRequest: {
+      password: null | string;
     };
     ConflictPair: {
       blockId: string;
@@ -2406,6 +2425,37 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['ResetPasswordRequest'];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ConfirmPassword: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmPasswordRequest'];
       };
     };
     responses: {
