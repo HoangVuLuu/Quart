@@ -374,7 +374,7 @@ section 5 where the two differ (for example 3.1 has two pages, Editing Shift and
 | 4.2 | M2-08 | ~~Two-factor authentication~~ **Dropped by Hoang on 2026-11-23** (not needed yet). | n/a |
 | 4.3 | M2-13 | ~~Admins, permission grants, ownership transfer~~ **Dropped by Hoang on 2026-11-23**. | n/a |
 | 4.4 | M2-17 | Sign in with Google (Google's app verification waits for 6.3). **Later** (Hoang, 2026-11-23); rules already decided, see 4.4 below. | D6 |
-| 4.5 | M2-18 | Social links on the team page. Usernames on the account, one "Show to my team" switch, shown as IG and FB buttons (2026-11-23). | nothing |
+| 4.5 | M2-18 | Social links on the team page. Usernames on the account, one "Show to my team" switch, shown with the official Instagram and Facebook logos (2026-11-23). | nothing |
 
 ### Phase 5: later milestones
 
