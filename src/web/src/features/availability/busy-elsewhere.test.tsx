@@ -19,7 +19,7 @@ const period: Schemas['PeriodSummary'] = {
   draftSaved: false,
   dueAt: '2099-10-02T22:00:00Z',
 };
-const shift = (id: string, start: string, end: string, busyElsewhere: boolean) => ({
+const shift = (id: string, start: string, end: string, busyElsewhere: boolean, timeOff = false) => ({
   id,
   blockId: `block-${start}`,
   date: '2099-10-05',
@@ -28,6 +28,7 @@ const shift = (id: string, start: string, end: string, busyElsewhere: boolean) =
   hours: 6,
   selected: false,
   busyElsewhere,
+  timeOff,
 });
 const mine: Schemas['MyAvailability'] = {
   period,
@@ -71,5 +72,31 @@ describe('availability with a shift at another workplace', () => {
       desiredWeeklyHours: 20,
       shiftNotes: [],
     });
+  });
+
+  // BL-01: days of accepted time off cannot be picked either.
+  it('greys out a day of accepted time off', async () => {
+    signedIn('employee', {
+      [`GET ${base}/periods/current`]: {
+        live: null,
+        next: { period, myAvailability: 'not_sent', canEditAvailability: true, sentCount: null },
+        upcoming: [],
+      },
+      [`GET ${base}/periods/${periodId}/availability/me`]: {
+        ...mine,
+        shifts: [
+          shift('mon-open', '10:00', '16:00', false, true),
+          shift('mon-close', '16:00', '22:00', false, true),
+        ],
+      },
+    });
+    const router = renderApp('/');
+    await screen.findByRole('heading', { name: /Hi/ });
+    await router.navigate('/availability');
+
+    expect(await screen.findByText(en.availability.timeOffHint)).toBeInTheDocument();
+    for (const label of screen.getAllByText(en.availability.timeOff)) {
+      expect(label.closest('button')).toBeDisabled();
+    }
   });
 });

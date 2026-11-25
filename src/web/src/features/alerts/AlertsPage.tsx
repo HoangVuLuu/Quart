@@ -8,6 +8,7 @@ import { Icon, iconButtonClassName } from '../../ui/Icon';
 import { PageHeader } from '../../ui/PageHeader';
 import { Loading, RowsSkeleton } from '../../ui/Skeleton';
 import { MarketplaceSections } from '../marketplace/MarketplaceSections';
+import { TimeOffRequests } from '../time-off/TimeOffRequests';
 import { useDecisionCount, useMarkAllRead, useMarkRead, useNotifications } from './data';
 import { destinationOf } from './destination';
 import { notificationText } from './notification-text';
@@ -32,6 +33,7 @@ export function AlertsPage() {
         subtitle={waiting > 0 ? t('alerts.waiting', { count: waiting }) : t('alerts.context')}
       />
 
+      <TimeOffRequests />
       <MarketplaceSections scope="decisions" />
 
       <section className="flex flex-col gap-3">

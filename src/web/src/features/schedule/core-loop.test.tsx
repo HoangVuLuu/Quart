@@ -41,6 +41,7 @@ function availabilityShift(
     hours: start === '10:00' ? 6 : 7,
     selected,
     busyElsewhere: false,
+    timeOff: false,
   };
 }
 
@@ -675,6 +676,8 @@ describe('notifications', () => {
         reason: 'stale',
         sent: '12',
         total: '15',
+        firstDay: '2099-10-05',
+        lastDay: '2099-10-09',
       };
 
       for (const type of notificationTypes) {

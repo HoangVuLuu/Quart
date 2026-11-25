@@ -7,6 +7,7 @@ import { buttonClassName, pressClassName } from '../../ui/button-styles';
 import { cx } from '../../ui/cx';
 import { Card } from '../../ui/Card';
 import { CardSkeleton, HeroSkeleton, Loading } from '../../ui/Skeleton';
+import { TimeOffHome } from '../time-off/TimeOffHome';
 import { Cup } from '../../ui/Cup';
 import { HeroCard } from '../../ui/HeroCard';
 import { PageHeader } from '../../ui/PageHeader';
@@ -240,6 +241,8 @@ export function HomePage() {
           <p className="text-sm text-muted">{t('home.nothing')}</p>
         </Card>
       )}
+      {/* BL-01: staff ask for time off at the bottom of Home (Hoang, 2026-11-25). */}
+      <TimeOffHome />
     </section>
   );
 }

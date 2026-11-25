@@ -5,6 +5,7 @@ import facebookLogo from '../../assets/brand/facebook.png';
 import instagramLogo from '../../assets/brand/instagram.png';
 import { SubPage } from '../../app/SubPage';
 import { messageKeyFor } from '../../i18n/errors';
+import { formatDateRange, formatShortDate } from '../../i18n/format';
 import { api, unwrap, type Schemas } from '../../lib/api/client';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
@@ -79,6 +80,7 @@ export function TeamPage() {
                       ? t('team.barista', { level: member.level })
                       : `${t(`roles.${member.role as 'owner' | 'admin'}`)} · ${t('scheduling.level', { level: member.level })}`}
                 </p>
+                {member.timeOff && <TimeOffChip timeOff={member.timeOff} />}
                 {/* Beside an Edit button there is no room at 390 px, in French above all: under the name. */}
                 {can('ManageLevels') && <SocialLinks member={member} className="mt-2" />}
               </div>
@@ -98,6 +100,26 @@ export function TeamPage() {
       </ul>
       {editing && <EditMember member={editing} onClose={() => setEditing(null)} />}
     </SubPage>
+  );
+}
+
+/** Accepted time off that has not ended, for the people who manage levels (BL-01, 2026-11-25). */
+function TimeOffChip({ timeOff }: { timeOff: NonNullable<Member['timeOff']> }) {
+  const { t, i18n } = useTranslation();
+  const language = i18n.language;
+  // "Dec 20", without the weekday, so the tag stays on one line at 390 px.
+  const day = (date: string) => formatDateRange(date, date, language);
+  const text = timeOff.now
+    ? timeOff.lastDay
+      ? t('team.timeOff.until', { day: day(timeOff.lastDay) })
+      : t('team.timeOff.open')
+    : timeOff.lastDay
+      ? t('team.timeOff.planned', { days: formatDateRange(timeOff.firstDay, timeOff.lastDay, language) })
+      : t('team.timeOff.from', { day: day(timeOff.firstDay) });
+  return (
+    <span className="mt-1 inline-block rounded-pill bg-warning-soft px-2.5 py-0.5 text-xs font-bold text-warning">
+      {text}
+    </span>
   );
 }
 
@@ -147,7 +169,7 @@ function SocialLinks({ member, className }: { member: Member; className?: string
  * most hours they may get in a week (M2-12). The hours they want come with their availability (1.1).
  */
 function EditMember({ member, onClose }: { member: Member; onClose: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id, can } = useWorkplace();
   const refresh = useRefreshWorkplace();
   const [level, setLevel] = useState(member.level ?? 1);
@@ -216,6 +238,14 @@ function EditMember({ member, onClose }: { member: Member; onClose: () => void }
           checked={worksShifts}
           onCheckedChange={setWorksShifts}
         />
+        {/* BL-01 (Hoang, 2026-11-25): during a time off the switch reads off; turning it on ends the time off. */}
+        {member.timeOff?.now && (
+          <p className="rounded-field bg-warning-soft px-3 py-2 text-sm font-bold text-warning">
+            {member.timeOff.lastDay
+              ? t('team.timeOff.sheetUntil', { day: formatShortDate(member.timeOff.lastDay, i18n.language) })
+              : t('team.timeOff.sheetOpen')}
+          </p>
+        )}
         {worksShifts && (
           <Switch
             label={t('team.sheet.limit')}

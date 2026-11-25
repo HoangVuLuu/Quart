@@ -436,6 +436,86 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/workplaces/{workplaceId}/time-off/mine': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetMyTimeOff'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/time-off': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ListTimeOffRequests'];
+    put?: never;
+    post: operations['RequestTimeOff'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/time-off/{timeOffId}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CancelTimeOff'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/time-off/{timeOffId}/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AcceptTimeOff'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workplaces/{workplaceId}/time-off/{timeOffId}/refuse': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['RefuseTimeOff'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/workplaces/{workplaceId}/periods/current': {
     parameters: {
       query?: never;
@@ -1233,6 +1313,8 @@ export interface components {
       busyElsewhere: boolean;
       note?: null | string;
       name?: null | string;
+      /** @default false */
+      timeOff: boolean;
     };
     BlockSetup: {
       /** Format: uuid */
@@ -1577,6 +1659,13 @@ export interface components {
       /** Format: double */
       expectedClosings: number;
     };
+    MemberTimeOff: {
+      /** Format: date */
+      firstDay: string;
+      /** Format: date */
+      lastDay: null | string;
+      now: boolean;
+    };
     MemberView: {
       /** Format: uuid */
       membershipId: string;
@@ -1591,6 +1680,7 @@ export interface components {
       maxWeeklyHours: null | number;
       instagram: null | string;
       facebook: null | string;
+      timeOff?: null | components['schemas']['MemberTimeOff'];
     };
     MetaResponse: {
       name: string;
@@ -1627,6 +1717,10 @@ export interface components {
       shift: components['schemas']['ShiftRef'];
       offered: boolean;
       tradePending: boolean;
+    };
+    MyTimeOff: {
+      canRequest: boolean;
+      current: null | components['schemas']['TimeOffView'];
     };
     MyWorkplace: {
       /** Format: uuid */
@@ -1899,6 +1993,37 @@ export interface components {
       /** Format: double */
       desiredWeeklyHours: null | number;
       notes: components['schemas']['AvailabilityNoteView'][];
+    };
+    TimeOffRequest: {
+      /** Format: date */
+      firstDay: string;
+      /** Format: date */
+      lastDay: null | string;
+      reason: null | string;
+    };
+    TimeOffRequestView: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      membershipId: string;
+      name: string;
+      /** Format: date */
+      firstDay: string;
+      /** Format: date */
+      lastDay: null | string;
+      reason: null | string;
+      /** Format: int32 */
+      shiftsInDays: number;
+    };
+    TimeOffView: {
+      /** Format: uuid */
+      id: string;
+      /** Format: date */
+      firstDay: string;
+      /** Format: date */
+      lastDay: null | string;
+      status: string;
+      now: boolean;
     };
     TokenRequest: {
       token: null | string;
@@ -2939,6 +3064,193 @@ export interface operations {
         'application/json': components['schemas']['DayChanges'];
       };
     };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  GetMyTimeOff: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyTimeOff'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  ListTimeOffRequests: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TimeOffRequestView'][];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  RequestTimeOff: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TimeOffRequest'];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TimeOffView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  CancelTimeOff: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        timeOffId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  AcceptTimeOff: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        timeOffId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  RefuseTimeOff: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        timeOffId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
     responses: {
       /** @description No Content */
       204: {

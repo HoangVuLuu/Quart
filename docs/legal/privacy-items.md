@@ -26,3 +26,7 @@ stores a new piece of personal data adds a line here, so 6.2 picks it up (remain
 - Instagram and Facebook (FR-040, M2-18): optional, typed by the person in Profile. Only the username is kept, never
   a link. Once added, teammates in the person's workplaces see them on the team page (2026-11-23: no separate sharing
   switch). They are part of the profile, so deleting the account deletes them; removing the text removes them at once.
+- Time off (FR-036a, BL-01): the days a staff member asks off and an optional reason (at most 300 characters). Only
+  managers who approve requests see the reason, and it is erased as soon as the request is accepted, refused or
+  cancelled. The days stay with the membership (managers see them on the team page while they last) and are deleted
+  when the person leaves the workplace or deletes their account.

@@ -309,6 +309,22 @@ FR-036  Each membership has an "I work shifts too" flag. When on, that member
         scheduled. Philippe has this on. The flag cannot be turned off while
         the member holds an upcoming shift, in a draft or a published
         schedule: the app refuses and says to remove those shifts first.
+FR-036a Time off (BL-01, built 2026-11-25). A staff member asks from a
+        "Request time off" button at the bottom of Home: a first day, a last
+        day or "Undetermined" (off until a manager turns their shifts back
+        on), and an optional reason of at most 300 characters that only
+        managers see. Managers do not ask; they turn their own shifts off.
+        One request at a time, never starting in the past; leaving the page
+        unsent asks first. The request waits at the top of Alerts for
+        managers who approve requests (Accept / Refuse), with the number of
+        published shifts the person holds in those days; the person can
+        cancel it while it waits. Accepting takes the person off those
+        shifts (published and draft), so the places open, and the reason is
+        erased once decided. On those days the person is not scheduled and
+        cannot pick them in availability; the team page shows "Works shifts"
+        off during them and back on the day after the last day. A manager
+        who turns shifts back on during the time off ends it for good. The
+        person is told when it is accepted, refused or ended early.
 FR-037  Each member who works shifts has a weekly desired hours target, and an
         optional maximum set by an admin. There is no minimum-hours concept.
         The target is given with each period's availability (BR-032); nobody
@@ -1726,7 +1742,7 @@ M9 — Google and calendar feed  (4 issues)
   M9-04  Submit the Google app for verification
 
 Backlog (no milestone)  (5 issues)
-  BL-01  Time-off requests with a written reason
+  BL-01  Time-off requests with a written reason (built 2026-11-25: FR-036a)
   BL-02  Payslips (epic)
   BL-03  Swap in OR-Tools CP-SAT behind the generator interface
   BL-04  Native app wrapper, if iPhone push proves insufficient
@@ -2204,6 +2220,15 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             "Forgot password?" to the address typed, and the link's page
             asks for the new password twice.  (FR-005, FR-040, FR-092)
 
+2026-11-25  Hoang, after testing staging: time off is built now, before the
+            pilot (changes D7's "after the pilot" for time off only; payslips
+            still wait). Staff ask, managers decide; accepting opens the
+            person's shifts on those days; the reason is optional and erased
+            once decided; managers do not ask. On Building and Editing
+            Schedule the missing-level chips sit at the bottom left of every
+            shift box, beside the note mark. Loading: a launch screen while
+            the app starts, then placeholders shaped like each page.
+            (FR-036a, BL-01, 19.5)
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES
 --------------------------------------------------------------------------------
@@ -2349,8 +2374,11 @@ hard 3 px offset under anything tappable. A third, heavier shadow lifts the
 floating tab bar and open sheets.
 
 Sheets slide up in 0.28 s, backdrops fade in 0.2 s, toasts pop in 0.25 s.
-Nothing else animates, and everything stops under prefers-reduced-motion
-(NFR-010).
+While a page's data first loads, grey placeholders shaped like the page
+fade in after 0.25 s, with a slow light moving across them (2026-11-25);
+while the app starts, the logo shows on the background like a phone app's
+launch screen. Nothing else animates, and everything stops under
+prefers-reduced-motion (NFR-010).
 
 19.6 Screen patterns
   - Top row: the logo blob on the left; on the right the team icon (opens the
