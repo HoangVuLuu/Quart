@@ -9,7 +9,7 @@ import { formatDateRange, formatDateTime, formatDayShort, formatDue, formatNumbe
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { cx } from '../../ui/cx';
-import { Skeleton } from '../../ui/Skeleton';
+import { DaysSkeleton, Loading } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
 import { TextArea, TextField } from '../../ui/TextField';
 import { useToast } from '../../ui/toast-context';
@@ -41,7 +41,9 @@ export function AvailabilityPage() {
   if (!mine.data) {
     return (
       <SubPage backTo="/" title={t('availability.title')}>
-        <Skeleton className="h-64" />
+        <Loading>
+          <DaysSkeleton days={4} />
+        </Loading>
       </SubPage>
     );
   }

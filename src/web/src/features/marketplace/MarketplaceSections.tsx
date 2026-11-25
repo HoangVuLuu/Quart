@@ -6,6 +6,7 @@ import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { Icon, iconButtonClassName } from '../../ui/Icon';
 import { StatusChip } from '../../ui/StatusChip';
+import { CardSkeleton, Loading } from '../../ui/Skeleton';
 import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
 import { ClaimSheet } from './ClaimSheet';
@@ -62,7 +63,16 @@ export function MarketplaceSections({
     wouldMissLevel: boolean;
   } | null>(null);
   if (board.error) throw board.error;
-  if (!board.data) return null;
+  // On Alerts the decisions may well be none, so only the Trade tab shows placeholders.
+  if (!board.data) {
+    if (scope !== 'trade') return null;
+    return (
+      <Loading>
+        <CardSkeleton />
+        <CardSkeleton />
+      </Loading>
+    );
+  }
   const all = board.data;
   const trading = scope === 'trade';
   const data = {

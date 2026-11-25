@@ -9,7 +9,7 @@ import { cx } from '../../ui/cx';
 import { Dialog } from '../../ui/Dialog';
 import { Icon } from '../../ui/Icon';
 import { Sheet } from '../../ui/Sheet';
-import { Skeleton } from '../../ui/Skeleton';
+import { DaysSkeleton, Loading, Skeleton } from '../../ui/Skeleton';
 import { StatusChip, type StatusTone } from '../../ui/StatusChip';
 import { useToast } from '../../ui/toast-context';
 import { dayHasStarted } from '../day-editor/model';
@@ -124,7 +124,14 @@ export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay, 
   const [confirming, setConfirming] = useState(false);
 
   if (draft.error) throw draft.error;
-  if (!draft.data) return <Skeleton className="h-48" />;
+  if (!draft.data) {
+    return (
+      <Loading>
+        <Skeleton className="h-12 rounded-pill" />
+        <DaysSkeleton />
+      </Loading>
+    );
+  }
   const data = draft.data;
   const published = data.period.version > 0;
   const blocking = data.issues.filter((issue) => issue.severity === 'block');
@@ -162,7 +169,12 @@ export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay, 
           loading={actions.generate.isPending}
           onClick={() => actions.generate.mutate(null)}
         >
-          {data.seed === null ? t('draft.generate') : t('draft.generateAgain')}
+          {/* It can take a few seconds: say what is happening (2026-11-25). */}
+          {actions.generate.isPending
+            ? t('draft.generating')
+            : data.seed === null
+              ? t('draft.generate')
+              : t('draft.generateAgain')}
         </Button>
         {besideGenerate}
       </div>
@@ -324,25 +336,16 @@ function DayRow({
                       {shift.start}–{shift.end}
                     </span>
                   </span>
-                  <span className="flex shrink-0 flex-col items-end gap-1">
-                    <StatusChip tone={full ? 'success' : 'danger'} className="shrink-0 px-1.5 text-[11px]">
-                      <span
-                        aria-label={t('scheduling.grid.fill', {
-                          filled: shift.people.length,
-                          headcount: shift.headcount,
-                        })}
-                      >
-                        {shift.people.length}/{shift.headcount}
-                      </span>
-                    </StatusChip>
-                    {/* FR-103a: someone who can work it left a note on this shift (Hoang: a dot on the card). */}
-                    {shift.notes.length > 0 && (
-                      <span className="flex size-6 items-center justify-center rounded-full bg-note text-on-note">
-                        <Icon name="note" className="size-3.5" />
-                        <span className="sr-only">{t('draft.editor.hasNotes')}</span>
-                      </span>
-                    )}
-                  </span>
+                  <StatusChip tone={full ? 'success' : 'danger'} className="shrink-0 px-1.5 text-[11px]">
+                    <span
+                      aria-label={t('scheduling.grid.fill', {
+                        filled: shift.people.length,
+                        headcount: shift.headcount,
+                      })}
+                    >
+                      {shift.people.length}/{shift.headcount}
+                    </span>
+                  </StatusChip>
                 </span>
                 {shift.people.map((assignment) => {
                   const person = people.get(assignment.membershipId);
@@ -376,11 +379,26 @@ function DayRow({
                     <span className="line-clamp-2 min-w-0 break-words">{shift.managerNote}</span>
                   </span>
                 )}
-                {missing.map((issue) => (
-                  <StatusChip key={issue.parameters.level} tone="danger" className="self-start">
-                    {t('scheduling.grid.missingLevel', { level: issue.parameters.level })}
-                  </StatusChip>
-                ))}
+                {/* The missing levels sit at the bottom left and the note mark at the bottom right, on one row,
+                    so cards with and without a note line up (Hoang, 2026-11-25). */}
+                {(missing.length > 0 || shift.notes.length > 0) && (
+                  <span className="mt-auto flex items-end gap-1 pt-1">
+                    <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                      {missing.map((issue) => (
+                        <StatusChip key={issue.parameters.level} tone="danger">
+                          {t('scheduling.grid.missingLevel', { level: issue.parameters.level })}
+                        </StatusChip>
+                      ))}
+                    </span>
+                    {/* FR-103a: someone who can work it left a note on this shift (Hoang: a dot on the card). */}
+                    {shift.notes.length > 0 && (
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-note text-on-note">
+                        <Icon name="note" className="size-3.5" />
+                        <span className="sr-only">{t('draft.editor.hasNotes')}</span>
+                      </span>
+                    )}
+                  </span>
+                )}
               </button>
             </li>
           );

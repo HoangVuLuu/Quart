@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router';
 import { useMe } from '../features/identity/session';
 import { syncPush } from '../features/push/push';
 import { ToastProvider } from '../ui/Toast';
+import { LaunchScreen } from './LaunchScreen';
 
 /** Signed-out people go to the log-in screen and come back to where they were heading (M2-04). */
 export function RequireSession() {
@@ -13,7 +14,7 @@ export function RequireSession() {
   useEffect(() => {
     if (userId) void syncPush(userId).catch(() => undefined);
   }, [userId]);
-  if (me.isPending) return null;
+  if (me.isPending) return <LaunchScreen />;
   if (me.error) throw me.error;
   if (me.data === null) {
     return <Navigate to="/sign-in" replace state={{ from: `${location.pathname}${location.search}` }} />;
@@ -24,7 +25,7 @@ export function RequireSession() {
 /** The signed-out screens make no sense to someone already signed in. */
 export function SignedOutOnly() {
   const me = useMe();
-  if (me.isPending) return null;
+  if (me.isPending) return <LaunchScreen />;
   return me.data ? <Navigate to="/workplaces" replace /> : <Outlet />;
 }
 

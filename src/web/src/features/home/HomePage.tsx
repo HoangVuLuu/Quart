@@ -6,6 +6,7 @@ import { formatDateRange, formatDue, formatNumber, formatShortDate } from '../..
 import { buttonClassName, pressClassName } from '../../ui/button-styles';
 import { cx } from '../../ui/cx';
 import { Card } from '../../ui/Card';
+import { CardSkeleton, HeroSkeleton, Loading } from '../../ui/Skeleton';
 import { Cup } from '../../ui/Cup';
 import { HeroCard } from '../../ui/HeroCard';
 import { PageHeader } from '../../ui/PageHeader';
@@ -44,11 +45,15 @@ export function HomePage() {
   const language = i18n.language;
   const { view, can } = useWorkplace();
   const me = useMe().data;
-  const periods = useCurrentPeriods().data;
-  const schedule = usePublishedSchedule(periods?.live?.id).data;
+  const periodsQuery = useCurrentPeriods();
+  const periods = periodsQuery.data;
+  const scheduleQuery = usePublishedSchedule(periods?.live?.id);
+  const schedule = scheduleQuery.data;
   // The next shift may be in a period published ahead of time, once this one has no shift left.
-  const later = usePublishedSchedule(periods?.upcoming?.[0]?.id).data;
-  const board = useMarketplace().data;
+  const laterQuery = usePublishedSchedule(periods?.upcoming?.[0]?.id);
+  const later = laterQuery.data;
+  const boardQuery = useMarketplace();
+  const board = boardQuery.data;
   const shiftName = useShiftName();
   const manages = can('ManageSchedule');
   const now = new Date();
@@ -74,15 +79,41 @@ export function HomePage() {
     board?.trades.filter((trade) => trade.role === 'coworker' && trade.status === 'requested').length ?? 0;
   const nextPeriod = periods?.next;
   const [showing, setShowing] = useState(false);
+  // The first visit waits for the periods, the schedules and the board while they are on their way (not
+  // after a failure: offline, Home shows what it has); later visits show them at once.
+  const loading =
+    periodsQuery.isPending ||
+    (periods?.live != null && scheduleQuery.isPending) ||
+    (periods?.upcoming?.[0] != null && laterQuery.isPending) ||
+    boardQuery.isPending;
+  const header = (
+    <PageHeader
+      context={new Intl.DateTimeFormat(language, { weekday: 'long', month: 'long', day: 'numeric' }).format(
+        now,
+      )}
+      title={t('home.hello', { name: me?.displayName.split(' ')[0] ?? '' })}
+    />
+  );
+
+  if (loading) {
+    return (
+      <section className="flex flex-col gap-4 px-5">
+        {header}
+        <OfflineBanner />
+        <Loading>
+          <HeroSkeleton />
+          <div className="grid grid-cols-2 gap-4">
+            <CardSkeleton lines={1} />
+            <CardSkeleton lines={1} />
+          </div>
+        </Loading>
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-4 px-5">
-      <PageHeader
-        context={new Intl.DateTimeFormat(language, { weekday: 'long', month: 'long', day: 'numeric' }).format(
-          now,
-        )}
-        title={t('home.hello', { name: me?.displayName.split(' ')[0] ?? '' })}
-      />
+      {header}
 
       <OfflineBanner />
 

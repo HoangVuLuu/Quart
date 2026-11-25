@@ -5,7 +5,7 @@ import { messageKeyFor } from '../../i18n/errors';
 import { formatDateRange, formatDue, formatNumber } from '../../i18n/format';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
-import { Skeleton } from '../../ui/Skeleton';
+import { Loading, RowsSkeleton, Skeleton } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
 import { useToast } from '../../ui/toast-context';
 import { FormError } from '../identity/FormError';
@@ -27,7 +27,10 @@ export function TeamAvailabilityPage() {
   if (!team.data || !next) {
     return (
       <SubPage backTo="/schedule" title={t('teamAvailability.title')}>
-        <Skeleton className="h-64" />
+        <Loading>
+          <Skeleton className="h-3 rounded-pill" />
+          <RowsSkeleton />
+        </Loading>
       </SubPage>
     );
   }

@@ -11,7 +11,7 @@ import { Card } from '../../ui/Card';
 import { cx } from '../../ui/cx';
 import { Dialog } from '../../ui/Dialog';
 import { Sheet } from '../../ui/Sheet';
-import { Skeleton } from '../../ui/Skeleton';
+import { Loading, RowsSkeleton } from '../../ui/Skeleton';
 import { Stepper } from '../../ui/Stepper';
 import { Switch } from '../../ui/Switch';
 import { FormError } from '../identity/FormError';
@@ -56,7 +56,11 @@ export function TeamPage() {
       title={t('team.title')}
       context={t('team.context', { count: view.memberCount, workplace: view.name })}
     >
-      {!members.data && <Skeleton className="h-64" />}
+      {!members.data && (
+        <Loading>
+          <RowsSkeleton />
+        </Loading>
+      )}
       <ul className="flex flex-col gap-3">
         {members.data?.map((member) => (
           <li key={member.membershipId}>

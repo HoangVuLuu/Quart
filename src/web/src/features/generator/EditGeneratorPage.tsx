@@ -12,7 +12,7 @@ import { Icon } from '../../ui/Icon';
 import { cx } from '../../ui/cx';
 import { Dialog } from '../../ui/Dialog';
 import { Sheet } from '../../ui/Sheet';
-import { Skeleton } from '../../ui/Skeleton';
+import { CardSkeleton, Loading, Skeleton } from '../../ui/Skeleton';
 import { Stepper } from '../../ui/Stepper';
 import { Switch } from '../../ui/Switch';
 import { TextField } from '../../ui/TextField';
@@ -68,7 +68,11 @@ export function EditGeneratorPage() {
   if (!setup.data) {
     return (
       <SubPage backTo="/schedule" title={t('generator.title')}>
-        <Skeleton className="h-64" />
+        <Loading>
+          <Skeleton className="h-12 rounded-pill" />
+          <CardSkeleton lines={3} />
+          <CardSkeleton lines={3} />
+        </Loading>
       </SubPage>
     );
   }

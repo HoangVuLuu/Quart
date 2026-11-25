@@ -316,7 +316,8 @@
     "increase": "Increase",
     "notification": "Notifications",
     "refreshing": "Refreshing…",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "loading": "Loading…"
   },
   "gallery": {
     "context": "For developers",
@@ -766,7 +767,8 @@
       "done": "Copied. The issues show who is not available this time.",
       "weeks_one": "{{count}} week",
       "weeks_other": "{{count}} weeks"
-    }
+    },
+    "generating": "Generating…"
   },
   "teamAvailability": {
     "title": "Team availability",

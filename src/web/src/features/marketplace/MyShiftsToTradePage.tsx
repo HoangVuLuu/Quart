@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SubPage } from '../../app/SubPage';
 import { formatDayHeading } from '../../i18n/format';
 import { EmptyState } from '../../ui/EmptyState';
-import { Skeleton } from '../../ui/Skeleton';
+import { CardSkeleton, Loading } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
 import { ShiftTradeSheet } from '../schedule/PublishedSchedule';
 import { usePublishedSchedule } from '../scheduling/data';
@@ -23,7 +23,11 @@ export function MyShiftsToTradePage() {
   return (
     <SubPage backTo="/trade" title={t('trade.mine.title')}>
       {!board.data ? (
-        <Skeleton className="h-48" />
+        <Loading>
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </Loading>
       ) : board.data.mine.length === 0 ? (
         <EmptyState title={t('trade.mine.empty')} />
       ) : (
