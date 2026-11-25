@@ -52,6 +52,7 @@ public static class WorkplacesModule
         endpoints.MapWorkplaces();
         endpoints.MapTemplate();
         endpoints.MapDayChanges();
+        endpoints.MapTimeOff();
         return endpoints;
     }
 
@@ -69,8 +70,15 @@ public static class WorkplacesModule
 }
 
 /// <summary>What the other modules may ask about a workplace, answered from this module's own tables.</summary>
-internal sealed class WorkplaceReader(WorkplacesDb db, IUserDirectory users) : IWorkplaceAccess, IWorkplaceDirectory
+internal sealed class WorkplaceReader(WorkplacesDb db, IUserDirectory users, IClock clock) : IWorkplaceAccess, IWorkplaceDirectory
 {
+    /// <summary>
+    /// "Works shifts" as everyone else sees it: off during a time off with no end date (BL-01). A time off with an
+    /// end date leaves it on, so the person is still asked about the days after it; those days are skipped instead.
+    /// </summary>
+    private static bool WorksShifts(Membership membership, List<DayRange>? timeOff, LocalDate today) =>
+        membership.WorksShifts && !(timeOff?.Any(range => range.Last is null && range.Contains(today)) ?? false);
+
     public async Task<MemberAccess?> FindAsync(Guid workplaceId, Guid userId, CancellationToken cancellationToken)
     {
         var membership = await db.Memberships.AsNoTracking()
@@ -80,7 +88,20 @@ internal sealed class WorkplaceReader(WorkplacesDb db, IUserDirectory users) : I
             return null;
         }
         var grants = await GrantsAsync([membership.Id], cancellationToken);
-        return new MemberAccess(workplaceId, membership.Id, userId, membership.Role, membership.Level, membership.WorksShifts, PermissionsOf(membership, grants));
+        // Every request comes through here: only a time off with no end date can turn "works shifts" off, so look
+        // for those alone, and work out today only when there is one.
+        var open = await db.TimeOffs.AsNoTracking()
+            .Where(x => x.MembershipId == membership.Id && x.Status == TimeOff.Accepted && x.LastDay == null)
+            .ToListAsync(cancellationToken);
+        List<DayRange>? timeOff = null;
+        var today = default(LocalDate);
+        if (open.Count > 0)
+        {
+            today = await TimeOffEndpoints.TodayAsync(db, workplaceId, clock, cancellationToken);
+            timeOff = open.Select(x => x.Days()).OfType<DayRange>().ToList();
+        }
+        return new MemberAccess(
+            workplaceId, membership.Id, userId, membership.Role, membership.Level, WorksShifts(membership, timeOff, today), PermissionsOf(membership, grants));
     }
 
     public async Task<IReadOnlyList<WorkplaceMember>> GetMembersAsync(Guid workplaceId, CancellationToken cancellationToken)
@@ -91,12 +112,15 @@ internal sealed class WorkplaceReader(WorkplacesDb db, IUserDirectory users) : I
             .ToListAsync(cancellationToken);
         var grants = await GrantsAsync(memberships.Select(x => x.Id).ToList(), cancellationToken);
         var names = await users.GetAsync(memberships.Select(x => x.UserId).ToList(), cancellationToken);
+        var today = await TimeOffEndpoints.TodayAsync(db, workplaceId, clock, cancellationToken);
+        var timeOff = await TimeOffEndpoints.CoveringAsync(db, workplaceId, today, cancellationToken);
         return memberships
             // An account deleted since (FR-009) no longer appears among the people who can be scheduled.
             .Where(x => names.ContainsKey(x.UserId))
             .Select(x => new WorkplaceMember(
-                x.Id, x.UserId, names[x.UserId].DisplayName, names[x.UserId].Language, x.Role, x.Level, x.WorksShifts,
-                x.MaxWeeklyHours, PermissionsOf(x, grants)))
+                x.Id, x.UserId, names[x.UserId].DisplayName, names[x.UserId].Language, x.Role, x.Level,
+                WorksShifts(x, timeOff.GetValueOrDefault(x.Id), today), x.MaxWeeklyHours, PermissionsOf(x, grants),
+                timeOff.GetValueOrDefault(x.Id)))
             .ToList();
     }
 

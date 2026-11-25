@@ -36,6 +36,7 @@ public static class SchedulingModule
         services.AddScoped<DraftBuilder>();
         services.AddScoped<IScheduleLedger, ScheduleLedger>();
         services.AddScoped<IMemberLeftHandler, ReleaseShiftsOnLeave>();
+        services.AddScoped<ITimeOffHandler, ReleaseShiftsForTimeOff>();
         services.AddScoped<IAccountDeletedHandler, Availability.ForgetAvailabilityOnAccountDeleted>();
         services.AddScoped<IJobHandler, AvailabilityStepHandler>();
         services.AddScoped<IJobHandler, SchedulingRetention>();

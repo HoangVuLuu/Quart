@@ -341,3 +341,33 @@ internal static class ScheduleHistory
         await db.SaveChangesAsync(cancellationToken);
     }
 }
+
+/// <summary>
+/// Accepted time off (BL-01, Hoang 2026-11-25): the person comes off every shift they hold on those days that has not
+/// started, in the published schedule and the draft, so the places open. Each published period that changes gets a
+/// new version (FR-164). Running it twice changes nothing.
+/// </summary>
+internal sealed class ReleaseShiftsForTimeOff(SchedulingDb db, IClock clock) : ITimeOffHandler
+{
+    public async Task<IReadOnlyList<Guid>> ReleaseAsync(Guid workplaceId, Guid membershipId, DayRange days, CancellationToken cancellationToken)
+    {
+        var now = clock.GetCurrentInstant();
+        var first = days.First;
+        var last = days.Last;
+        var periods = db.Periods.Where(x => x.WorkplaceId == workplaceId).Select(x => x.Id);
+        var shiftIds = db.Shifts
+            .Where(x => periods.Contains(x.PeriodId) && x.Date >= first && (last == null || x.Date <= last))
+            .Select(x => x.Id);
+        var released = db.Assignments.Where(x => x.MembershipId == membershipId && x.StartsAt > now && shiftIds.Contains(x.ShiftId));
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var live = await released.Where(x => !x.IsDraft).Select(x => new { x.ShiftId, x.PeriodId }).ToListAsync(cancellationToken);
+        await released.ExecuteDeleteAsync(cancellationToken);
+        foreach (var periodId in live.Select(x => x.PeriodId).Distinct().Order())
+        {
+            await ScheduleHistory.BumpAsync(db, periodId, now, cancellationToken);
+        }
+        await transaction.CommitAsync(cancellationToken);
+        return live.Select(x => x.ShiftId).Distinct().ToList();
+    }
+}

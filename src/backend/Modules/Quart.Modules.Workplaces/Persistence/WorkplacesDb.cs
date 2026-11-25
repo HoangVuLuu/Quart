@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using NodaTime;
 using Npgsql;
+using Quart.SharedKernel.Directory;
 using Quart.SharedKernel.Persistence;
 
 namespace Quart.Modules.Workplaces.Persistence;
@@ -26,6 +27,8 @@ internal sealed class WorkplacesDb(DbContextOptions<WorkplacesDb> options) : DbC
     public DbSet<ShiftBlockConflict> ShiftBlockConflicts => Set<ShiftBlockConflict>();
 
     public DbSet<DayChange> DayChanges => Set<DayChange>();
+
+    public DbSet<TimeOff> TimeOffs => Set<TimeOff>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -79,6 +82,17 @@ internal sealed class WorkplacesDb(DbContextOptions<WorkplacesDb> options) : DbC
             // An unordered pair is stored smaller ID first, so the same pair cannot be added twice (M3-03).
             conflict.ToTable(table => table.HasCheckConstraint("ck_shift_block_conflict_ordered", "membership_a < membership_b"));
             conflict.HasIndex(x => new { x.ShiftBlockId, x.MembershipA, x.MembershipB }).IsUnique();
+        });
+
+        modelBuilder.Entity<TimeOff>(timeOff =>
+        {
+            timeOff.HasKey(x => x.Id);
+            timeOff.HasIndex(x => new { x.WorkplaceId, x.Status });
+            timeOff.HasIndex(x => x.MembershipId);
+            timeOff.Property(x => x.Status).HasMaxLength(10);
+            timeOff.Property(x => x.Reason).HasMaxLength(TimeOff.ReasonMaxLength);
+            timeOff.HasOne<Membership>().WithMany().HasForeignKey(x => x.MembershipId).OnDelete(DeleteBehavior.Cascade);
+            timeOff.ToTable(table => table.HasCheckConstraint("ck_time_off_days", "last_day IS NULL OR last_day >= first_day"));
         });
 
         modelBuilder.Entity<DayChange>(change =>
@@ -314,4 +328,60 @@ internal sealed class WorkplacesDbFactory : IDesignTimeDbContextFactory<Workplac
         WorkplacesModule.Configure(options, new NpgsqlDataSourceBuilder("Host=design-time").UseNodaTime().Build());
         return new WorkplacesDb(options.Options);
     }
+}
+
+/// <summary>
+/// A staff member's time off (BL-01, 2026-11-25): asked for, then accepted or refused by a manager. Once accepted,
+/// the person is not scheduled or asked for availability on those days, and the team page shows their shifts as off.
+/// </summary>
+internal sealed class TimeOff
+{
+    public const string Pending = "pending";
+    public const string Accepted = "accepted";
+    public const string Refused = "refused";
+    public const string Cancelled = "cancelled";
+    public const int ReasonMaxLength = 300;
+
+    public Guid Id { get; set; }
+
+    public Guid WorkplaceId { get; set; }
+
+    public Guid MembershipId { get; set; }
+
+    public LocalDate FirstDay { get; set; }
+
+    /// <summary>Null: "undetermined", off until a manager turns their shifts back on.</summary>
+    public LocalDate? LastDay { get; set; }
+
+    /// <summary>Optional, seen only by managers, and erased once the request is decided, cancelled or over.</summary>
+    public string? Reason { get; set; }
+
+    public required string Status { get; set; }
+
+    public Instant CreatedAt { get; set; }
+
+    public Instant? DecidedAt { get; set; }
+
+    public Guid? DecidedBy { get; set; }
+
+    /// <summary>The day a manager turned shifts back on: the time off stops the day before.</summary>
+    public LocalDate? EndedOn { get; set; }
+
+    /// <summary>The days it really covers once accepted, or null when it covers none (ended before it began).</summary>
+    public DayRange? Days()
+    {
+        if (Status != Accepted)
+        {
+            return null;
+        }
+        LocalDate? last = EndedOn is { } ended ? ended.PlusDays(-1) : LastDay;
+        if (last is { } end && LastDay is { } planned && planned < end)
+        {
+            last = planned;
+        }
+        return last is { } until && until < FirstDay ? null : new DayRange(FirstDay, last);
+    }
+
+    /// <summary>Accepted and not over yet: today or later is still inside it.</summary>
+    public bool StillCovers(LocalDate today) => Days() is { } days && (days.Last is not { } last || last >= today);
 }

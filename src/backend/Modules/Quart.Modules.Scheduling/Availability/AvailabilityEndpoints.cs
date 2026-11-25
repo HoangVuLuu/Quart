@@ -51,7 +51,7 @@ internal static class AvailabilityEndpoints
     }
 
     private static async Task<Results<Ok<MyAvailability>, ProblemHttpResult>> GetMineAsync(
-        Guid workplaceId, Guid periodId, HttpContext http, SchedulingDb db, IClock clock, CancellationToken cancellationToken)
+        Guid workplaceId, Guid periodId, HttpContext http, SchedulingDb db, IWorkplaceDirectory directory, IClock clock, CancellationToken cancellationToken)
     {
         var member = http.Member();
         if (await FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
@@ -63,7 +63,7 @@ internal static class AvailabilityEndpoints
         {
             return Problems.Forbidden(NotShiftWorker);
         }
-        return TypedResults.Ok(await ViewMineAsync(db, period, member, cancellationToken));
+        return TypedResults.Ok(await ViewMineAsync(db, directory, period, member, cancellationToken));
     }
 
     /// <summary>Saves the taps as a draft: nothing is sent to the admin yet (M4-02).</summary>
@@ -109,10 +109,18 @@ internal static class AvailabilityEndpoints
         }
 
         var wanted = (request.ShiftIds ?? []).Distinct().ToList();
-        var known = await db.Shifts.Where(x => x.PeriodId == periodId && !x.AddedByHand && wanted.Contains(x.Id)).Select(x => x.Id).ToListAsync(cancellationToken);
+        var known = await db.Shifts.Where(x => x.PeriodId == periodId && !x.AddedByHand && wanted.Contains(x.Id))
+            .Select(x => new { x.Id, x.Date }).ToListAsync(cancellationToken);
         if (known.Count != wanted.Count)
         {
             return Problems.Validation(new FieldError(UnknownShift, "shiftIds"));
+        }
+        // BL-01: a day of accepted time off is never offered, so a pick on it (an older screen) is dropped.
+        var person = (await directory.GetMembersAsync(workplaceId, cancellationToken)).SingleOrDefault(x => x.MembershipId == member.MembershipId);
+        if (person?.TimeOff is { Count: > 0 })
+        {
+            var off = known.Where(x => person.IsOffOn(x.Date)).Select(x => x.Id).ToHashSet();
+            wanted = wanted.Where(id => !off.Contains(id)).ToList();
         }
 
         // FR-103a: a note only on a shift the person can work, plain text, 60 characters at most. An empty note
@@ -166,7 +174,7 @@ internal static class AvailabilityEndpoints
         {
             await NotifyAdminsAsync(directory, notifier, workplaceId, member.MembershipId, NotificationTypes.AvailabilitySent, period, cancellationToken);
         }
-        return TypedResults.Ok(await ViewMineAsync(db, period, member, cancellationToken));
+        return TypedResults.Ok(await ViewMineAsync(db, directory, period, member, cancellationToken));
     }
 
     /// <summary>
@@ -207,7 +215,7 @@ internal static class AvailabilityEndpoints
         await db.SaveChangesAsync(cancellationToken);
 
         await NotifyAdminsAsync(directory, notifier, workplaceId, member.MembershipId, NotificationTypes.AvailabilityNoteAdded, period, cancellationToken);
-        return TypedResults.Ok(await ViewMineAsync(db, period, member, cancellationToken));
+        return TypedResults.Ok(await ViewMineAsync(db, directory, period, member, cancellationToken));
     }
 
     /// <summary>
@@ -378,9 +386,12 @@ internal static class AvailabilityEndpoints
             notes.OrderBy(x => x.CreatedAt).Select(x => new AvailabilityNoteView(x.Id, x.Body, x.CreatedAt.ToDateTimeOffset())).ToList()));
     }
 
-    private static async Task<MyAvailability> ViewMineAsync(SchedulingDb db, Period period, MemberAccess member, CancellationToken cancellationToken)
+    private static async Task<MyAvailability> ViewMineAsync(
+        SchedulingDb db, IWorkplaceDirectory directory, Period period, MemberAccess member, CancellationToken cancellationToken)
     {
         var membershipId = member.MembershipId;
+        // BL-01: days of accepted time off are off, and cannot be picked.
+        var person = (await directory.GetMembersAsync(period.WorkplaceId, cancellationToken)).SingleOrDefault(x => x.MembershipId == membershipId);
         var availability = await db.Availabilities.AsNoTracking()
             .Include(x => x.Blocks)
             .Include(x => x.Notes)
@@ -410,9 +421,10 @@ internal static class AvailabilityEndpoints
                 .Select(x =>
                 {
                     var elsewhere = busy.Any(b => b.Overlaps(x));
+                    var off = person?.IsOffOn(x.Date) ?? false;
                     return new AvailabilityShift(
                         x.Id, x.SourceBlockId, x.Date.ToDateOnly(), Support.Time(x.StartTime), Support.Time(x.EndTime), x.Hours,
-                        selected.Contains(x.Id) && !elsewhere, elsewhere, elsewhere ? null : shiftNotes.GetValueOrDefault(x.Id), x.Name);
+                        selected.Contains(x.Id) && !elsewhere && !off, elsewhere, elsewhere || off ? null : shiftNotes.GetValueOrDefault(x.Id), x.Name, off);
                 })
                 .ToList(),
             (availability?.Notes ?? []).OrderBy(x => x.CreatedAt).Select(x => new AvailabilityNoteView(x.Id, x.Body, x.CreatedAt.ToDateTimeOffset())).ToList());
@@ -479,7 +491,10 @@ public sealed record MyAvailability(
 /// The person's note on this shift (FR-103a): to themselves always; to the admins who may read notes, once sent.
 /// </param>
 /// <param name="Name">The shift's custom name, or null to be called Opening, Closing or Mid (M3-04).</param>
-public sealed record AvailabilityShift(Guid Id, Guid BlockId, DateOnly Date, string Start, string End, decimal Hours, bool Selected, bool BusyElsewhere, string? Note = null, string? Name = null);
+/// <param name="TimeOff">The person is on accepted time off that day (BL-01): it cannot be picked.</param>
+public sealed record AvailabilityShift(
+    Guid Id, Guid BlockId, DateOnly Date, string Start, string End, decimal Hours, bool Selected, bool BusyElsewhere,
+    string? Note = null, string? Name = null, bool TimeOff = false);
 
 public sealed record AvailabilityNoteView(Guid Id, string Body, DateTimeOffset CreatedAt);
 

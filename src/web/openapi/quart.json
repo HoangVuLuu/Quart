@@ -1184,6 +1184,269 @@
         }
       }
     },
+    "/api/workplaces/{workplaceId}/time-off/mine": {
+      "get": {
+        "tags": [
+          "TimeOffEndpoints"
+        ],
+        "operationId": "GetMyTimeOff",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyTimeOff"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workplaces/{workplaceId}/time-off": {
+      "post": {
+        "tags": [
+          "TimeOffEndpoints"
+        ],
+        "operationId": "RequestTimeOff",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeOffRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeOffView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "TimeOffEndpoints"
+        ],
+        "operationId": "ListTimeOffRequests",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimeOffRequestView"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workplaces/{workplaceId}/time-off/{timeOffId}/cancel": {
+      "post": {
+        "tags": [
+          "TimeOffEndpoints"
+        ],
+        "operationId": "CancelTimeOff",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "timeOffId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workplaces/{workplaceId}/time-off/{timeOffId}/accept": {
+      "post": {
+        "tags": [
+          "TimeOffEndpoints"
+        ],
+        "operationId": "AcceptTimeOff",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "timeOffId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workplaces/{workplaceId}/time-off/{timeOffId}/refuse": {
+      "post": {
+        "tags": [
+          "TimeOffEndpoints"
+        ],
+        "operationId": "RefuseTimeOff",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "timeOffId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/workplaces/{workplaceId}/periods/current": {
       "get": {
         "tags": [
@@ -3836,6 +4099,10 @@
               "null",
               "string"
             ]
+          },
+          "timeOff": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -5215,6 +5482,30 @@
           }
         }
       },
+      "MemberTimeOff": {
+        "required": [
+          "firstDay",
+          "lastDay",
+          "now"
+        ],
+        "type": "object",
+        "properties": {
+          "firstDay": {
+            "type": "string",
+            "format": "date"
+          },
+          "lastDay": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "now": {
+            "type": "boolean"
+          }
+        }
+      },
       "MemberView": {
         "required": [
           "membershipId",
@@ -5276,6 +5567,16 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "timeOff": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MemberTimeOff"
+              }
             ]
           }
         }
@@ -5420,6 +5721,28 @@
           },
           "tradePending": {
             "type": "boolean"
+          }
+        }
+      },
+      "MyTimeOff": {
+        "required": [
+          "canRequest",
+          "current"
+        ],
+        "type": "object",
+        "properties": {
+          "canRequest": {
+            "type": "boolean"
+          },
+          "current": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TimeOffView"
+              }
+            ]
           }
         }
       },
@@ -6457,6 +6780,112 @@
           }
         }
       },
+      "TimeOffRequest": {
+        "required": [
+          "firstDay",
+          "lastDay",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "firstDay": {
+            "type": "string",
+            "format": "date"
+          },
+          "lastDay": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "TimeOffRequestView": {
+        "required": [
+          "id",
+          "membershipId",
+          "name",
+          "firstDay",
+          "lastDay",
+          "reason",
+          "shiftsInDays"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "membershipId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "firstDay": {
+            "type": "string",
+            "format": "date"
+          },
+          "lastDay": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "shiftsInDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TimeOffView": {
+        "required": [
+          "id",
+          "firstDay",
+          "lastDay",
+          "status",
+          "now"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstDay": {
+            "type": "string",
+            "format": "date"
+          },
+          "lastDay": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "status": {
+            "type": "string"
+          },
+          "now": {
+            "type": "boolean"
+          }
+        }
+      },
       "TokenRequest": {
         "required": [
           "token"
@@ -6696,6 +7125,9 @@
     },
     {
       "name": "DayChangeEndpoints"
+    },
+    {
+      "name": "TimeOffEndpoints"
     },
     {
       "name": "PeriodEndpoints"

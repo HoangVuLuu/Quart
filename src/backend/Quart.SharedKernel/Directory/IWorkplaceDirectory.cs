@@ -25,6 +25,8 @@ public interface IWorkplaceDirectory
 /// <param name="Active">False once the person left or was removed.</param>
 public sealed record AccountMembership(Guid WorkplaceId, Guid MembershipId, string Role, bool Active);
 
+/// <param name="WorksShifts">False during a time off with no end date, until a manager turns shifts back on.</param>
+/// <param name="TimeOff">Accepted time off that has not ended (BL-01): nobody schedules or asks them on those days.</param>
 public sealed record WorkplaceMember(
     Guid MembershipId,
     Guid UserId,
@@ -34,9 +36,28 @@ public sealed record WorkplaceMember(
     int Level,
     bool WorksShifts,
     decimal? MaxWeeklyHours,
-    IReadOnlySet<Permission> Permissions)
+    IReadOnlySet<Permission> Permissions,
+    IReadOnlyList<DayRange>? TimeOff = null)
 {
     public bool Can(Permission permission) => Permissions.Contains(permission);
+
+    /// <summary>On accepted time off that day (BL-01).</summary>
+    public bool IsOffOn(LocalDate date) => TimeOff?.Any(range => range.Contains(date)) ?? false;
+}
+
+/// <summary>Whole days, both ends included; no last day means "until further notice".</summary>
+public sealed record DayRange(LocalDate First, LocalDate? Last)
+{
+    public bool Contains(LocalDate date) => date >= First && (Last is not { } last || date <= last);
+}
+
+/// <summary>
+/// Told, in the same request, when a manager accepts someone's time off (BL-01, 2026-11-25): the Scheduling module
+/// takes them off the shifts they hold on those days, so the places open. Returns the published shifts changed.
+/// </summary>
+public interface ITimeOffHandler
+{
+    Task<IReadOnlyList<Guid>> ReleaseAsync(Guid workplaceId, Guid membershipId, DayRange days, CancellationToken cancellationToken);
 }
 
 /// <summary>The weekly grid and the rules a period is built from (AD-010).</summary>

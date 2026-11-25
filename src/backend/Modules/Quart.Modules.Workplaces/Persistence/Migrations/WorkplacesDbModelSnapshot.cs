@@ -334,6 +334,71 @@ namespace Quart.Modules.Workplaces.Persistence.Migrations
                     b.ToTable("shift_block_requirement", "workplaces");
                 });
 
+            modelBuilder.Entity("Quart.Modules.Workplaces.Persistence.TimeOff", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Instant>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Instant?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<Guid?>("DecidedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("decided_by");
+
+                    b.Property<LocalDate?>("EndedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("ended_on");
+
+                    b.Property<LocalDate>("FirstDay")
+                        .HasColumnType("date")
+                        .HasColumnName("first_day");
+
+                    b.Property<LocalDate?>("LastDay")
+                        .HasColumnType("date")
+                        .HasColumnName("last_day");
+
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("membership_id");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("WorkplaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workplace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_time_off");
+
+                    b.HasIndex("MembershipId")
+                        .HasDatabaseName("ix_time_off_membership_id");
+
+                    b.HasIndex("WorkplaceId", "Status")
+                        .HasDatabaseName("ix_time_off_workplace_id_status");
+
+                    b.ToTable("time_off", "workplaces", t =>
+                        {
+                            t.HasCheckConstraint("ck_time_off_days", "last_day IS NULL OR last_day >= first_day");
+                        });
+                });
+
             modelBuilder.Entity("Quart.Modules.Workplaces.Persistence.Workplace", b =>
                 {
                     b.Property<Guid>("Id")
@@ -407,6 +472,16 @@ namespace Quart.Modules.Workplaces.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_shift_block_requirement_shift_block_shift_block_id");
+                });
+
+            modelBuilder.Entity("Quart.Modules.Workplaces.Persistence.TimeOff", b =>
+                {
+                    b.HasOne("Quart.Modules.Workplaces.Persistence.Membership", null)
+                        .WithMany()
+                        .HasForeignKey("MembershipId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_time_off_membership_membership_id");
                 });
 
             modelBuilder.Entity("Quart.Modules.Workplaces.Persistence.ShiftBlock", b =>

@@ -225,8 +225,10 @@ internal static class WorkplaceEndpoints
     /// are filled in only for people who manage levels, and for the caller's own row.
     /// </summary>
     private static async Task<Ok<List<MemberView>>> ListMembersAsync(
-        Guid workplaceId, HttpContext http, WorkplacesDb db, IUserDirectory users, CancellationToken cancellationToken)
+        Guid workplaceId, HttpContext http, WorkplacesDb db, IUserDirectory users, IClock clock, CancellationToken cancellationToken)
     {
+        var today = await TimeOffEndpoints.TodayAsync(db, workplaceId, clock, cancellationToken);
+        var timeOff = await TimeOffEndpoints.CoveringAsync(db, workplaceId, today, cancellationToken);
         var member = http.Member();
         var memberships = await db.Memberships.AsNoTracking()
             .Where(x => x.WorkplaceId == workplaceId && x.LeftAt == null)
@@ -238,6 +240,10 @@ internal static class WorkplaceEndpoints
             .Select(x =>
             {
                 var detailed = manages || x.Id == member.MembershipId;
+                // BL-01: the time off that has not ended, for the people who see "works shifts". During it, the
+                // switch reads off; the day after, it is back on by itself.
+                var range = detailed ? timeOff.GetValueOrDefault(x.Id)?.FirstOrDefault() : null;
+                var off = range is not null && range.Contains(today);
                 return new MemberView(
                     x.Id,
                     names[x.UserId].DisplayName,
@@ -245,10 +251,11 @@ internal static class WorkplaceEndpoints
                     x.Role,
                     manages ? x.Level : null,
                     x.Id == member.MembershipId,
-                    detailed ? x.WorksShifts : null,
+                    detailed ? x.WorksShifts && !off : null,
                     detailed ? x.MaxWeeklyHours : null,
                     names[x.UserId].Shared?.Instagram,
-                    names[x.UserId].Shared?.Facebook);
+                    names[x.UserId].Shared?.Facebook,
+                    range is null ? null : new MemberTimeOff(range.First.ToDateOnly(), range.Last?.ToDateOnly(), off));
             })
             .OrderBy(x => x.Role == Roles.Employee).ThenBy(x => x.DisplayName, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
@@ -262,12 +269,26 @@ internal static class WorkplaceEndpoints
     /// they would vanish from the draft tools but stay on the shift (D1).
     /// </summary>
     private static async Task<Results<NoContent, ProblemHttpResult>> UpdateMemberAsync(
-        Guid workplaceId, Guid membershipId, UpdateMemberRequest request, WorkplacesDb db, IScheduleLedger ledger, CancellationToken cancellationToken)
+        Guid workplaceId, Guid membershipId, UpdateMemberRequest request, WorkplacesDb db, IScheduleLedger ledger,
+        IWorkplaceDirectory directory, INotifier notifier, IClock clock, CancellationToken cancellationToken)
     {
         var membership = await db.Memberships.SingleOrDefaultAsync(x => x.Id == membershipId && x.WorkplaceId == workplaceId && x.LeftAt == null, cancellationToken);
         if (membership is null)
         {
             return Problems.NotFound();
+        }
+        // BL-01 (Hoang, 2026-11-25): during a time off the switch reads off. Turning it on ends the time off; leaving
+        // it off (the sheet saved for something else) changes nothing.
+        var today = await TimeOffEndpoints.TodayAsync(db, workplaceId, clock, cancellationToken);
+        var onTimeOff = (await TimeOffEndpoints.CoveringAsync(db, workplaceId, today, cancellationToken))
+            .GetValueOrDefault(membershipId)?.Any(range => range.Contains(today)) ?? false;
+        if (onTimeOff)
+        {
+            if (request.WorksShifts == true)
+            {
+                await TimeOffEndpoints.EndEarlyAsync(db, directory, notifier, workplaceId, membershipId, clock, cancellationToken);
+            }
+            request = request with { WorksShifts = null };
         }
         if (membership.WorksShifts && request.WorksShifts == false
             && await ledger.HasUpcomingAsync(workplaceId, membershipId, cancellationToken))
@@ -340,6 +361,8 @@ internal static class WorkplaceEndpoints
     {
         membership.LeftAt = clock.GetCurrentInstant();
         await db.SaveChangesAsync(cancellationToken);
+        // Their time off, reasons included, means nothing once they are gone (BL-01).
+        await db.TimeOffs.Where(x => x.MembershipId == membership.Id).ExecuteDeleteAsync(cancellationToken);
         foreach (var handler in handlers)
         {
             await handler.HandleAsync(membership.WorkplaceId, membership.Id, cancellationToken);
@@ -412,6 +435,10 @@ public sealed record MemberView(
     bool? WorksShifts,
     decimal? MaxWeeklyHours,
     string? Instagram,
-    string? Facebook);
+    string? Facebook,
+    MemberTimeOff? TimeOff = null);
+
+/// <summary>Accepted time off that has not ended (BL-01). <paramref name="Now"/>: today is one of its days.</summary>
+public sealed record MemberTimeOff(DateOnly FirstDay, DateOnly? LastDay, bool Now);
 
 public sealed record UpdateMemberRequest(int? Level, bool? WorksShifts, decimal? MaxWeeklyHours, bool? ClearMaxWeeklyHours);
