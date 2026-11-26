@@ -2251,6 +2251,12 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             manager can mark someone on a shift as starting earlier: light red
             box, name in red for the team, no label. Shift cards show every
             name on the shift.  (BR-012, FR-141a)
+2026-11-26  Hoang: the local demo data uses the staging team (Philippe and 14
+            staff, five per level, name@demo.quart, one shared password), and
+            two more local commands help testing: reset the workplace to "no
+            period yet", and send availability with notes for everyone. In
+            Development the join limit is 100 a minute instead of 10, so the
+            demo team can join.  (FR-007)
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES
 --------------------------------------------------------------------------------
