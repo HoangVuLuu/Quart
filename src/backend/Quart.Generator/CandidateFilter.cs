@@ -23,6 +23,7 @@ public sealed class CandidateFilter
     private readonly Dictionary<string, List<GeneratorShift>> shiftsOf;
     private readonly Dictionary<string, GeneratorMember> memberById;
     private readonly Dictionary<string, decimal[]> weekHours;
+    private readonly Dictionary<string, int[]> weekShifts;
     // Per member, how many shifts they have on each day (by day number), kept up to date as people are
     // placed and removed: the consecutive-shift check and the double check ask it on every candidate.
     private readonly Dictionary<string, Dictionary<int, int>> perDay;
@@ -40,6 +41,7 @@ public sealed class CandidateFilter
         firstDay = HardRules.FirstDay(input);
         var weeks = HardRules.Weeks(input);
         weekHours = input.Members.ToDictionary(member => member.Id, _ => new decimal[weeks], StringComparer.Ordinal);
+        weekShifts = input.Members.ToDictionary(member => member.Id, _ => new int[weeks], StringComparer.Ordinal);
         perDay = input.Members.ToDictionary(member => member.Id, _ => new Dictionary<int, int>(), StringComparer.Ordinal);
         available = HardRules.Available(input);
         locked = input.LockedAssignments.Select(assignment => (assignment.ShiftId, assignment.MemberId)).ToHashSet();
@@ -75,6 +77,12 @@ public sealed class CandidateFilter
 
     /// <summary>The member's hours so far in one week of the period (0 is the first), locks included.</summary>
     public decimal WeekHours(string memberId, int week) => weekHours[memberId][week];
+
+    /// <summary>The member's number of shifts so far over the whole period, locks included (BR-012).</summary>
+    public int ShiftCount(string memberId) => shiftsOf[memberId].Count;
+
+    /// <summary>The member's number of shifts so far in one week of the period (0 is the first), locks included (BR-012).</summary>
+    public int WeekShifts(string memberId, int week) => weekShifts[memberId][week];
 
     /// <summary>Which week of the period the shift falls in: 0 for the first seven days.</summary>
     public int WeekOf(string shiftId) => HardRules.Week(Shift(shiftId), firstDay);
@@ -134,6 +142,7 @@ public sealed class CandidateFilter
         }
         shiftsOf[memberId].Remove(shift);
         weekHours[memberId][HardRules.Week(shift, firstDay)] -= HardRules.Hours(shift);
+        weekShifts[memberId][HardRules.Week(shift, firstDay)]--;
         var days = perDay[memberId];
         if (--days[shift.Date.DayNumber] == 0)
         {
@@ -176,6 +185,7 @@ public sealed class CandidateFilter
         onShift[shift.Id].Add(memberId);
         shiftsOf[memberId].Add(shift);
         weekHours[memberId][HardRules.Week(shift, firstDay)] += HardRules.Hours(shift);
+        weekShifts[memberId][HardRules.Week(shift, firstDay)]++;
         var days = perDay[memberId];
         days[shift.Date.DayNumber] = days.GetValueOrDefault(shift.Date.DayNumber) + 1;
     }

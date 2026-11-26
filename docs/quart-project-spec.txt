@@ -854,19 +854,39 @@ BR-006  Nobody is scheduled above the maximum weekly hours an admin set for
         evaluator flags it.
 
 7.4 Soft goals — optimised in this priority order
+In order, highest first. Each goal outweighs every goal below it together, for
+any one change the generator makes (2026-11-26):
+  1. BR-010  fill every slot
+  2. BR-011  level requirements
+  3. BR-015  avoid doubles
+  4. BR-012  people below their desired hours before people who reached them
+  5. BR-012  an equal number of shifts
+  6. BR-013, BR-014  opening and closing fairness, if enabled
+  7. BR-012  hours close to desired (a tie-breaker only)
+Fairness sits above hours on purpose: an opening is 6 h and a closing 7 h, so
+trading one for the other moves hours slightly, and that must not block a
+fairer trade.
+
 BR-010  Fill every slot.                                  (weight: highest)
 BR-011  Satisfy each shift's level requirement.
-BR-012  Get each person as close as possible to their desired weekly hours.
-        In each week, not just over the period, and spread evenly over the
-        weeks: being short of the target costs more the further short, so 6
-        hours short in each of two weeks beats 12 short in one (2026-11-25,
-        after a person worked one week and had nothing the next). The desired
-        hours stay a goal: only the admin's maximum is a limit.
+BR-012  Share shifts out as equally as possible, counted in shifts, not hours,
+        and measured per week (period totals only break ties). Reaching your
+        desired hours in a week does not stop you getting shifts that week: it
+        puts you last in line, behind everyone still below theirs. An extra
+        shift is one the person could lose and still have their desired hours
+        that week (shortest shifts counted first). People who all reached their
+        hours share the extra shifts equally too. Limited availability, levels
+        and maximum hours can still leave counts unequal. Hours close to the
+        desired hours only break ties. The desired hours stay a goal: only the
+        admin's maximum is a limit. (Hoang, 2026-11-26; replaces "as close as
+        possible to desired hours" and the 2026-11-25 squared shortfall.)
 BR-013  Spread opening shifts fairly, if enabled.
 BR-014  Spread closing shifts fairly, if enabled.
 BR-015  Avoid giving one person both shifts in the same day. Permitted only as
-        a last resort when no other assignment can fill the slot. An admin may
-        still create a double by hand; it is flagged, not blocked.
+        a last resort when no other assignment can fill the slot. Someone who
+        reached their hours but is free that day goes before someone below
+        their hours who would need a double. An admin may still create a
+        double by hand; it is flagged, not blocked.
 
 7.5 Fairness definition
 BR-020  Opening and closing fairness are two independent on/off settings.
@@ -913,8 +933,13 @@ Randomized greedy construction followed by local search:
   1. Order shifts by scarcity (fewest available candidates first), with a small
      random jitter from the seed.
   2. For each shift, satisfy the level requirement first, then fill remaining
-     slots. Candidates are scored on distance from their desired hours, with a
-     random tiebreak among the top few. Hard rules filter the candidate pool.
+     slots. Hard rules filter the candidate pool. Candidates are ranked: no
+     double first, then below their desired hours that week, then fewest
+     shifts that week, then over the period, then furthest below their desired
+     hours. The pick is random among the top few of those tied on "below their
+     hours" and "fewest shifts". On a slot with no level rule, someone of the
+     highest required level counts as having one more shift, to save them for
+     the shifts that need them.
   3. Local search: repeatedly try substituting one person for another and keep
      any change that improves the evaluator score. Hard rules are re-checked
      before any substitution is applied.
@@ -2257,6 +2282,15 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             period yet", and send availability with notes for everyone. In
             Development the join limit is 100 a minute instead of 10, so the
             demo team can join.  (FR-007)
+2026-11-26  Hoang: the generator shares shifts out as equally as possible.
+            Reaching your desired hours no longer stops you getting shifts; it
+            puts you last in line. Avoiding a double comes before that: someone
+            who reached their hours but is free goes before someone below who
+            would need a double. Opening and closing fairness now sit above
+            hours, which are only a tie-breaker. New order in 7.4; the squared
+            weekly shortfall of 2026-11-25 is replaced by an equal count per
+            week. "Equal" and "reached" are per week, counted in shifts.
+            (BR-012, BR-015, 7.4, 7.7)
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES
 --------------------------------------------------------------------------------

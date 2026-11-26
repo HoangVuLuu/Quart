@@ -15,10 +15,15 @@ public sealed record Evaluation(int Score, IReadOnlyList<GeneratorIssue> Issues,
 /// </summary>
 public static class Evaluator
 {
-    // Points taken off per problem. Spec 7.4 orders the soft goals: fill every slot, then levels, then
-    // hours, then fairness, then avoiding doubles; the weights fall in that order. Filling a slot always
-    // pays: it moves someone at most one shift (6 or 7 hours, 60 or 70 points) from their target, far
-    // less than the 1 000 an empty slot costs.
+    // Points taken off per problem. Spec 7.4 orders the soft goals (Hoang, 2026-11-26): fill every slot,
+    // then levels, then avoid doubles, then people below their desired hours before people who reached
+    // them, then an equal number of shifts, then opening and closing fairness, then hours close to desired.
+    // Each goal outweighs every goal below it put together, for any one change the generator makes (adding,
+    // replacing or swapping one person), so the score and the greedy construction agree on the order and
+    // local search never undoes it. Filling a slot always pays: at most a double (6 000), an extra shift
+    // (2 000), the equal-shifts cost of a 14th shift in one week (2 600) and a little fairness and hours,
+    // far less than the 30 000 an empty slot costs. The levels gap is held for realistic weeks (up to about
+    // 10 shifts per person); fairness is a fraction, so in rare near-ties it can still edge out a goal above.
 
     /// <summary>
     /// A hard rule broken (spec 7.3, BR-036, <see cref="IssueCodes.HardRules"/>): someone unavailable
@@ -27,48 +32,57 @@ public static class Evaluator
     /// <see cref="CandidateFilter"/> stops it); only a manual edit or a lock can, and nothing else a
     /// schedule gains may pay for it.
     /// </summary>
-    public const int HardRuleWeight = 10_000;
+    public const int HardRuleWeight = 300_000;
 
     /// <summary>Per missing person on a shift (BR-010, the highest soft goal).</summary>
-    public const int EmptySlotWeight = 1_000;
+    public const int EmptySlotWeight = 30_000;
 
     /// <summary>Per person missing from a level requirement (BR-011).</summary>
-    public const int MissingLevelWeight = 500;
+    public const int MissingLevelWeight = 15_000;
 
     /// <summary>
-    /// Per hour away from a person's desired weekly hours, in either direction, counted in each week of
-    /// the period (BR-012): 13 hours then 27 against 20 a week costs 14 hours, even though the period's
-    /// 40 is right. Under and over hours are still reported over the whole period (BR-033).
+    /// Per extra shift someone works in one day (BR-015). Above everything about hours and shares: someone
+    /// who already reached their hours but is free that day goes before someone below their hours who would
+    /// need a double (Hoang, 2026-11-26).
     /// </summary>
-    public const int HoursWeight = 10;
+    public const int DoubleShiftWeight = 6_000;
 
     /// <summary>
-    /// Times the square of the hours someone is short of their desired hours, in each week (Hoang, 2026-11-25).
-    /// <see cref="HoursWeight"/> alone costs 12 short hours in one week the same as 6 in each of two, so a person
-    /// could work one week and nothing the next. Squared, the even split costs less (36 + 36 against 144), so
-    /// each person's shifts spread over the weeks. Being short never pays, so nobody gets fewer shifts for it,
-    /// and a person who asked for more hours still gets more shifts. Over the target stays only linear: hours
-    /// asked for remain a goal, not a limit (Hoang's choice). Small next to one shift's hours (60 or 70).
+    /// Per extra shift, in each week (BR-012): a shift the person could lose and still have their desired
+    /// hours that week, counting their shortest shifts first. Reaching your hours never stops you getting
+    /// shifts, it puts you last in line: a shift goes to someone still below their hours whenever that
+    /// avoids a double. Bigger than the equal-shifts cost of a gap of up to 9 shifts in one week between two people.
     /// </summary>
-    public const int WeeklySpreadWeight = 1;
+    public const int ExtraShiftWeight = 2_000;
+
+    /// <summary>
+    /// Times n × (n - 1), where n is a person's number of shifts in one week (BR-012). The first shift of
+    /// a week is free and each additional one costs more than the one before (2, 4, 6... times this), so
+    /// a schedule with nothing wrong still scores 0. Moving a shift from
+    /// someone with more to someone with fewer always scores higher, which is what makes the counts as
+    /// equal as possible. Per week, so each person's shifts also spread over the weeks. Counts shifts, not
+    /// hours: an opening and a closing count the same. The smallest such gain (twice this) is above what
+    /// one change usually does to fairness and hours.
+    /// </summary>
+    public const int EqualShiftsWeight = 100;
 
     /// <summary>
     /// Times the square of how many shifts someone is away from their expected openings, and again for
-    /// closings, when that fairness switch is on (BR-013, BR-014, BR-020). One shift away costs this much:
-    /// between hours and doubles, less than one shift's worth of hours (60 or 70), more than a double (50).
-    /// Squared, so two people half a shift off cost less than one person a shift and a half off: a trade
-    /// that evens two people out always scores higher, which is what keeps everyone within about one shift
-    /// of fair. Expected is proportional to what each person is available for (BR-021, BR-022): see
-    /// <see cref="MemberSummary.ExpectedOpenings"/>.
+    /// closings, when that fairness switch is on (BR-013, BR-014, BR-020). Above hours on purpose: an
+    /// opening is 6 hours and a closing 7, so trading one for the other moves hours by 1, and that must
+    /// not block a fairer trade. Squared, so two people half a shift off cost less than one person a shift
+    /// and a half off: a trade that evens two people out always scores higher, which is what keeps everyone
+    /// within about one shift of fair. Expected is proportional to what each person is available for
+    /// (BR-021, BR-022): see <see cref="MemberSummary.ExpectedOpenings"/>.
     /// </summary>
-    public const int FairnessWeight = 55;
+    public const int FairnessWeight = 20;
 
     /// <summary>
-    /// Per extra shift someone works in one day (BR-015, the lowest goal: a last resort, not forbidden).
-    /// Just under one shift's worth of hours, so getting people to their hours wins over avoiding a
-    /// double. Keeping doubles to a last resort is the algorithm's job (M1-05), not only this weight's.
+    /// Per hour away from a person's desired weekly hours, in either direction, counted in each week of
+    /// the period (BR-012), the lowest goal: only a tie-breaker between schedules that are otherwise as
+    /// good. Under and over hours are still reported over the whole period (BR-033).
     /// </summary>
-    public const int DoubleShiftWeight = 50;
+    public const int HoursWeight = 1;
 
     /// <summary>Under or over hours is reported only beyond this many hours over the period (BR-033).</summary>
     public const decimal HoursTolerance = 2m;
@@ -113,6 +127,7 @@ public static class Evaluator
         penalty += Consecutive(context, issues);
         penalty += Doubles(context, issues);
         penalty += Pairs(context, issues);
+        penalty += Shares(context);
         penalty += Fairness(context);
         return penalty;
     }
@@ -222,15 +237,11 @@ public static class Evaluator
 
             var weekly = context.WeeklyHours(member.Id);
             var distance = 0m;
-            var shortSquared = 0m;
             foreach (var weekHours in weekly)
             {
                 distance += Math.Abs(weekHours - member.DesiredWeeklyHours);
-                var shortBy = Math.Max(0m, member.DesiredWeeklyHours - weekHours);
-                shortSquared += shortBy * shortBy;
             }
             penalty += (long)Math.Round(distance * HoursWeight, MidpointRounding.AwayFromZero);
-            penalty += (long)Math.Round(shortSquared * WeeklySpreadWeight, MidpointRounding.AwayFromZero);
 
             var hours = weekly.Sum();
             var target = member.DesiredWeeklyHours * context.Weeks;
@@ -350,6 +361,60 @@ public static class Evaluator
             }
         }
         return penalty;
+    }
+
+    /// <summary>
+    /// The equal share of shifts (BR-012), per person and per week: extra shifts beyond desired hours, then
+    /// a cost that grows faster with each shift. No issue type: like fairness, it only moves the score. Locks count too.
+    /// </summary>
+    private static long Shares(Context context)
+    {
+        var penalty = 0L;
+        foreach (var member in context.Input.Members)
+        {
+            // Someone who never sent availability is never scheduled by the generator; any shifts they
+            // have are locks, already flagged as a broken rule.
+            if (!context.Submitted.Contains(member.Id))
+            {
+                continue;
+            }
+
+            var byWeek = new List<decimal>[context.Weeks];
+            foreach (var shift in context.ShiftsOf(member.Id))
+            {
+                (byWeek[context.WeekOf(shift)] ??= []).Add(HardRules.Hours(shift));
+            }
+            foreach (var shifts in byWeek)
+            {
+                if (shifts is null)
+                {
+                    continue;
+                }
+                penalty += (long)shifts.Count * (shifts.Count - 1) * EqualShiftsWeight;
+                penalty += (long)ExtraShifts(shifts, member.DesiredWeeklyHours) * ExtraShiftWeight;
+            }
+        }
+        return penalty;
+    }
+
+    /// <summary>
+    /// How many of one week's shifts the person could lose and still have <paramref name="desired"/>
+    /// hours, losing the shortest first so as many count as possible.
+    /// </summary>
+    internal static int ExtraShifts(IReadOnlyList<decimal> shiftHours, decimal desired)
+    {
+        var left = shiftHours.Sum();
+        var extra = 0;
+        foreach (var hours in shiftHours.Order())
+        {
+            if (left - hours < desired)
+            {
+                break;
+            }
+            left -= hours;
+            extra++;
+        }
+        return extra;
     }
 
     /// <summary>No issue type: fairness only moves the score, as FR-143 lists no fairness issue.</summary>

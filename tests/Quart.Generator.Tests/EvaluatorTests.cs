@@ -236,8 +236,9 @@ public sealed class EvaluatorTests
         var even = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("next-mon", "ana")]);
         var lumped = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d2-open", "ana")]);
 
-        // Plus, since 2026-11-25, the empty week's 6 short hours squared, so the even split wins by more.
-        Assert.Equal(12 * Evaluator.HoursWeight + 6 * 6 * Evaluator.WeeklySpreadWeight, even.Score - lumped.Score);
+        // Plus, since 2026-11-26, the equal share per week: 2 shifts in one week cost 2 × 1 against nothing for 1 + 1,
+        // and the second shift of that week is an extra one (she had her 6 hours without it).
+        Assert.Equal(12 * Evaluator.HoursWeight + 2 * Evaluator.EqualShiftsWeight + Evaluator.ExtraShiftWeight, even.Score - lumped.Score);
         Assert.DoesNotContain(lumped.Issues, issue => issue.Code is IssueCodes.UnderHours or IssueCodes.OverHours);
     }
 
@@ -375,14 +376,69 @@ public sealed class EvaluatorTests
     [Fact]
     public void The_score_adds_up_the_weights()
     {
-        // One empty slot, a missing level 3, ana 1 hour over (13 of 12 wanted, not reported) and a double.
+        // One empty slot, a missing level 3, ana 1 hour over (13 of 12 wanted, not reported) and a double, and
+        // ana's second shift of the week (not an extra one: without it she would be short of her 12 hours).
         var opening = Week[0] with { LevelRequirements = [new LevelRequirement(3, 1)] };
         var input = Everyone([opening, Week[1]], [Member("ana", level: 2, desired: 12), Member("ben", level: 1, desired: 7)]);
 
         var evaluation = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d0-close", "ana"), On("d0-close", "ben")]);
 
-        var expected = Evaluator.EmptySlotWeight + Evaluator.MissingLevelWeight + 1 * Evaluator.HoursWeight + Evaluator.DoubleShiftWeight;
+        var expected = Evaluator.EmptySlotWeight + Evaluator.MissingLevelWeight + 1 * Evaluator.HoursWeight + Evaluator.DoubleShiftWeight + 2 * Evaluator.EqualShiftsWeight;
         Assert.Equal(-expected, evaluation.Score);
+    }
+
+    [Fact]
+    public void An_extra_shift_is_one_the_person_could_lose_and_still_have_their_hours()
+    {
+        // BR-012 (Hoang, 2026-11-26): ana wants 12 hours a week. Two openings give her 12; a third is extra.
+        // The third also costs more than the second on the equal share (4 against 2) and is 6 hours over.
+        var input = Everyone(Week, [Member("ana", desired: 12)]);
+
+        var two = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d2-open", "ana")]);
+        var three = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d2-open", "ana"), On("d4-open", "ana")]);
+
+        Assert.Equal(Evaluator.EmptySlotWeight - Evaluator.ExtraShiftWeight - 4 * Evaluator.EqualShiftsWeight - 6 * Evaluator.HoursWeight,
+            three.Score - two.Score);
+    }
+
+    [Fact]
+    public void Extra_shifts_count_the_shortest_first()
+    {
+        // ana wants 7 hours: an opening (6 h) and a closing (7 h) give 13. Losing the opening still leaves her
+        // 7, so one shift is extra, even though losing the closing would not.
+        var input = Everyone(Week, [Member("ana", desired: 7)]);
+
+        var evaluation = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d2-close", "ana")]);
+
+        var empty = Week.Sum(shift => shift.Headcount) - 2;
+        Assert.Equal(-(empty * Evaluator.EmptySlotWeight + Evaluator.ExtraShiftWeight + 2 * Evaluator.EqualShiftsWeight + 6 * Evaluator.HoursWeight),
+            evaluation.Score);
+    }
+
+    [Fact]
+    public void Two_people_with_equal_counts_score_higher_than_unequal_counts()
+    {
+        // BR-012: four shifts, both want many hours. 2 and 2 beats 3 and 1, whatever the hours.
+        var input = Everyone(Week, [Member("ana", desired: 40), Member("ben", desired: 40)]);
+
+        var equal = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d2-open", "ana"), On("d0-close", "ben"), On("d2-close", "ben")]);
+        var unequal = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d2-open", "ana"), On("d4-open", "ana"), On("d0-close", "ben")]);
+
+        Assert.True(equal.Score > unequal.Score, $"{equal.Score} vs {unequal.Score}");
+    }
+
+    [Fact]
+    public void A_trade_that_balances_openings_and_closings_wins_even_with_hours_slightly_further_from_desired()
+    {
+        // Spec 7.4: fairness sits above hours. ana wants 12 and ben 14: two openings for ana and two closings
+        // for ben hit both targets exactly, but trading one opening for one closing is fair (one of each),
+        // and leaves each 1 hour off. The fair schedule scores higher.
+        var input = WithFairness(Everyone(Week, [Member("ana", desired: 12), Member("ben", desired: 14)]));
+
+        var exactHours = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d2-open", "ana"), On("d0-close", "ben"), On("d2-close", "ben")]);
+        var fair = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d2-close", "ana"), On("d0-close", "ben"), On("d2-open", "ben")]);
+
+        Assert.Equal(4 * Evaluator.FairnessWeight - 2 * Evaluator.HoursWeight, fair.Score - exactHours.Score);
     }
 
     private static GeneratorInput WithFairness(GeneratorInput input, bool opening = true, bool closing = true) =>
