@@ -6,6 +6,7 @@ import { formatDateRange, formatDue, formatNumber, formatShortDate } from '../..
 import { buttonClassName, pressClassName } from '../../ui/button-styles';
 import { cx } from '../../ui/cx';
 import { Card } from '../../ui/Card';
+import { ShiftNames } from '../schedule/PersonName';
 import { CardSkeleton, HeroSkeleton, Loading } from '../../ui/Skeleton';
 import { TimeOffHome } from '../time-off/TimeOffHome';
 import { Cup } from '../../ui/Cup';
@@ -257,13 +258,18 @@ function dayLabel(shift: ScheduleShift, now: Date, t: TFunction, language: strin
       : formatShortDate(shift.date, language);
 }
 
-/** "With Kevin T.", or "On your own" when nobody else is on the shift. */
+/**
+ * Everyone on the shift, "Tony, Selma", the viewer included (Hoang, 2026-11-25: both names rather than "With
+ * Selma"), someone starting earlier in red; "On your own" when nobody else is on it.
+ */
 export function Coworkers({ shift }: { shift: ScheduleShift }) {
   const { t } = useTranslation();
-  const others = shift.people
-    .filter((person) => !person.isMe)
-    .map((person) => person.name ?? t('team.former'));
-  return <p>{others.length > 0 ? t('home.with', { names: others.join(', ') }) : t('home.alone')}</p>;
+  if (!shift.people.some((person) => !person.isMe)) return <p>{t('home.alone')}</p>;
+  return (
+    <p>
+      <ShiftNames people={shift.people} />
+    </p>
+  );
 }
 
 /** The admin's hero (mockups 1j, 1j2): where the next period stands, and the way to the next step. */

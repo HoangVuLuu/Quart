@@ -868,6 +868,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/workplaces/{workplaceId}/periods/{periodId}/draft/assignments/{shiftId}/{membershipId}/early': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['MarkDraftAssignmentEarly'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/workplaces/{workplaceId}/periods/{periodId}/draft/shifts/{shiftId}/note': {
     parameters: {
       query?: never;
@@ -1431,6 +1447,8 @@ export interface components {
       /** Format: uuid */
       membershipId: string;
       locked: boolean;
+      /** @default false */
+      startsEarly: boolean;
     };
     DraftIssue: {
       code: string;
@@ -1503,6 +1521,9 @@ export interface components {
       shifts: components['schemas']['DraftShift'][];
       people: components['schemas']['DraftPerson'][];
       issues: components['schemas']['DraftIssue'][];
+    };
+    EarlyRequest: {
+      startsEarly: boolean;
     };
     EmailOnlyRequest: {
       email: null | string;
@@ -1914,6 +1935,8 @@ export interface components {
       /** Format: int32 */
       level: null | number;
       isMe: boolean;
+      /** @default false */
+      startsEarly: boolean;
     };
     ScheduleShift: {
       /** Format: uuid */
@@ -4096,6 +4119,44 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['LockRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DraftView'];
+        };
+      };
+      /** @description Any error, as problem details with a machine-readable code (AD-023). */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ApiProblem'];
+        };
+      };
+    };
+  };
+  MarkDraftAssignmentEarly: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workplaceId: string;
+        periodId: string;
+        shiftId: string;
+        membershipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EarlyRequest'];
       };
     };
     responses: {

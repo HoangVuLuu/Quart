@@ -114,6 +114,7 @@ export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay, 
   const draft = useDraft(periodId);
   const actions = useDraftActions(periodId);
   const [week, setWeek] = useState(0);
+  const [dashboard, setDashboard] = useState(false);
   const lastWeek = (draft.data?.period.weeks ?? 1) - 1;
   const swipeWeeks = useSwipe({
     onNext: () => setWeek((current) => Math.min(lastWeek, current + 1)),
@@ -202,6 +203,11 @@ export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay, 
           ))}
         </div>
       )}
+      {/* Under the weeks, across the row (Hoang, 2026-11-25): who has how many shifts in the week shown. */}
+      <Button variant="white" className="w-full" onClick={() => setDashboard(true)}>
+        {t('draft.dashboard.open')}
+      </Button>
+      {dashboard && <Dashboard draft={data} week={week} onClose={() => setDashboard(false)} />}
 
       {/* Phones list the days one under the other; wider screens show two days side by side (NFR-003).
           A sideways swipe changes the week, like the pills above. */}
@@ -575,21 +581,42 @@ function ShiftEditor({
           const person = people.get(assignment.membershipId);
           const name = person?.name ?? t('team.former');
           return (
-            <li key={assignment.membershipId} className="rounded-field bg-surface-3 px-4 py-2">
+            <li
+              key={assignment.membershipId}
+              className={cx(
+                'rounded-field px-4 py-2',
+                assignment.startsEarly ? 'bg-danger-soft' : 'bg-surface-3',
+              )}
+            >
               <div className="flex items-center gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold">
+                {/* Tapping the person's box marks them as starting earlier: the box turns light red, and their
+                    name shows in red on the team's shift cards (Hoang, 2026-11-25). Tapping again takes it off. */}
+                <button
+                  type="button"
+                  className="min-h-11 min-w-0 flex-1 text-left"
+                  aria-pressed={assignment.startsEarly === true}
+                  aria-label={t('draft.editor.startsEarly', { name })}
+                  disabled={actions.early.isPending}
+                  onClick={() =>
+                    actions.early.mutate({
+                      shiftId: shift.id,
+                      membershipId: assignment.membershipId,
+                      startsEarly: !assignment.startsEarly,
+                    })
+                  }
+                >
+                  <span className="block font-bold">
                     {name}{' '}
                     <span className="text-xs text-muted">
                       {person && t('scheduling.levelShort', { level: person.level })}
                     </span>
-                  </p>
+                  </span>
                   {person && (
-                    <p className="text-xs text-muted">
+                    <span className="block text-xs text-muted">
                       {t('draft.editor.thisWeek', { hours: hours(person) })}
-                    </p>
+                    </span>
                   )}
-                </div>
+                </button>
                 <Button
                   variant={assignment.locked ? 'dark' : 'white'}
                   className="min-h-11 px-4 text-sm"
@@ -722,5 +749,53 @@ function WeekNotes({ periodId, people }: { periodId: string; people: DraftPerson
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * The dashboard (Hoang, 2026-11-25): for the week shown, each person's shifts and hours against the hours they
+ * asked for, most shifts first. Not in the mockups: it reuses the bottom sheet and the shift sheet's rows (1m).
+ */
+function Dashboard({ draft, week, onClose }: { draft: DraftView; week: number; onClose: () => void }) {
+  const { t, i18n } = useTranslation();
+  const language = i18n.language;
+  const shifts = draft.shifts.filter((shift) => weekOf(draft.period, shift.date) === week);
+  const rows = draft.people
+    .map((person) => ({
+      person,
+      count: shifts.filter((shift) => shift.people.some((x) => x.membershipId === person.membershipId))
+        .length,
+      hours: person.weeklyHours[week] ?? 0,
+    }))
+    .sort((a, b) => b.count - a.count || a.person.name.localeCompare(b.person.name, language));
+  return (
+    <Sheet
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title={t('draft.dashboard.title')}
+      description={draft.period.weeks > 1 ? t('scheduling.grid.week', { number: week + 1 }) : undefined}
+    >
+      <ul className="flex flex-col gap-2">
+        {rows.map(({ person, count, hours }) => (
+          <li
+            key={person.membershipId}
+            className="flex items-center justify-between gap-3 rounded-field bg-surface-3 px-4 py-3"
+          >
+            <span className="min-w-0 font-bold">{person.name}</span>
+            <span className="shrink-0 text-right text-sm">
+              <span className="block font-bold">{t('draft.dashboard.shifts', { count })}</span>
+              <span className="block text-xs text-muted">
+                {person.desiredWeeklyHours == null
+                  ? t('draft.dashboard.hours', { hours: formatNumber(hours, language) })
+                  : t('draft.dashboard.hoursOf', {
+                      hours: formatNumber(hours, language),
+                      wanted: formatNumber(person.desiredWeeklyHours, language),
+                    })}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </Sheet>
   );
 }

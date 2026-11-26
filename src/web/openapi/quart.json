@@ -2799,6 +2799,84 @@
         }
       }
     },
+    "/api/workplaces/{workplaceId}/periods/{periodId}/draft/assignments/{shiftId}/{membershipId}/early": {
+      "put": {
+        "tags": [
+          "DraftEndpoints"
+        ],
+        "operationId": "MarkDraftAssignmentEarly",
+        "parameters": [
+          {
+            "name": "workplaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "shiftId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "membershipId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EarlyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any error, as problem details with a machine-readable code (AD-023).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/workplaces/{workplaceId}/periods/{periodId}/draft/shifts/{shiftId}/note": {
       "put": {
         "tags": [
@@ -4606,6 +4684,10 @@
           },
           "locked": {
             "type": "boolean"
+          },
+          "startsEarly": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -4880,6 +4962,17 @@
             "items": {
               "$ref": "#/components/schemas/DraftIssue"
             }
+          }
+        }
+      },
+      "EarlyRequest": {
+        "required": [
+          "startsEarly"
+        ],
+        "type": "object",
+        "properties": {
+          "startsEarly": {
+            "type": "boolean"
           }
         }
       },
@@ -6470,6 +6563,10 @@
           },
           "isMe": {
             "type": "boolean"
+          },
+          "startsEarly": {
+            "type": "boolean",
+            "default": false
           }
         }
       },

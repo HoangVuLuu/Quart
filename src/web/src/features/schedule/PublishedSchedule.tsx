@@ -12,6 +12,7 @@ import { cx } from '../../ui/cx';
 import { EmptyState } from '../../ui/EmptyState';
 import { Sheet } from '../../ui/Sheet';
 import { Skeleton } from '../../ui/Skeleton';
+import { PersonName } from './PersonName';
 import { StatusChip } from '../../ui/StatusChip';
 import { useToast } from '../../ui/toast-context';
 import { Coworkers } from '../home/HomePage';
@@ -221,10 +222,18 @@ function WholeTeam({ schedule }: { schedule: ScheduleView }) {
                               key={person.membershipId}
                               className={cx(
                                 'rounded-pill px-2.5 py-0.5 text-sm font-bold',
-                                person.isMe ? 'bg-primary text-on-primary' : 'bg-surface-3',
+                                // Starts earlier (2026-11-25): red on light red, readable whoever it is.
+                                person.startsEarly
+                                  ? 'bg-danger-soft text-danger'
+                                  : person.isMe
+                                    ? 'bg-primary text-on-primary'
+                                    : 'bg-surface-3',
                               )}
                             >
                               {person.isMe ? t('schedule.you') : (person.name ?? t('team.former'))}
+                              {person.startsEarly && (
+                                <span className="sr-only"> ({t('schedule.startsEarly')})</span>
+                              )}
                             </span>
                           ))}
                           {shift.people.length < shift.headcount && (
@@ -270,7 +279,6 @@ function WholeTeam({ schedule }: { schedule: ScheduleView }) {
 export function ShiftPeopleSheet({ shift, onClose }: { shift: ScheduleShift; onClose: () => void }) {
   const { t, i18n } = useTranslation();
   const shiftName = useShiftName();
-  const others = shift.people.filter((person) => !person.isMe);
   const open = Math.max(0, shift.headcount - shift.people.length);
   return (
     <Sheet
@@ -279,14 +287,15 @@ export function ShiftPeopleSheet({ shift, onClose }: { shift: ScheduleShift; onC
       title={shiftName(shift)}
       description={`${formatDayHeading(shift.date, i18n.language)} · ${shift.start}–${shift.end} · ${formatNumber(shift.hours, i18n.language)} h`}
     >
-      <h3 className="text-sm font-bold text-muted">{t('schedule.sheet.with')}</h3>
+      {/* Everyone on the shift, the viewer included (Hoang, 2026-11-25). */}
+      <h3 className="text-sm font-bold text-muted">{t('schedule.sheet.onShift')}</h3>
       <ul className="mt-2 flex flex-col gap-2">
-        {others.map((person) => (
+        {shift.people.map((person) => (
           <li key={person.membershipId} className="rounded-field bg-surface-3 px-4 py-3 font-bold">
-            {person.name ?? t('team.former')}
+            <PersonName person={person} />
           </li>
         ))}
-        {others.length === 0 && open === 0 && (
+        {shift.people.length === 0 && open === 0 && (
           <li className="rounded-field bg-surface-3 px-4 py-3 text-sm text-muted">
             {t('schedule.sheet.alone')}
           </li>

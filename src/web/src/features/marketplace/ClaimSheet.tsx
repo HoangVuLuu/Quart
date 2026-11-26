@@ -4,6 +4,7 @@ import { formatDayHeading, formatNumber } from '../../i18n/format';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
 import { Sheet } from '../../ui/Sheet';
+import { PersonName } from '../schedule/PersonName';
 import { StatusChip } from '../../ui/StatusChip';
 import { usePublishedSchedule } from '../scheduling/data';
 import { useShiftName } from '../scheduling/ShiftName';
@@ -65,7 +66,7 @@ export function ClaimSheet({
         <ul className="mt-2 flex flex-col gap-2">
           {others.map((person) => (
             <li key={person.membershipId} className="rounded-field bg-surface-3 px-4 py-3 font-bold">
-              {person.name ?? t('team.former')}
+              <PersonName person={person} />
             </li>
           ))}
           {full && others.length === 0 && (

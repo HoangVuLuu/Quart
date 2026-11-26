@@ -70,7 +70,8 @@ internal static class PublishedScheduleEndpoints
                         names.GetValueOrDefault(x.MembershipId)?.DisplayName,
                         // 3.1: levels only for people who manage them.
                         member.Can(Permission.ManageLevels) ? names.GetValueOrDefault(x.MembershipId)?.Level : null,
-                        x.MembershipId == member.MembershipId))
+                        x.MembershipId == member.MembershipId,
+                        x.StartsEarly))
                     .OrderBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase)
                     .ToList(),
                 shift.Note,
@@ -99,7 +100,8 @@ public sealed record ScheduleShift(
     string? Name = null);
 
 /// <param name="Name">Null for someone who has left the workplace.</param>
-public sealed record SchedulePerson(Guid MembershipId, string? Name, int? Level, bool IsMe);
+/// <param name="StartsEarly">Starts earlier than the shift: the name shows in red (Hoang, 2026-11-25).</param>
+public sealed record SchedulePerson(Guid MembershipId, string? Name, int? Level, bool IsMe, bool StartsEarly = false);
 
 /// <summary>
 /// The published schedule as the Marketplace module changes it (M7). Each change locks the shift rows it

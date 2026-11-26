@@ -257,7 +257,8 @@
       "with": "Avec toi",
       "alone": "Personne d’autre sur ce quart.",
       "openSpots_one": "{{count}} place libre",
-      "openSpots_other": "{{count}} places libres"
+      "openSpots_other": "{{count}} places libres",
+      "onShift": "Sur ce quart"
     },
     "ready": {
       "title": "Prêt à créer l’horaire?",
@@ -290,7 +291,8 @@
       "keep": "Oui, les garder",
       "clear": "Les effacer et ouvrir la période",
       "back": "Retour"
-    }
+    },
+    "startsEarly": "commence plus tôt"
   },
   "availability": {
     "title": "Disponibilités",
@@ -768,7 +770,8 @@
       "addNamed": "Ajouter {{name}}",
       "available": "Disponible",
       "unavailable": "Pas disponible",
-      "noAnswer": "Pas de réponse"
+      "noAnswer": "Pas de réponse",
+      "startsEarly": "{{name}} commence plus tôt"
     },
     "reuse": {
       "button": "Réutiliser un horaire passé",
@@ -779,7 +782,15 @@
       "weeks_one": "{{count}} semaine",
       "weeks_other": "{{count}} semaines"
     },
-    "generating": "Génération…"
+    "generating": "Génération…",
+    "dashboard": {
+      "open": "Tableau de bord",
+      "title": "Tableau de bord",
+      "shifts_one": "{{count}} quart",
+      "shifts_other": "{{count}} quarts",
+      "hours": "{{hours}} h",
+      "hoursOf": "{{hours}} h sur {{wanted}} h voulues"
+    }
   },
   "teamAvailability": {
     "title": "Disponibilités de l’équipe",

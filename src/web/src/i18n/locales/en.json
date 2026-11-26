@@ -257,7 +257,8 @@
       "with": "Working with you",
       "alone": "Nobody else on this shift.",
       "openSpots_one": "{{count}} open spot",
-      "openSpots_other": "{{count}} open spots"
+      "openSpots_other": "{{count}} open spots",
+      "onShift": "On this shift"
     },
     "ready": {
       "title": "Ready to build?",
@@ -290,7 +291,8 @@
       "keep": "Yes, keep them",
       "clear": "Clear them and open period",
       "back": "Return"
-    }
+    },
+    "startsEarly": "starts earlier"
   },
   "availability": {
     "title": "Availability",
@@ -768,7 +770,8 @@
       "addNamed": "Add {{name}}",
       "available": "Available",
       "unavailable": "Not available",
-      "noAnswer": "No answer"
+      "noAnswer": "No answer",
+      "startsEarly": "{{name}} starts earlier"
     },
     "reuse": {
       "button": "Reuse a past schedule",
@@ -779,7 +782,15 @@
       "weeks_one": "{{count}} week",
       "weeks_other": "{{count}} weeks"
     },
-    "generating": "Generating…"
+    "generating": "Generating…",
+    "dashboard": {
+      "open": "Dashboard",
+      "title": "Dashboard",
+      "shifts_one": "{{count}} shift",
+      "shifts_other": "{{count}} shifts",
+      "hours": "{{hours}} h",
+      "hoursOf": "{{hours}} h of {{wanted}} h wanted"
+    }
   },
   "teamAvailability": {
     "title": "Team availability",
