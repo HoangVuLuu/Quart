@@ -346,8 +346,8 @@ internal sealed class Assignment
 
     /// <summary>
     /// The manager tapped this person on the shift: they start earlier than the shift (Hoang, 2026-11-25). Their
-    /// name shows in red wherever the shift's people show. It stays with the person, not the place: whoever takes
-    /// the shift over is not marked.
+    /// name shows in red wherever the shift's people show. It belongs to the place, not the person: whoever takes
+    /// the shift over (give-away, claim or trade) is marked in turn (Hoang, 2026-11-26).
     /// </summary>
     public bool StartsEarly { get; set; }
 

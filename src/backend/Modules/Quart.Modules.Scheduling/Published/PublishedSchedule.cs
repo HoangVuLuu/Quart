@@ -159,11 +159,14 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
             return LedgerResult.Taken;
         }
 
+        // The "starts earlier" mark belongs to the place on the shift (Hoang, 2026-11-26): whoever takes it over
+        // from someone marked is marked too.
+        var early = from is { } marked && holders.Any(x => x.MembershipId == marked && x.StartsEarly);
         if (from is { } leaving)
         {
             await RemoveAsync(shiftId, leaving, cancellationToken);
         }
-        await AddAsync(shift, to, source, cancellationToken);
+        await AddAsync(shift, to, source, cancellationToken, early);
         return await CommitAsync(shift.PeriodId, transaction, cancellationToken);
     }
 
@@ -205,8 +208,10 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
         // Both people leave before either arrives, so the no-double-booking rule sees the final state only.
         await RemoveAsync(shiftA, a.MembershipId, cancellationToken);
         await RemoveAsync(shiftB, b.MembershipId, cancellationToken);
-        await AddAsync(first, b, Assignment.Trade, cancellationToken);
-        await AddAsync(second, a, Assignment.Trade, cancellationToken);
+        // Each takes the other's place, with its "starts earlier" mark (2026-11-26).
+        bool Early(Guid shiftId, Guid membershipId) => holders.Any(x => x.ShiftId == shiftId && x.MembershipId == membershipId && x.StartsEarly);
+        await AddAsync(first, b, Assignment.Trade, cancellationToken, Early(shiftA, a.MembershipId));
+        await AddAsync(second, a, Assignment.Trade, cancellationToken, Early(shiftB, b.MembershipId));
         var result = await CommitAsync(first.PeriodId, transaction, cancellationToken);
         if (result == LedgerResult.Applied && second.PeriodId != first.PeriodId)
         {
@@ -236,7 +241,7 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
         // The published row and the draft's copy go together.
         db.Assignments.Where(x => x.ShiftId == shiftId && x.MembershipId == membershipId).ExecuteDeleteAsync(cancellationToken);
 
-    private async Task AddAsync(Shift shift, LedgerPerson person, string source, CancellationToken cancellationToken)
+    private async Task AddAsync(Shift shift, LedgerPerson person, string source, CancellationToken cancellationToken, bool startsEarly = false)
     {
         var inDraft = await db.Assignments.AnyAsync(x => x.ShiftId == shift.Id && x.MembershipId == person.MembershipId && x.IsDraft, cancellationToken);
         foreach (var draft in inDraft ? new[] { false } : [false, true])
@@ -252,6 +257,7 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
                 Source = source,
                 StartsAt = shift.StartsAt,
                 EndsAt = shift.EndsAt,
+                StartsEarly = startsEarly,
             });
         }
     }

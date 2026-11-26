@@ -51,6 +51,28 @@ public sealed class StartsEarlyTests(PostgresFixture postgres)
         Assert.Equal(HttpStatusCode.Forbidden, staff.Status);
     }
 
+    [Fact]
+    public async Task The_mark_belongs_to_the_place_so_whoever_takes_the_shift_over_is_marked()
+    {
+        // Hoang, 2026-11-26: if Selma gives her shift away, the person who takes it now starts earlier.
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        var schedule = await team.PublishAsync();
+        var (nora, omar) = (team.Staff[2], team.Staff[3]);
+        var shift = Team.ShiftsOf(schedule, nora).First(x => !Team.Holds(x, omar));
+        await team.Owner.PostAsync($"{team.Period}/draft/start");
+        await team.Owner.SendAsync(HttpMethod.Put, $"{team.Period}/draft/assignments/{Team.Id(shift)}/{nora.MembershipId}/early", new { startsEarly = true });
+        await team.Owner.PostAsync($"{team.Period}/draft/publish", new { confirmed = true });
+
+        await nora.PostAsync($"{team.Base}/marketplace/give-aways", new { shiftId = Team.Id(shift) });
+        var offer = (await omar.GetAsync($"{team.Base}/marketplace"))["offers"]!.AsArray().Single()!;
+        await omar.PostAsync($"{team.Base}/marketplace/claims", new { shiftId = Team.Id(shift), giveAwayId = Team.Id(offer) });
+
+        var after = Shift(await team.ScheduleAsync(), shift);
+        Assert.True(Person(after, omar)["startsEarly"]!.GetValue<bool>());
+        Assert.DoesNotContain(after["people"]!.AsArray(), x => x!["membershipId"]!.GetValue<string>() == nora.MembershipId.ToString());
+    }
+
     private static JsonNode Shift(JsonNode view, JsonNode shift) =>
         view["shifts"]!.AsArray().Single(x => Team.Id(x!) == Team.Id(shift))!;
 

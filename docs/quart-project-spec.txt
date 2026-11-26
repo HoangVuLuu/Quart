@@ -565,8 +565,8 @@ FR-141a Building and Editing Schedule (2026-11-25). A full-width "Dashboard"
         starting earlier than the shift: the box turns light red, and once
         published their name shows in red wherever the shift's people show.
         Nothing on screen says why (a screen reader hears "starts earlier").
-        The mark stays with the person: whoever takes the shift over is not
-        marked. Shift cards list everyone on the shift, the viewer included,
+        The mark belongs to the place on the shift: whoever takes it over
+        (give-away, claim or trade) is marked in turn (Hoang, 2026-11-26). Shift cards list everyone on the shift, the viewer included,
         instead of "With Kevin T.".
 FR-141  Tapping a shift opens a panel with: the current roster, and a list of
         everyone who could be added. Every name carries a colour for their
