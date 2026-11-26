@@ -6,11 +6,12 @@ namespace Quart.Generator;
 /// goes through the <see cref="CandidateFilter"/>, so hard rules are checked before it is applied and no
 /// change can break one (BR-005 included). Locks are never touched (BR-004).
 /// <list type="bullet">
-/// <item><b>Fill</b> an open slot. Someone already working that day only when nobody else can (BR-015).</item>
+/// <item><b>Fill</b> an open slot. Someone already working that day only when nobody else can (BR-015);
+/// then someone below their desired hours that week, then whoever has the fewest shifts that week (BR-012).</item>
 /// <item><b>Replace</b> one person on a shift with another. Never with someone already working that day,
 /// since the slot was full: a double is never worth it when the slot is filled anyway (BR-015).</item>
 /// <item><b>Swap</b> two people's shifts, often on the same day, which moves openings and closings between
-/// people at almost no cost in hours, for fairness (BR-013, BR-014).</item>
+/// people while keeping each person's number of shifts, for fairness (BR-013, BR-014).</item>
 /// </list>
 /// It is bounded by a number of tries that grows with the period, and stops early once many tries in a
 /// row improve nothing. There is no time limit: the generator has no clock (spec 7.2), so the same seed
@@ -85,6 +86,16 @@ internal static class LocalSearch
             {
                 return false;
             }
+
+            // BR-012: people below their desired hours that week first, then the fewest shifts that week.
+            var week = filter.WeekOf(shift.Id);
+            var below = pool.Where(memberId => filter.WeekHours(memberId, week) < rulebook.Members[memberId].DesiredWeeklyHours).ToList();
+            if (below.Count > 0)
+            {
+                pool = below;
+            }
+            var fewest = pool.Min(memberId => filter.WeekShifts(memberId, week));
+            pool = pool.Where(memberId => filter.WeekShifts(memberId, week) == fewest).ToList();
 
             var memberId = pool[random.Next(pool.Count)];
             filter.Assign(shift.Id, memberId);

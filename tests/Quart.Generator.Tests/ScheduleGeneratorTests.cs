@@ -79,6 +79,131 @@ public sealed class ScheduleGeneratorTests
         }
     }
 
+    /// <summary>One person per shift, an opening and a closing every day, from 2026-10-05.</summary>
+    private static List<GeneratorShift> SoloDays(int days)
+    {
+        var shifts = new List<GeneratorShift>();
+        for (var day = 0; day < days; day++)
+        {
+            var date = new DateOnly(2026, 10, 5).AddDays(day).ToString("yyyy-MM-dd");
+            shifts.Add(Solo($"o{day:00}", date));
+            shifts.Add(Solo($"c{day:00}", date, "16:00", "22:00", "closing"));
+        }
+        return shifts;
+    }
+
+    private static int[] CountsOf(GeneratorResult result, IEnumerable<GeneratorMember> people) =>
+        people.Select(person => result.Assignments.Count(assignment => assignment.MemberId == person.Id)).ToArray();
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void Same_desired_hours_and_availability_give_counts_within_one_shift(int seed)
+    {
+        // BR-012 (Hoang, 2026-11-26): 28 shifts over two weeks, five people who all want 20 hours and can
+        // work anything. Nobody can reach 20 hours in both weeks, so the shifts are shared out equally.
+        var shifts = SoloDays(14);
+        var people = Enumerable.Range(0, 5).Select(index => Member($"p{index}", desired: 20)).ToList();
+        var all = shifts.Select(shift => shift.Id).ToArray();
+        var input = Input(shifts, people, people.Select(person => Available(person.Id, all)).ToList(), seed: seed);
+
+        var counts = CountsOf(generator.Generate(input), people);
+
+        Assert.True(counts.Max() - counts.Min() <= 1, string.Join(" ", counts));
+        Assert.Equal(28, counts.Sum());
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void Different_desired_hours_with_too_few_shifts_still_give_counts_within_one_shift(int seed)
+    {
+        // BR-012: 14 shifts in one week, four people wanting 40 down to 28 hours. Nobody can reach their
+        // hours, so everyone is below them, and asking for more hours does not mean more shifts.
+        var shifts = SoloDays(7);
+        var people = new[] { Member("ana", desired: 40), Member("ben", desired: 36), Member("cleo", desired: 30), Member("dan", desired: 28) };
+        var all = shifts.Select(shift => shift.Id).ToArray();
+        var input = Input(shifts, people, people.Select(person => Available(person.Id, all)).ToList(), seed: seed,
+            rules: Rules with { MaxConsecutiveShifts = null });
+
+        var counts = CountsOf(generator.Generate(input), people);
+
+        Assert.True(counts.Max() - counts.Min() <= 1, string.Join(" ", counts));
+    }
+
+    [Fact]
+    public void Someone_who_reached_their_hours_gets_nothing_more_while_someone_below_can_take_it()
+    {
+        // BR-012: ana wants 6 hours and is the only one free on Monday, so Monday gives her 6. Tuesday and
+        // Wednesday would make the counts just as equal either way, but ben is still below his hours.
+        var shifts = new[] { Solo("mon"), Solo("tue", "2026-10-06"), Solo("wed", "2026-10-07") };
+        var input = Input(shifts, [Member("ana", desired: 6), Member("ben", desired: 30)],
+            [Available("ana", "mon", "tue", "wed"), Available("ben", "tue", "wed")]);
+
+        foreach (var seed in Enumerable.Range(1, 10))
+        {
+            Assert.Equal([new("mon", "ana"), new("tue", "ben"), new("wed", "ben")], generator.Generate(input with { Seed = seed }).Assignments);
+        }
+    }
+
+    [Fact]
+    public void Someone_who_reached_their_hours_and_is_free_goes_before_someone_below_who_would_need_a_double()
+    {
+        // BR-015 above BR-012: ana wants 40 hours and opens Monday. ben already has his 6 hours (a locked
+        // Tuesday) but is free Monday evening, so he closes rather than ana working both.
+        var shifts = new[] { Solo("mon-open"), Solo("mon-close", start: "16:00", end: "23:00", blockId: "closing"), Solo("tue-open", "2026-10-06") };
+        var input = Input(shifts, [Member("ana", desired: 40), Member("ben", desired: 6)],
+            [Available("ana", "mon-open", "mon-close"), Available("ben", "mon-close", "tue-open")],
+            locked: [new Assignment("tue-open", "ben")]);
+
+        foreach (var seed in Enumerable.Range(1, 10))
+        {
+            var result = generator.Generate(input with { Seed = seed });
+            Assert.Contains(new Assignment("mon-open", "ana"), result.Assignments);
+            Assert.Contains(new Assignment("mon-close", "ben"), result.Assignments);
+        }
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void When_everyone_reached_their_hours_every_shift_is_still_filled_and_extras_are_shared(int seed)
+    {
+        // BR-010 above BR-012: six shifts, one a day, and two people who each want only 6 hours. Reaching
+        // your hours puts you last in line, it never leaves a shift open: each works 3.
+        var shifts = Enumerable.Range(0, 6).Select(day => Solo($"d{day}", new DateOnly(2026, 10, 5).AddDays(day).ToString("yyyy-MM-dd"))).ToArray();
+        var people = new[] { Member("ana", desired: 6), Member("ben", desired: 6) };
+        var all = shifts.Select(shift => shift.Id).ToArray();
+        var input = Input(shifts, people, [Available("ana", all), Available("ben", all)], seed: seed, rules: Rules with { MaxConsecutiveShifts = null });
+
+        var result = generator.Generate(input);
+
+        Assert.DoesNotContain(result.Issues, issue => issue.Code == IssueCodes.BelowHeadcount);
+        Assert.Equal([3, 3], CountsOf(result, people));
+    }
+
+    [Fact]
+    public void Locked_shifts_count_toward_the_equal_share()
+    {
+        // ana is locked onto Monday and Tuesday. Both want many hours, so Wednesday and Thursday go to ben:
+        // 2 and 2, not 3 and 1.
+        var shifts = new[] { Solo("mon"), Solo("tue", "2026-10-06"), Solo("wed", "2026-10-07"), Solo("thu", "2026-10-08") };
+        var input = Input(shifts, [Member("ana", desired: 40), Member("ben", desired: 40)],
+            [Available("ana", "mon", "tue", "wed", "thu"), Available("ben", "wed", "thu")],
+            locked: [new Assignment("mon", "ana"), new Assignment("tue", "ana")],
+            rules: Rules with { MaxConsecutiveShifts = null });
+
+        foreach (var seed in Enumerable.Range(1, 10))
+        {
+            var result = generator.Generate(input with { Seed = seed });
+            Assert.Contains(new Assignment("wed", "ben"), result.Assignments);
+            Assert.Contains(new Assignment("thu", "ben"), result.Assignments);
+        }
+    }
+
     [Fact]
     public void Counts_hours_already_given_when_choosing_the_next_shift()
     {
