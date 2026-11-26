@@ -236,8 +236,8 @@ public sealed class EvaluatorTests
         var even = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("next-mon", "ana")]);
         var lumped = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d2-open", "ana")]);
 
-        // Plus, since 2026-11-25, the empty week's 6 short hours squared, so the even split wins by more.
-        Assert.Equal(12 * Evaluator.HoursWeight + 6 * 6 * Evaluator.WeeklySpreadWeight, even.Score - lumped.Score);
+        // Plus, since 2026-11-25, the empty week: 6 hours short, squared, over her 6-hour target, so the even split wins by more.
+        Assert.Equal(12 * Evaluator.HoursWeight + 6 * 6 / 6 * Evaluator.WeeklySpreadWeight, even.Score - lumped.Score);
         Assert.DoesNotContain(lumped.Issues, issue => issue.Code is IssueCodes.UnderHours or IssueCodes.OverHours);
     }
 
@@ -493,5 +493,23 @@ public sealed class EvaluatorTests
         var input = Everyone(Week, ThreePeople);
 
         Assert.Throws<ArgumentException>(() => Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d0-open", "ana")]));
+    }
+
+    [Fact]
+    public void An_empty_week_costs_the_same_whatever_hours_the_person_wants()
+    {
+        // Hoang, 2026-11-26: Aymen (12 hours wanted, 2 shifts at most) went weeks without a shift while Tony
+        // (30 wanted) had 2. Moving one of Tony's shifts to Aymen must score higher: Aymen's empty week is all of
+        // his target, Tony is short 60 % of a bigger one. Openings only, so fairness stays out of it.
+        var openings = Week.Where(shift => shift.Id.EndsWith("-open", StringComparison.Ordinal)).ToArray();
+        var input = Everyone(openings, [Member("aymen", desired: 12, max: 12), Member("tony", desired: 30)]) with
+        {
+            Rules = Rules with { MaxConsecutiveShifts = null },
+        };
+
+        var tonyHasBoth = Evaluator.Evaluate(input, [On("d0-open", "tony"), On("d1-open", "tony")]);
+        var oneEach = Evaluator.Evaluate(input, [On("d0-open", "tony"), On("d1-open", "aymen")]);
+
+        Assert.True(oneEach.Score > tonyHasBoth.Score);
     }
 }

@@ -43,14 +43,17 @@ public static class Evaluator
     public const int HoursWeight = 10;
 
     /// <summary>
-    /// Times the square of the hours someone is short of their desired hours, in each week (Hoang, 2026-11-25).
-    /// <see cref="HoursWeight"/> alone costs 12 short hours in one week the same as 6 in each of two, so a person
-    /// could work one week and nothing the next. Squared, the even split costs less (36 + 36 against 144), so
-    /// each person's shifts spread over the weeks. Being short never pays, so nobody gets fewer shifts for it,
-    /// and a person who asked for more hours still gets more shifts. Over the target stays only linear: hours
-    /// asked for remain a goal, not a limit (Hoang's choice). Small next to one shift's hours (60 or 70).
+    /// Times the hours someone is short in a week, squared, over their desired weekly hours (Hoang, 2026-11-25
+    /// and 2026-11-26). <see cref="HoursWeight"/> alone costs 12 short hours in one week the same as 6 in each of
+    /// two, so a person could work one week and nothing the next. Squared, the even split costs less, so each
+    /// person's shifts spread over the weeks. Over the target, so an empty week weighs the same for everyone
+    /// next to their own target: someone who may work only 12 hours (2 shifts) and has none gets a shift before
+    /// someone who wants 30 and has 2 gets a third. Counted in plain hours, a person with a low maximum went
+    /// weeks without a shift. Between two people with nothing, the one who wants more still comes first. Being
+    /// short never pays, so nobody gets fewer shifts for it. Over the target stays only linear: hours asked for
+    /// remain a goal, not a limit (Hoang's choice). An empty week of 30 hours costs 900.
     /// </summary>
-    public const int WeeklySpreadWeight = 1;
+    public const int WeeklySpreadWeight = 30;
 
     /// <summary>
     /// Times the square of how many shifts someone is away from their expected openings, and again for
@@ -226,8 +229,11 @@ public static class Evaluator
             foreach (var weekHours in weekly)
             {
                 distance += Math.Abs(weekHours - member.DesiredWeeklyHours);
-                var shortBy = Math.Max(0m, member.DesiredWeeklyHours - weekHours);
-                shortSquared += shortBy * shortBy;
+                if (member.DesiredWeeklyHours > 0)
+                {
+                    var shortBy = Math.Max(0m, member.DesiredWeeklyHours - weekHours);
+                    shortSquared += shortBy * shortBy / member.DesiredWeeklyHours;
+                }
             }
             penalty += (long)Math.Round(distance * HoursWeight, MidpointRounding.AwayFromZero);
             penalty += (long)Math.Round(shortSquared * WeeklySpreadWeight, MidpointRounding.AwayFromZero);

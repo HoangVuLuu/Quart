@@ -860,8 +860,11 @@ BR-012  Get each person as close as possible to their desired weekly hours.
         In each week, not just over the period, and spread evenly over the
         weeks: being short of the target costs more the further short, so 6
         hours short in each of two weeks beats 12 short in one (2026-11-25,
-        after a person worked one week and had nothing the next). The desired
-        hours stay a goal: only the admin's maximum is a limit.
+        after a person worked one week and had nothing the next). The gap is
+        weighed against each person's own target, so someone whose maximum
+        allows only a few hours still gets a shift each week they are free
+        (2026-11-26). The desired hours stay a goal: only the admin's maximum
+        is a limit.
 BR-013  Spread opening shifts fairly, if enabled.
 BR-014  Spread closing shifts fairly, if enabled.
 BR-015  Avoid giving one person both shifts in the same day. Permitted only as
@@ -2257,6 +2260,10 @@ Q-14  Does the derived dark palette (19.3) hold up on a real phone, and does
             period yet", and send availability with notes for everyone. In
             Development the join limit is 100 a minute instead of 10, so the
             demo team can join.  (FR-007)
+2026-11-26  Hoang, from staging: Aymen (12-hour maximum) went weeks without a
+            shift while free. The weekly gap is now the hours short, squared,
+            over the person's target, so an empty week counts as much for
+            someone wanting 12 hours as for someone wanting 30.  (BR-012)
 --------------------------------------------------------------------------------
 18. PROTOTYPE NOTES
 --------------------------------------------------------------------------------
