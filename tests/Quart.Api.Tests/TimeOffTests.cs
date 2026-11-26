@@ -45,7 +45,7 @@ public sealed class TimeOffTests(PostgresFixture postgres)
         Assert.Contains("timeoff.accepted", await team.NotificationTypesAsync(paul));
         var row = await RowAsync(team, paul);
         Assert.True(row["worksShifts"]!.GetValue<bool>());
-        Assert.Equal("2026-11-11", row["timeOff"]!["firstDay"]!.GetValue<string>());
+        Assert.Equal(days[0], row["timeOff"]!["firstDay"]!.GetValue<string>());
         Assert.False(row["timeOff"]!["now"]!.GetValue<bool>());
     }
 
