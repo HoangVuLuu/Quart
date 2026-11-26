@@ -63,7 +63,10 @@ internal static class PublishedScheduleEndpoints
                 shift.StartsAt.ToDateTimeOffset(),
                 shift.Headcount,
                 DraftEndpoints.PartOf(parts[DraftBuilder.Id(shift.Id)]),
+                // By name, so the list stays put when someone is marked (the database returns rows in any order).
                 live.Where(x => x.ShiftId == shift.Id)
+                    .OrderBy(x => names.GetValueOrDefault(x.MembershipId)?.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+                    .ThenBy(x => x.MembershipId)
                     .Select(x => new SchedulePerson(
                         x.MembershipId,
                         // Someone who has left keeps their past shifts, without their name (FR-009).

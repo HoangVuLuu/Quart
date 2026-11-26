@@ -649,6 +649,7 @@ internal static class DraftEndpoints
                 .ToDictionaryAsync(x => x.Key, x => x.Count(), cancellationToken)
             : [];
         var summaries = evaluation.Members.ToDictionary(x => x.MemberId);
+        var nameOf = data.Members.ToDictionary(x => x.MembershipId, x => x.DisplayName);
 
         var shifts = data.Shifts.Select(shift => new DraftShift(
             shift.Id,
@@ -660,7 +661,11 @@ internal static class DraftEndpoints
             shift.Headcount,
             PartOf(parts[DraftBuilder.Id(shift.Id)]),
             shift.Requirements.OrderBy(x => x.Level).Select(x => new DraftRequirement(x.Level, x.MinCount)).ToList(),
-            draft.Where(x => x.ShiftId == shift.Id).Select(x => new DraftAssignment(x.MembershipId, x.IsLocked, x.StartsEarly)).ToList(),
+            // By name, so the list stays put when someone is kept or marked (the database returns rows in any order).
+            draft.Where(x => x.ShiftId == shift.Id)
+                .OrderBy(x => nameOf.GetValueOrDefault(x.MembershipId), StringComparer.CurrentCultureIgnoreCase)
+                .ThenBy(x => x.MembershipId)
+                .Select(x => new DraftAssignment(x.MembershipId, x.IsLocked, x.StartsEarly)).ToList(),
             // Someone working at another workplace then shows as simply not available (FR-094).
             data.Availabilities
                 .Where(x => x.Status == Persistence.Availability.Sent && x.Blocks.Any(b => b.ShiftId == shift.Id)

@@ -73,6 +73,31 @@ public sealed class StartsEarlyTests(PostgresFixture postgres)
         Assert.DoesNotContain(after["people"]!.AsArray(), x => x!["membershipId"]!.GetValue<string>() == nora.MembershipId.ToString());
     }
 
+    [Fact]
+    public async Task Marking_someone_keeps_the_people_of_a_shift_in_the_same_order()
+    {
+        // Hoang, 2026-11-26: tapping the box moved the person to the other place in the list.
+        await using var app = await TestApp.StartAsync(postgres);
+        var team = await Team.CreateAsync(app);
+        var schedule = await team.PublishAsync();
+        var shift = schedule["shifts"]!.AsArray().First(x => x!["people"]!.AsArray().Count >= 2)!;
+        static List<string> Order(JsonNode shift) =>
+            shift["people"]!.AsArray().Select(x => x!["membershipId"]!.GetValue<string>()).ToList();
+        var before = Order(shift);
+
+        var draft = await team.Owner.PostAsync($"{team.Period}/draft/start");
+        var orders = new List<List<string>> { Order(Shift(draft, shift)) };
+        foreach (var membershipId in before)
+        {
+            var marked = await team.Owner.SendAsync(HttpMethod.Put, $"{team.Period}/draft/assignments/{Team.Id(shift)}/{membershipId}/early", new { startsEarly = true });
+            orders.Add(Order(Shift(marked, shift)));
+        }
+        await team.Owner.PostAsync($"{team.Period}/draft/publish", new { confirmed = true });
+        orders.Add(Order(Shift(await team.ScheduleAsync(), shift)));
+
+        Assert.All(orders, order => Assert.Equal(before, order));
+    }
+
     private static JsonNode Shift(JsonNode view, JsonNode shift) =>
         view["shifts"]!.AsArray().Single(x => Team.Id(x!) == Team.Id(shift))!;
 
