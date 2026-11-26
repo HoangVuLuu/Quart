@@ -95,6 +95,10 @@
   --animate-fade-out: fade-out 0.2s ease-in;
   --animate-toast-in: toast-in 0.25s ease-out;
   --animate-toast-out: fade-out 0.2s ease-in;
+  /* Loading (2026-11-25): placeholders wave slowly from left to right, which feels shorter than a blink,
+     and a page's placeholders only appear after a quarter of a second, so a fast load shows nothing. */
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-appear: fade-in 0.2s ease-out 0.25s both;
 
   @keyframes sheet-in {
     from {
@@ -114,6 +118,14 @@
   @keyframes fade-out {
     to {
       opacity: 0;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
     }
   }
   @keyframes toast-in {
@@ -434,4 +446,15 @@
     bottom: 14cqh;
     gap: 5cqw;
   }
+}
+
+/* A loading placeholder: a well with a soft light passing over it (2026-11-25). */
+@utility skeleton-wave {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-surface-3) 0%,
+    var(--color-surface-2) 50%,
+    var(--color-surface-3) 100%
+  );
+  background-size: 200% 100%;
 }

@@ -63,14 +63,18 @@ internal static class PublishedScheduleEndpoints
                 shift.StartsAt.ToDateTimeOffset(),
                 shift.Headcount,
                 DraftEndpoints.PartOf(parts[DraftBuilder.Id(shift.Id)]),
+                // By name, so the list stays put when someone is marked (the database returns rows in any order).
                 live.Where(x => x.ShiftId == shift.Id)
+                    .OrderBy(x => names.GetValueOrDefault(x.MembershipId)?.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+                    .ThenBy(x => x.MembershipId)
                     .Select(x => new SchedulePerson(
                         x.MembershipId,
                         // Someone who has left keeps their past shifts, without their name (FR-009).
                         names.GetValueOrDefault(x.MembershipId)?.DisplayName,
                         // 3.1: levels only for people who manage them.
                         member.Can(Permission.ManageLevels) ? names.GetValueOrDefault(x.MembershipId)?.Level : null,
-                        x.MembershipId == member.MembershipId))
+                        x.MembershipId == member.MembershipId,
+                        x.StartsEarly))
                     .OrderBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase)
                     .ToList(),
                 shift.Note,
@@ -99,7 +103,8 @@ public sealed record ScheduleShift(
     string? Name = null);
 
 /// <param name="Name">Null for someone who has left the workplace.</param>
-public sealed record SchedulePerson(Guid MembershipId, string? Name, int? Level, bool IsMe);
+/// <param name="StartsEarly">Starts earlier than the shift: the name shows in red (Hoang, 2026-11-25).</param>
+public sealed record SchedulePerson(Guid MembershipId, string? Name, int? Level, bool IsMe, bool StartsEarly = false);
 
 /// <summary>
 /// The published schedule as the Marketplace module changes it (M7). Each change locks the shift rows it
@@ -157,11 +162,14 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
             return LedgerResult.Taken;
         }
 
+        // The "starts earlier" mark belongs to the place on the shift (Hoang, 2026-11-26): whoever takes it over
+        // from someone marked is marked too.
+        var early = from is { } marked && holders.Any(x => x.MembershipId == marked && x.StartsEarly);
         if (from is { } leaving)
         {
             await RemoveAsync(shiftId, leaving, cancellationToken);
         }
-        await AddAsync(shift, to, source, cancellationToken);
+        await AddAsync(shift, to, source, cancellationToken, early);
         return await CommitAsync(shift.PeriodId, transaction, cancellationToken);
     }
 
@@ -203,8 +211,10 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
         // Both people leave before either arrives, so the no-double-booking rule sees the final state only.
         await RemoveAsync(shiftA, a.MembershipId, cancellationToken);
         await RemoveAsync(shiftB, b.MembershipId, cancellationToken);
-        await AddAsync(first, b, Assignment.Trade, cancellationToken);
-        await AddAsync(second, a, Assignment.Trade, cancellationToken);
+        // Each takes the other's place, with its "starts earlier" mark (2026-11-26).
+        bool Early(Guid shiftId, Guid membershipId) => holders.Any(x => x.ShiftId == shiftId && x.MembershipId == membershipId && x.StartsEarly);
+        await AddAsync(first, b, Assignment.Trade, cancellationToken, Early(shiftA, a.MembershipId));
+        await AddAsync(second, a, Assignment.Trade, cancellationToken, Early(shiftB, b.MembershipId));
         var result = await CommitAsync(first.PeriodId, transaction, cancellationToken);
         if (result == LedgerResult.Applied && second.PeriodId != first.PeriodId)
         {
@@ -234,7 +244,7 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
         // The published row and the draft's copy go together.
         db.Assignments.Where(x => x.ShiftId == shiftId && x.MembershipId == membershipId).ExecuteDeleteAsync(cancellationToken);
 
-    private async Task AddAsync(Shift shift, LedgerPerson person, string source, CancellationToken cancellationToken)
+    private async Task AddAsync(Shift shift, LedgerPerson person, string source, CancellationToken cancellationToken, bool startsEarly = false)
     {
         var inDraft = await db.Assignments.AnyAsync(x => x.ShiftId == shift.Id && x.MembershipId == person.MembershipId && x.IsDraft, cancellationToken);
         foreach (var draft in inDraft ? new[] { false } : [false, true])
@@ -250,6 +260,7 @@ internal sealed class ScheduleLedger(SchedulingDb db, IWorkplaceDirectory direct
                 Source = source,
                 StartsAt = shift.StartsAt,
                 EndsAt = shift.EndsAt,
+                StartsEarly = startsEarly,
             });
         }
     }
@@ -339,5 +350,35 @@ internal static class ScheduleHistory
             Snapshot = DraftEndpoints.Snapshot(live),
         });
         await db.SaveChangesAsync(cancellationToken);
+    }
+}
+
+/// <summary>
+/// Accepted time off (BL-01, Hoang 2026-11-25): the person comes off every shift they hold on those days that has not
+/// started, in the published schedule and the draft, so the places open. Each published period that changes gets a
+/// new version (FR-164). Running it twice changes nothing.
+/// </summary>
+internal sealed class ReleaseShiftsForTimeOff(SchedulingDb db, IClock clock) : ITimeOffHandler
+{
+    public async Task<IReadOnlyList<Guid>> ReleaseAsync(Guid workplaceId, Guid membershipId, DayRange days, CancellationToken cancellationToken)
+    {
+        var now = clock.GetCurrentInstant();
+        var first = days.First;
+        var last = days.Last;
+        var periods = db.Periods.Where(x => x.WorkplaceId == workplaceId).Select(x => x.Id);
+        var shiftIds = db.Shifts
+            .Where(x => periods.Contains(x.PeriodId) && x.Date >= first && (last == null || x.Date <= last))
+            .Select(x => x.Id);
+        var released = db.Assignments.Where(x => x.MembershipId == membershipId && x.StartsAt > now && shiftIds.Contains(x.ShiftId));
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var live = await released.Where(x => !x.IsDraft).Select(x => new { x.ShiftId, x.PeriodId }).ToListAsync(cancellationToken);
+        await released.ExecuteDeleteAsync(cancellationToken);
+        foreach (var periodId in live.Select(x => x.PeriodId).Distinct().Order())
+        {
+            await ScheduleHistory.BumpAsync(db, periodId, now, cancellationToken);
+        }
+        await transaction.CommitAsync(cancellationToken);
+        return live.Select(x => x.ShiftId).Distinct().ToList();
     }
 }

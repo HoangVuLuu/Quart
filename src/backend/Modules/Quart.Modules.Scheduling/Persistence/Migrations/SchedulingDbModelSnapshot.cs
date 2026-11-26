@@ -65,6 +65,10 @@ namespace Quart.Modules.Scheduling.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("starts_at");
 
+                    b.Property<bool>("StartsEarly")
+                        .HasColumnType("boolean")
+                        .HasColumnName("starts_early");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");

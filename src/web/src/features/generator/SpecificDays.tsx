@@ -8,7 +8,7 @@ import { messageKeyFor } from '../../i18n/errors';
 import { api, unwrap, type Schemas } from '../../lib/api/client';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
-import { Skeleton } from '../../ui/Skeleton';
+import { CardSkeleton, Loading } from '../../ui/Skeleton';
 import { useToast } from '../../ui/toast-context';
 import { DayList } from '../day-editor/DayList';
 import { DayView } from '../day-editor/DayView';
@@ -50,7 +50,9 @@ export function SpecificDaysLayout() {
   if (!setup.data || !changes.data) {
     return (
       <SubPage backTo="/generator" title={t('dayEditor.title')}>
-        <Skeleton className="h-96" />
+        <Loading>
+          <CardSkeleton lines={6} />
+        </Loading>
       </SubPage>
     );
   }

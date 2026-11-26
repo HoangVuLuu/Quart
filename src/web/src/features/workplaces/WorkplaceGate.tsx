@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { Navigate, Outlet } from 'react-router';
 import { ApiError, api, unwrap } from '../../lib/api/client';
-import { Skeleton } from '../../ui/Skeleton';
+import { LaunchScreen } from '../../app/LaunchScreen';
 import {
   rememberedWorkplace,
   rememberWorkplace,
@@ -42,13 +42,8 @@ export function WorkplaceGate() {
     return <Navigate to="/workplaces" replace />;
   }
   if (query.error) throw query.error;
-  if (!query.data) {
-    return (
-      <div className="mx-auto max-w-md p-6">
-        <Skeleton className="h-40" />
-      </div>
-    );
-  }
+  // Still part of starting the app: the launch screen stays until the workplace is known (2026-11-25).
+  if (!query.data) return <LaunchScreen />;
   return (
     <WorkplaceProvider view={query.data}>
       <Outlet />

@@ -196,6 +196,15 @@
       "name_required": "Enter a name.",
       "owner_cannot_leave": "The owner cannot leave. Transfer ownership first.",
       "time_zone_unknown": "Unknown time zone."
+    },
+    "timeoff": {
+      "not_staff": "Managers turn their own shifts off on the team page.",
+      "already_open": "You already have a time-off request.",
+      "first_day_past": "The first day can’t be in the past.",
+      "last_before_first": "The last day comes after the first.",
+      "too_long": "At most a year. For longer, choose Undetermined.",
+      "reason_too_long": "At most 300 characters.",
+      "not_pending": "This request was already answered."
     }
   },
   "shell": {
@@ -248,7 +257,8 @@
       "with": "Working with you",
       "alone": "Nobody else on this shift.",
       "openSpots_one": "{{count}} open spot",
-      "openSpots_other": "{{count}} open spots"
+      "openSpots_other": "{{count}} open spots",
+      "onShift": "On this shift"
     },
     "ready": {
       "title": "Ready to build?",
@@ -281,7 +291,8 @@
       "keep": "Yes, keep them",
       "clear": "Clear them and open period",
       "back": "Return"
-    }
+    },
+    "startsEarly": "starts earlier"
   },
   "availability": {
     "title": "Availability",
@@ -306,7 +317,9 @@
     "sendAgain": "Send again",
     "due": "Due {{when}}",
     "wanted": "Hours you want per week",
-    "wantedHint": "For every week of this period."
+    "wantedHint": "For every week of this period.",
+    "timeOff": "Time off",
+    "timeOffHint": "Shifts marked “Time off” fall on your accepted time off, so they can’t be picked."
   },
   "ui": {
     "close": "Close",
@@ -316,7 +329,8 @@
     "increase": "Increase",
     "notification": "Notifications",
     "refreshing": "Refreshing…",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "loading": "Loading…"
   },
   "gallery": {
     "context": "For developers",
@@ -756,7 +770,8 @@
       "addNamed": "Add {{name}}",
       "available": "Available",
       "unavailable": "Not available",
-      "noAnswer": "No answer"
+      "noAnswer": "No answer",
+      "startsEarly": "{{name}} starts earlier"
     },
     "reuse": {
       "button": "Reuse a past schedule",
@@ -766,6 +781,15 @@
       "done": "Copied. The issues show who is not available this time.",
       "weeks_one": "{{count}} week",
       "weeks_other": "{{count}} weeks"
+    },
+    "generating": "Generating…",
+    "dashboard": {
+      "open": "Dashboard",
+      "title": "Dashboard",
+      "shifts_one": "{{count}} shift",
+      "shifts_other": "{{count}} shifts",
+      "hours": "{{hours}} h",
+      "hoursOf": "{{hours}} h of {{wanted}} h wanted"
     }
   },
   "teamAvailability": {
@@ -810,6 +834,14 @@
     "social": {
       "instagram": "{{name}} on Instagram",
       "facebook": "{{name}} on Facebook"
+    },
+    "timeOff": {
+      "until": "Time off until {{day}}",
+      "open": "Time off, no end date",
+      "planned": "Time off {{days}}",
+      "from": "Time off from {{day}}",
+      "sheetUntil": "On time off until {{day}}. Turning shifts back on now ends the time off.",
+      "sheetOpen": "On time off with no end date. Turning shifts back on ends it."
     }
   },
   "marketplace": {
@@ -924,7 +956,7 @@
         "applied": "{{count}} trades are done",
         "rejected": "{{count}} trades were not applied",
         "expired": "{{count}} trades expired",
-        "cancelled": "{{count}} trades were cancelled: a manager changed the hours"
+        "cancelled": "{{count}} trades were cancelled: a manager changed their shifts"
       },
       "period": {
         "cancelled": "{{count}} periods were cancelled"
@@ -970,10 +1002,16 @@
         "applied": "The trade for {{date}}, {{start}}–{{end}} is done",
         "rejected": "The trade for {{date}}, {{start}}–{{end}} was not applied",
         "expired": "The trade for {{date}}, {{start}}–{{end}} expired",
-        "cancelled": "The trade for {{date}}, {{start}}–{{end}} was cancelled: a manager changed the shift's hours"
+        "cancelled": "The trade for {{date}}, {{start}}–{{end}} was cancelled: a manager changed the shift"
       },
       "period": {
         "cancelled": "The period starting {{periodStart}} was cancelled"
+      },
+      "timeoff": {
+        "requested": "{{name}} asks for time off: {{days}}",
+        "accepted": "Your time off is accepted: {{days}}",
+        "refused": "Your time off was refused: {{days}}",
+        "ended": "A manager turned your shifts back on, so your time off has ended"
       }
     },
     "markOneRead": "Mark as read: {{text}}"
@@ -1253,5 +1291,46 @@
     "liveTitle": "Save and tell the team?",
     "liveText": "The changes go live now. The people on a changed or removed shift get an alert.",
     "liveConfirm": "Save"
+  },
+  "timeOff": {
+    "title": "Request time off",
+    "context": "A manager accepts or refuses it. You get an alert either way.",
+    "firstDay": "First day off",
+    "lastDay": "Last day off",
+    "pickDay": "Pick a day.",
+    "undetermined": "Undetermined",
+    "undeterminedText": "You stay off until a manager turns your shifts back on.",
+    "reason": "Reason (optional)",
+    "reasonHint": "Only managers see it.",
+    "send": "Send request",
+    "sent": "Request sent",
+    "days": "{{first}} to {{last}}",
+    "daysOpen": "From {{first}}, no end date",
+    "summary_one": "{{days}} · {{count}} day.",
+    "summary_other": "{{days}} · {{count}} days.",
+    "summaryOpen": "{{days}}, until a manager puts you back.",
+    "leave": {
+      "title": "Leave without sending?",
+      "text": "Your time-off request isn’t sent yet.",
+      "stay": "Keep editing",
+      "leave": "Leave without sending"
+    },
+    "home": {
+      "request": "Request time off",
+      "pending": "Time off requested",
+      "waiting": "Waiting for a manager",
+      "cancel": "Cancel request",
+      "accepted": "Time off coming up",
+      "now": "You’re on time off",
+      "acceptedChip": "Accepted"
+    },
+    "alerts": {
+      "title": "Time off",
+      "asks": "{{name}} asks for time off",
+      "shifts_one": "Works {{count}} shift in those days",
+      "shifts_other": "Works {{count}} shifts in those days",
+      "accept": "Accept",
+      "refuse": "Refuse"
+    }
   }
 }

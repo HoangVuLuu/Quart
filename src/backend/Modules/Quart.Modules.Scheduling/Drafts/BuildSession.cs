@@ -132,6 +132,7 @@ internal static class BuildSession
             UserId = x.UserId,
             IsDraft = true,
             IsLocked = x.Locked,
+            StartsEarly = x.StartsEarly,
             Source = x.Source,
             StartsAt = shifts[x.ShiftId].StartsAt,
             EndsAt = shifts[x.ShiftId].EndsAt,
@@ -141,8 +142,9 @@ internal static class BuildSession
     /// <param name="Notes">The manager's shift notes (FR-145); null in a copy saved before they existed.</param>
     private sealed record Saved(List<Row> Rows, Dictionary<Guid, string>? Notes);
 
-    private sealed record Row(Guid ShiftId, Guid MembershipId, Guid UserId, bool Locked, string Source)
+    /// <param name="StartsEarly">False in a copy saved before it existed (2026-11-25).</param>
+    private sealed record Row(Guid ShiftId, Guid MembershipId, Guid UserId, bool Locked, string Source, bool StartsEarly = false)
     {
-        public static Row Of(Assignment x) => new(x.ShiftId, x.MembershipId, x.UserId, x.IsLocked, x.Source);
+        public static Row Of(Assignment x) => new(x.ShiftId, x.MembershipId, x.UserId, x.IsLocked, x.Source, x.StartsEarly);
     }
 }

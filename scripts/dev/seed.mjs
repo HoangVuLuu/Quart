@@ -1,50 +1,35 @@
-// Fills a fresh local database with a small Presotea, so the whole loop can be tried without creating
-// ten accounts by hand: an owner, eight staff, the two shifts a day, and a period collecting availability.
+// Fills a fresh local database with the same Presotea team as staging, so the whole loop can be tried without
+// creating accounts by hand: the platform admin, Philippe (owner) and 14 staff, two shifts a day, and a period
+// where everyone has sent their availability (with notes).
 // It only talks to the app the way a browser does, plus Mailpit to "open" the verification emails.
 //
-//   node scripts/dev/seed.mjs            (the app must be running: scripts/dev/start.sh)
+//   node scripts/dev/seed.mjs            (once, on an empty database; the app must be running: scripts/dev/start.sh)
 //
 // Never run it against anything but your own machine: the accounts share one well-known password.
-import { spawnSync } from 'node:child_process';
-
-const api = process.env.QUART_API ?? 'http://localhost:5080';
-const mailpit = process.env.QUART_MAILPIT ?? 'http://localhost:8025';
-const password = 'tapioca-pearls-4-everyone';
-
-/** One browser: its own cookies, and the anti-forgery header on every request (AD-025). */
-class Browser {
-  cookies = new Map([['XSRF-TOKEN', 'seed']]);
-
-  async send(method, path, body) {
-    const response = await fetch(`${api}${path}`, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-XSRF-TOKEN': 'seed',
-        Cookie: [...this.cookies].map(([name, value]) => `${name}=${value}`).join('; '),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    for (const cookie of response.headers.getSetCookie()) {
-      const [pair] = cookie.split(';');
-      this.cookies.set(pair.slice(0, pair.indexOf('=')), pair.slice(pair.indexOf('=') + 1));
-    }
-    const text = await response.text();
-    if (!response.ok) throw new Error(`${method} ${path} answered ${response.status}: ${text}`);
-    return text ? JSON.parse(text) : undefined;
-  }
-
-  get = (path) => this.send('GET', path);
-  post = (path, body = {}) => this.send('POST', path, body);
-}
+import { spawnSync } from "node:child_process";
+import {
+  admin,
+  Browser,
+  mailpit,
+  password,
+  team,
+  workplaceName,
+} from "./demo.mjs";
+import { fillAvailability } from "./fill-availability.mjs";
 
 /** The token in the link of the newest email to that address, read from Mailpit. */
 async function tokenFor(email) {
   for (let attempt = 0; attempt < 20; attempt++) {
-    const found = await (await fetch(`${mailpit}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`)).json();
+    const found = await (
+      await fetch(
+        `${mailpit}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
+      )
+    ).json();
     for (const summary of found.messages ?? []) {
-      const message = await (await fetch(`${mailpit}/api/v1/message/${summary.ID}`)).json();
-      const match = /token=([A-Za-z0-9_-]+)/.exec(message.Text ?? '');
+      const message = await (
+        await fetch(`${mailpit}/api/v1/message/${summary.ID}`)
+      ).json();
+      const match = /token=([A-Za-z0-9_-]+)/.exec(message.Text ?? "");
       if (match) return match[1];
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
@@ -54,11 +39,18 @@ async function tokenFor(email) {
   );
 }
 
-async function account(fullName, email, language = 'fr') {
+async function account({ fullName, email, language }) {
   const browser = new Browser();
-  await browser.post('/api/auth/sign-up', { fullName, email, password, language });
-  await browser.post('/api/auth/verify-email', { token: await tokenFor(email) });
-  await browser.post('/api/auth/sign-in', { email, password });
+  await browser.post("/api/auth/sign-up", {
+    fullName,
+    email,
+    password,
+    language,
+  });
+  await browser.post("/api/auth/verify-email", {
+    token: await tokenFor(email),
+  });
+  await browser.post("/api/auth/sign-in", { email, password });
   return browser;
 }
 
@@ -69,85 +61,109 @@ function nextMonday() {
   return day.toISOString().slice(0, 10);
 }
 
-const staff = [
-  ['Amélie Tremblay', 'amelie@demo.quart', 3, 26],
-  ['Marc-Olivier Roy', 'marc@demo.quart', 3, 26],
-  ['Jasmine Khalil', 'jasmine@demo.quart', 3, 24],
-  ['Sophie Lapointe', 'sophie@demo.quart', 2, 20],
-  ['Kevin Tran', 'kevin@demo.quart', 2, 20],
-  ['Noah Bergeron', 'noah@demo.quart', 2, 16],
-  ['Léa Bouchard', 'lea@demo.quart', 1, 12],
-  ['Liam O’Connor', 'liam@demo.quart', 1, 9],
-];
-
-console.log('Creating the platform admin and the owner…');
-const admin = await account('Hoang Vu Luu', 'hoang@demo.quart', 'en');
-const granted = spawnSync(
-  'dotnet',
-  ['run', '--no-build', '--project', 'src/backend/Quart.Api', '--launch-profile', 'http', '--', 'grant-platform-admin', 'hoang@demo.quart'],
-  { stdio: 'inherit', cwd: new URL('../..', import.meta.url) },
-);
-if (granted.status !== 0) throw new Error('Could not make hoang@demo.quart the platform admin.');
-
-const owner = await account('Philippe Nguyen', 'philippe@demo.quart');
-const created = await admin.post('/api/workplaces', { name: 'Presotea Montmorency', address: 'Laval, QC', timeZone: 'America/Toronto' });
-await owner.post('/api/workplaces/owner-invitations/accept', { token: created.invitationToken });
-const workplace = `/api/workplaces/${created.workplaceId}`;
-const view = await owner.get(workplace);
-// FR-036: Philippe works shifts too.
-await owner.send('PATCH', `${workplace}/members/${view.me.membershipId}`, {
-  level: 3, worksShifts: true,
-});
-
-console.log('Saving the two shifts a day (2 people, at least one level 3)…');
-const block = (start, end) => ({
-  id: null, days: [1, 2, 3, 4, 5, 6, 7], start, end, headcount: 2, requirements: [{ level: 3, minCount: 1 }], conflicts: [],
-});
-await owner.send('PUT', `${workplace}/generator`, {
-  periodWeeks: 2, maxConsecutiveShifts: 3, openingFairness: true, closingFairness: true,
-  blocks: [block('10:00', '16:00'), block('16:00', '23:00')],
-});
-
-console.log('Staff join with the code…');
-const people = [];
-for (const [fullName, email, level, desiredWeeklyHours] of staff) {
-  const browser = await account(fullName, email);
-  await browser.post('/api/workplaces/join', { code: view.joinCode });
-  const membershipId = (await browser.get(workplace)).me.membershipId;
-  await owner.send('PATCH', `${workplace}/members/${membershipId}`, {
-    level, worksShifts: true,
-  });
-  people.push({ browser, email, desiredWeeklyHours });
-}
-
-console.log('Opening a two-week period; everyone but Liam sends their availability…');
-// FR-091: availability is due 48 hours before the period starts, the Saturday at 00:00. The length comes
-// from the generator rules saved above (FR-090).
-const startDate = nextMonday();
-const dueDate = new Date(Date.parse(`${startDate}T00:00:00Z`) - 2 * 86_400_000).toISOString().slice(0, 10);
-const period = await owner.post(`${workplace}/periods`, { startDate, dueDate, dueTime: '00:00' });
-const availability = `${workplace}/periods/${period.id}/availability/me`;
-for (const { browser, email, desiredWeeklyHours } of [...people, { browser: owner, email: 'philippe@demo.quart', desiredWeeklyHours: 26 }]) {
-  if (email === 'liam@demo.quart') continue;
-  const shifts = (await browser.get(availability)).shifts;
-  // Léa only opens; everyone else can work anything except one day off, different for each.
-  const dayOff = people.findIndex((person) => person.email === email) + 1;
-  const can = shifts.filter((shift) =>
-    email === 'lea@demo.quart' ? shift.start === '10:00' : new Date(`${shift.date}T00:00:00Z`).getUTCDay() !== dayOff % 7,
+try {
+  console.log("Creating the platform admin and the owner…");
+  const hoang = await account(admin);
+  const granted = spawnSync(
+    "dotnet",
+    [
+      "run",
+      "--no-build",
+      "--project",
+      "src/backend/Quart.Api",
+      "--launch-profile",
+      "http",
+      "--",
+      "grant-platform-admin",
+      admin.email,
+    ],
+    { stdio: "inherit", cwd: new URL("../..", import.meta.url) },
   );
-  // The hours wanted per week come with the availability (BR-032).
-  await browser.post(`${availability}/send`, { shiftIds: can.map((shift) => shift.id), desiredWeeklyHours });
-}
-await people[1].browser.post(`${availability}/notes`, { body: 'Examens la 2e semaine, soirs seulement si possible.' });
+  if (granted.status !== 0)
+    throw new Error(`Could not make ${admin.email} the platform admin.`);
 
-console.log(`
+  const philippe = team.find((x) => x.owner);
+  const owner = await account(philippe);
+  const created = await hoang.post("/api/workplaces", {
+    name: workplaceName,
+    address: "Laval, QC",
+    timeZone: "America/Toronto",
+  });
+  await owner.post("/api/workplaces/owner-invitations/accept", {
+    token: created.invitationToken,
+  });
+  const workplace = `/api/workplaces/${created.workplaceId}`;
+  const view = await owner.get(workplace);
+  // FR-036: Philippe works shifts too.
+  await owner.send("PATCH", `${workplace}/members/${view.me.membershipId}`, {
+    level: philippe.level,
+    worksShifts: true,
+  });
+
+  console.log("Saving the two shifts a day (2 people, at least one level 3)…");
+  const block = (start, end) => ({
+    id: null,
+    days: [1, 2, 3, 4, 5, 6, 7],
+    start,
+    end,
+    headcount: 2,
+    requirements: [{ level: 3, minCount: 1 }],
+    conflicts: [],
+  });
+  await owner.send("PUT", `${workplace}/generator`, {
+    periodWeeks: 2,
+    maxConsecutiveShifts: 3,
+    openingFairness: true,
+    closingFairness: true,
+    blocks: [block("10:00", "16:00"), block("16:00", "23:00")],
+  });
+
+  console.log("The team joins with the code…");
+  for (const person of team.filter((x) => !x.owner)) {
+    const browser = await account(person);
+    await browser.post("/api/workplaces/join", { code: view.joinCode });
+    const membershipId = (await browser.get(workplace)).me.membershipId;
+    await owner.send("PATCH", `${workplace}/members/${membershipId}`, {
+      level: person.level,
+      worksShifts: true,
+    });
+  }
+
+  console.log("Opening a two-week period…");
+  // FR-091: availability is due 48 hours before the period starts, the Saturday at 00:00. The length comes
+  // from the generator rules saved above (FR-090).
+  const startDate = nextMonday();
+  const dueDate = new Date(
+    Date.parse(`${startDate}T00:00:00Z`) - 2 * 86_400_000,
+  )
+    .toISOString()
+    .slice(0, 10);
+  await owner.post(`${workplace}/periods`, {
+    startDate,
+    dueDate,
+    dueTime: "00:00",
+  });
+
+  console.log("Everyone sends their availability…");
+  await fillAvailability();
+
+  console.log(`
 Done. Everyone's password is:  ${password}
 
-  philippe@demo.quart   owner (level 3, works shifts)   -> press Generate on the Schedule tab
-  sophie@demo.quart     barista, level 2                -> staff view
-  liam@demo.quart       barista, level 1                -> has not sent availability yet
-  amelie@ marc@ jasmine@ kevin@ noah@ lea@demo.quart    -> the rest of the team
+  philippe@demo.quart   owner (level 3, works shifts)   -> Schedule tab -> Generate schedule
+  kymanh@ jay@ noemie@ aymen@demo.quart                 -> level 3 (Kym-Anh sees French)
+  tony@ cecilia@ lili@ wendy@ jason@demo.quart          -> level 2 (Tony sees French)
+  emilie@ joseph@ cedric@ selma@ ayman@demo.quart       -> level 1
   hoang@demo.quart      platform admin (creates workplaces, member of none)
 
 Join code for a new account of your own: ${view.joinCode}
 `);
+} catch (error) {
+  console.error(`\n${error.message}`);
+  if (/breach|pwned|compromised/i.test(error.message)) {
+    console.error(
+      "The app refused the demo password as leaked. Change `password` in scripts/dev/demo.mjs.",
+    );
+  }
+  process.exit(1);
+}

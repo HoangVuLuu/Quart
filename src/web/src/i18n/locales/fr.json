@@ -196,6 +196,15 @@
       "name_required": "Entre un nom.",
       "owner_cannot_leave": "Le propriétaire ne peut pas quitter. Transfère d’abord la propriété.",
       "time_zone_unknown": "Fuseau horaire inconnu."
+    },
+    "timeoff": {
+      "not_staff": "Les gérants désactivent leurs propres quarts dans la page d’équipe.",
+      "already_open": "Tu as déjà une demande de congé.",
+      "first_day_past": "Le premier jour ne peut pas être passé.",
+      "last_before_first": "Le dernier jour vient après le premier.",
+      "too_long": "Au plus un an. Pour plus long, choisis Indéterminé.",
+      "reason_too_long": "Au plus 300 caractères.",
+      "not_pending": "Cette demande a déjà reçu une réponse."
     }
   },
   "shell": {
@@ -248,7 +257,8 @@
       "with": "Avec toi",
       "alone": "Personne d’autre sur ce quart.",
       "openSpots_one": "{{count}} place libre",
-      "openSpots_other": "{{count}} places libres"
+      "openSpots_other": "{{count}} places libres",
+      "onShift": "Sur ce quart"
     },
     "ready": {
       "title": "Prêt à créer l’horaire?",
@@ -281,7 +291,8 @@
       "keep": "Oui, les garder",
       "clear": "Les effacer et ouvrir la période",
       "back": "Retour"
-    }
+    },
+    "startsEarly": "commence plus tôt"
   },
   "availability": {
     "title": "Disponibilités",
@@ -306,7 +317,9 @@
     "sendAgain": "Envoyer à nouveau",
     "due": "À envoyer d’ici {{when}}",
     "wanted": "Heures voulues par semaine",
-    "wantedHint": "Pour chaque semaine de cette période."
+    "wantedHint": "Pour chaque semaine de cette période.",
+    "timeOff": "Congé",
+    "timeOffHint": "Les quarts marqués « Congé » tombent pendant ton congé accepté, donc ils ne peuvent pas être choisis."
   },
   "ui": {
     "close": "Fermer",
@@ -316,7 +329,8 @@
     "increase": "Augmenter",
     "notification": "Notifications",
     "refreshing": "Actualisation…",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "loading": "Chargement…"
   },
   "gallery": {
     "context": "Pour l’équipe de dev",
@@ -756,7 +770,8 @@
       "addNamed": "Ajouter {{name}}",
       "available": "Disponible",
       "unavailable": "Pas disponible",
-      "noAnswer": "Pas de réponse"
+      "noAnswer": "Pas de réponse",
+      "startsEarly": "{{name}} commence plus tôt"
     },
     "reuse": {
       "button": "Réutiliser un horaire passé",
@@ -766,6 +781,15 @@
       "done": "Copié. Les problèmes montrent qui n’est pas disponible cette fois.",
       "weeks_one": "{{count}} semaine",
       "weeks_other": "{{count}} semaines"
+    },
+    "generating": "Génération…",
+    "dashboard": {
+      "open": "Tableau de bord",
+      "title": "Tableau de bord",
+      "shifts_one": "{{count}} quart",
+      "shifts_other": "{{count}} quarts",
+      "hours": "{{hours}} h",
+      "hoursOf": "{{hours}} h sur {{wanted}} h voulues"
     }
   },
   "teamAvailability": {
@@ -810,6 +834,14 @@
     "social": {
       "instagram": "{{name}} sur Instagram",
       "facebook": "{{name}} sur Facebook"
+    },
+    "timeOff": {
+      "until": "En congé jusqu’au {{day}}",
+      "open": "En congé, sans date de fin",
+      "planned": "Congé {{days}}",
+      "from": "Congé à partir du {{day}}",
+      "sheetUntil": "En congé jusqu’au {{day}}. Réactiver les quarts maintenant termine le congé.",
+      "sheetOpen": "En congé sans date de fin. Réactiver les quarts le termine."
     }
   },
   "marketplace": {
@@ -924,7 +956,7 @@
         "applied": "{{count}} échanges sont faits",
         "rejected": "{{count}} échanges n’ont pas été appliqués",
         "expired": "{{count}} échanges ont expiré",
-        "cancelled": "{{count}} échanges ont été annulés : un gérant a changé les heures"
+        "cancelled": "{{count}} échanges ont été annulés : un gérant a modifié leurs quarts"
       },
       "period": {
         "cancelled": "{{count}} périodes ont été annulées"
@@ -970,10 +1002,16 @@
         "applied": "L’échange du {{date}}, {{start}}–{{end}} est fait",
         "rejected": "L’échange du {{date}}, {{start}}–{{end}} n’a pas été appliqué",
         "expired": "L’échange du {{date}}, {{start}}–{{end}} a expiré",
-        "cancelled": "L’échange du {{date}}, {{start}}–{{end}} a été annulé : un gérant a changé les heures du quart"
+        "cancelled": "L’échange du {{date}}, {{start}}–{{end}} a été annulé : un gérant a modifié le quart"
       },
       "period": {
         "cancelled": "La période du {{periodStart}} a été annulée"
+      },
+      "timeoff": {
+        "requested": "{{name}} demande un congé : {{days}}",
+        "accepted": "Ton congé est accepté : {{days}}",
+        "refused": "Ton congé a été refusé : {{days}}",
+        "ended": "Un gérant a réactivé tes quarts, donc ton congé est terminé"
       }
     },
     "markOneRead": "Marquer comme lu : {{text}}"
@@ -1253,5 +1291,46 @@
     "liveTitle": "Enregistrer et aviser l’équipe?",
     "liveText": "Les changements s’appliquent maintenant. Les personnes sur un quart changé ou retiré reçoivent une alerte.",
     "liveConfirm": "Enregistrer"
+  },
+  "timeOff": {
+    "title": "Demander un congé",
+    "context": "Un gérant l’accepte ou le refuse. Tu reçois une alerte dans les deux cas.",
+    "firstDay": "Premier jour de congé",
+    "lastDay": "Dernier jour de congé",
+    "pickDay": "Choisis un jour.",
+    "undetermined": "Indéterminé",
+    "undeterminedText": "Tu restes en congé jusqu’à ce qu’un gérant réactive tes quarts.",
+    "reason": "Raison (facultatif)",
+    "reasonHint": "Seuls les gérants la voient.",
+    "send": "Envoyer la demande",
+    "sent": "Demande envoyée",
+    "days": "Du {{first}} au {{last}}",
+    "daysOpen": "À partir du {{first}}, sans date de fin",
+    "summary_one": "{{days}} · {{count}} jour.",
+    "summary_other": "{{days}} · {{count}} jours.",
+    "summaryOpen": "{{days}}, jusqu’à ce qu’un gérant te remette à l’horaire.",
+    "leave": {
+      "title": "Quitter sans envoyer?",
+      "text": "Ta demande de congé n’est pas encore envoyée.",
+      "stay": "Continuer",
+      "leave": "Quitter sans envoyer"
+    },
+    "home": {
+      "request": "Demander un congé",
+      "pending": "Congé demandé",
+      "waiting": "En attente d’un gérant",
+      "cancel": "Annuler la demande",
+      "accepted": "Congé à venir",
+      "now": "Tu es en congé",
+      "acceptedChip": "Accepté"
+    },
+    "alerts": {
+      "title": "Congés",
+      "asks": "{{name}} demande un congé",
+      "shifts_one": "Travaille {{count}} quart pendant ces jours",
+      "shifts_other": "Travaille {{count}} quarts pendant ces jours",
+      "accept": "Accepter",
+      "refuse": "Refuser"
+    }
   }
 }

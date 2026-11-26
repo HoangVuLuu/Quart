@@ -21,6 +21,11 @@ export function destinationOf(type: string, parameters: Readonly<Record<string, 
     case 'shift.unclaimed':
     case 'shift.unclaimed_mine':
       return '/trade';
+    // BL-01: the person's answer shows at the bottom of Home.
+    case 'timeoff.accepted':
+    case 'timeoff.refused':
+    case 'timeoff.ended':
+      return '/';
     case 'availability.sent':
     case 'availability.note_added':
       return periodId && membershipId ? `/availability/people/${periodId}/${membershipId}` : null;

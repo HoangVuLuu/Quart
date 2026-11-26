@@ -44,6 +44,41 @@ public sealed class ScheduleGeneratorTests
         Assert.Equal([new Assignment("mon-open", "ben")], generator.Generate(input).Assignments);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void Spreads_each_persons_shifts_evenly_over_the_weeks(int seed)
+    {
+        // Hoang, 2026-11-25: someone worked one week and had nothing the next while available. Four weeks, an
+        // opening and a closing every day for two people, ten people asking 6 to 30 hours: each person's weeks
+        // differ by one shift at most, and nobody who can work has a week with nothing (before: "1 0 1 0").
+        var shifts = new List<GeneratorShift>();
+        var first = new DateOnly(2026, 10, 5);
+        for (var day = 0; day < 28; day++)
+        {
+            var date = first.AddDays(day).ToString("yyyy-MM-dd");
+            shifts.Add(Shift($"o{day:00}", date, "10:00", "16:00"));
+            shifts.Add(Shift($"c{day:00}", date, "16:00", "22:00", blockId: "closing"));
+        }
+        var desired = new decimal[] { 30, 30, 24, 24, 20, 20, 12, 12, 12, 6 };
+        var people = desired.Select((hours, index) => Member($"p{index}", level: 3, desired: hours, max: hours + 6)).ToList();
+        var all = shifts.Select(shift => shift.Id).ToArray();
+        var input = Input(shifts, people, people.Select(person => Available(person.Id, all)).ToList(), seed: seed,
+            rules: new GeneratorRules(MaxConsecutiveShifts: 3, OpeningFairness: true, ClosingFairness: true));
+
+        var assignments = generator.Generate(input).Assignments;
+
+        foreach (var person in people)
+        {
+            var weeks = Enumerable.Range(0, 4)
+                .Select(week => assignments.Count(x => x.MemberId == person.Id && int.Parse(x.ShiftId[1..]) / 7 == week))
+                .ToList();
+            Assert.True(weeks.Max() - weeks.Min() <= 1, $"{person.Id}: {string.Join(" ", weeks)}");
+            Assert.DoesNotContain(0, weeks);
+        }
+    }
+
     [Fact]
     public void Counts_hours_already_given_when_choosing_the_next_shift()
     {

@@ -6,7 +6,9 @@ import { Card } from '../../ui/Card';
 import { cx } from '../../ui/cx';
 import { Icon, iconButtonClassName } from '../../ui/Icon';
 import { PageHeader } from '../../ui/PageHeader';
+import { Loading, RowsSkeleton } from '../../ui/Skeleton';
 import { MarketplaceSections } from '../marketplace/MarketplaceSections';
+import { TimeOffRequests } from '../time-off/TimeOffRequests';
 import { useDecisionCount, useMarkAllRead, useMarkRead, useNotifications } from './data';
 import { destinationOf } from './destination';
 import { notificationText } from './notification-text';
@@ -31,6 +33,7 @@ export function AlertsPage() {
         subtitle={waiting > 0 ? t('alerts.waiting', { count: waiting }) : t('alerts.context')}
       />
 
+      <TimeOffRequests />
       <MarketplaceSections scope="decisions" />
 
       <section className="flex flex-col gap-3">
@@ -47,7 +50,13 @@ export function AlertsPage() {
             </Button>
           )}
         </div>
-        {items.length === 0 && (
+        {/* Not "Nothing yet." while the list is still on its way (2026-11-25). */}
+        {!notifications.data && (
+          <Loading>
+            <RowsSkeleton rows={3} />
+          </Loading>
+        )}
+        {notifications.data && items.length === 0 && (
           <Card>
             <p className="text-sm text-muted">{t('alerts.empty')}</p>
           </Card>

@@ -5,7 +5,7 @@ import { formatDateRange } from '../../i18n/format';
 import { EmptyState } from '../../ui/EmptyState';
 import { buttonClassName } from '../../ui/button-styles';
 import { PageHeader } from '../../ui/PageHeader';
-import { Skeleton } from '../../ui/Skeleton';
+import { CardSkeleton, Loading, Skeleton } from '../../ui/Skeleton';
 import { useCurrentPeriods } from '../scheduling/data';
 import { useWorkplace } from '../workplaces/workplace';
 import { OfflineBanner } from '../offline/OfflineBanner';
@@ -35,7 +35,11 @@ export function SchedulePage() {
     return (
       <section className="px-5">
         <PageHeader title={t('schedule.title')} />
-        <Skeleton className="h-48" />
+        <Loading>
+          <Skeleton className="h-12 rounded-pill" />
+          <CardSkeleton lines={3} />
+          <CardSkeleton lines={3} />
+        </Loading>
       </section>
     );
   }

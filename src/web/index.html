@@ -20,7 +20,14 @@
     <title>Quart</title>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- The launch screen (2026-11-25): drawn before any script runs, replaced by the app. Same as LaunchScreen.tsx. -->
+    <div id="root">
+      <div class="flex min-h-dvh items-center justify-center bg-bg">
+        <div class="quart-blob flex h-28 w-32 items-center justify-center">
+          <span class="font-display text-3xl text-white">Quart</span>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

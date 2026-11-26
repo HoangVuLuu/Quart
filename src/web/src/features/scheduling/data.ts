@@ -277,6 +277,17 @@ export function useDraftActions(periodId: string) {
         ),
       onSuccess: show,
     }),
+    // Tapping a person on the shift: they start earlier, and their name shows in red (Hoang, 2026-11-25).
+    early: useMutation({
+      mutationFn: (target: { shiftId: string; membershipId: string; startsEarly: boolean }) =>
+        unwrap(
+          api.PUT(`${base}/assignments/{shiftId}/{membershipId}/early`, {
+            params: { path: { ...path, shiftId: target.shiftId, membershipId: target.membershipId } },
+            body: { startsEarly: target.startsEarly },
+          }),
+        ),
+      onSuccess: show,
+    }),
     publish: useMutation({
       mutationFn: (confirmed: boolean) =>
         unwrap(api.POST(`${base}/publish`, { params: { path }, body: { confirmed } })),

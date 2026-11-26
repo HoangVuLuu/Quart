@@ -43,6 +43,16 @@ public static class Evaluator
     public const int HoursWeight = 10;
 
     /// <summary>
+    /// Times the square of the hours someone is short of their desired hours, in each week (Hoang, 2026-11-25).
+    /// <see cref="HoursWeight"/> alone costs 12 short hours in one week the same as 6 in each of two, so a person
+    /// could work one week and nothing the next. Squared, the even split costs less (36 + 36 against 144), so
+    /// each person's shifts spread over the weeks. Being short never pays, so nobody gets fewer shifts for it,
+    /// and a person who asked for more hours still gets more shifts. Over the target stays only linear: hours
+    /// asked for remain a goal, not a limit (Hoang's choice). Small next to one shift's hours (60 or 70).
+    /// </summary>
+    public const int WeeklySpreadWeight = 1;
+
+    /// <summary>
     /// Times the square of how many shifts someone is away from their expected openings, and again for
     /// closings, when that fairness switch is on (BR-013, BR-014, BR-020). One shift away costs this much:
     /// between hours and doubles, less than one shift's worth of hours (60 or 70), more than a double (50).
@@ -212,11 +222,15 @@ public static class Evaluator
 
             var weekly = context.WeeklyHours(member.Id);
             var distance = 0m;
+            var shortSquared = 0m;
             foreach (var weekHours in weekly)
             {
                 distance += Math.Abs(weekHours - member.DesiredWeeklyHours);
+                var shortBy = Math.Max(0m, member.DesiredWeeklyHours - weekHours);
+                shortSquared += shortBy * shortBy;
             }
             penalty += (long)Math.Round(distance * HoursWeight, MidpointRounding.AwayFromZero);
+            penalty += (long)Math.Round(shortSquared * WeeklySpreadWeight, MidpointRounding.AwayFromZero);
 
             var hours = weekly.Sum();
             var target = member.DesiredWeeklyHours * context.Weeks;

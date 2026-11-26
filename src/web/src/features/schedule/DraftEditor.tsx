@@ -9,7 +9,7 @@ import { cx } from '../../ui/cx';
 import { Dialog } from '../../ui/Dialog';
 import { Icon } from '../../ui/Icon';
 import { Sheet } from '../../ui/Sheet';
-import { Skeleton } from '../../ui/Skeleton';
+import { DaysSkeleton, Loading, Skeleton } from '../../ui/Skeleton';
 import { StatusChip, type StatusTone } from '../../ui/StatusChip';
 import { useToast } from '../../ui/toast-context';
 import { dayHasStarted } from '../day-editor/model';
@@ -114,6 +114,7 @@ export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay, 
   const draft = useDraft(periodId);
   const actions = useDraftActions(periodId);
   const [week, setWeek] = useState(0);
+  const [dashboard, setDashboard] = useState(false);
   const lastWeek = (draft.data?.period.weeks ?? 1) - 1;
   const swipeWeeks = useSwipe({
     onNext: () => setWeek((current) => Math.min(lastWeek, current + 1)),
@@ -124,7 +125,14 @@ export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay, 
   const [confirming, setConfirming] = useState(false);
 
   if (draft.error) throw draft.error;
-  if (!draft.data) return <Skeleton className="h-48" />;
+  if (!draft.data) {
+    return (
+      <Loading>
+        <Skeleton className="h-12 rounded-pill" />
+        <DaysSkeleton />
+      </Loading>
+    );
+  }
   const data = draft.data;
   const published = data.period.version > 0;
   const blocking = data.issues.filter((issue) => issue.severity === 'block');
@@ -162,7 +170,12 @@ export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay, 
           loading={actions.generate.isPending}
           onClick={() => actions.generate.mutate(null)}
         >
-          {data.seed === null ? t('draft.generate') : t('draft.generateAgain')}
+          {/* It can take a few seconds: say what is happening (2026-11-25). */}
+          {actions.generate.isPending
+            ? t('draft.generating')
+            : data.seed === null
+              ? t('draft.generate')
+              : t('draft.generateAgain')}
         </Button>
         {besideGenerate}
       </div>
@@ -190,6 +203,11 @@ export function DraftEditor({ periodId, besideGenerate, onPublished, onEditDay, 
           ))}
         </div>
       )}
+      {/* Under the weeks, across the row (Hoang, 2026-11-25): who has how many shifts in the week shown. */}
+      <Button variant="white" className="w-full" onClick={() => setDashboard(true)}>
+        {t('draft.dashboard.open')}
+      </Button>
+      {dashboard && <Dashboard draft={data} week={week} onClose={() => setDashboard(false)} />}
 
       {/* Phones list the days one under the other; wider screens show two days side by side (NFR-003).
           A sideways swipe changes the week, like the pills above. */}
@@ -324,25 +342,16 @@ function DayRow({
                       {shift.start}–{shift.end}
                     </span>
                   </span>
-                  <span className="flex shrink-0 flex-col items-end gap-1">
-                    <StatusChip tone={full ? 'success' : 'danger'} className="shrink-0 px-1.5 text-[11px]">
-                      <span
-                        aria-label={t('scheduling.grid.fill', {
-                          filled: shift.people.length,
-                          headcount: shift.headcount,
-                        })}
-                      >
-                        {shift.people.length}/{shift.headcount}
-                      </span>
-                    </StatusChip>
-                    {/* FR-103a: someone who can work it left a note on this shift (Hoang: a dot on the card). */}
-                    {shift.notes.length > 0 && (
-                      <span className="flex size-6 items-center justify-center rounded-full bg-note text-on-note">
-                        <Icon name="note" className="size-3.5" />
-                        <span className="sr-only">{t('draft.editor.hasNotes')}</span>
-                      </span>
-                    )}
-                  </span>
+                  <StatusChip tone={full ? 'success' : 'danger'} className="shrink-0 px-1.5 text-[11px]">
+                    <span
+                      aria-label={t('scheduling.grid.fill', {
+                        filled: shift.people.length,
+                        headcount: shift.headcount,
+                      })}
+                    >
+                      {shift.people.length}/{shift.headcount}
+                    </span>
+                  </StatusChip>
                 </span>
                 {shift.people.map((assignment) => {
                   const person = people.get(assignment.membershipId);
@@ -354,7 +363,15 @@ function DayRow({
                       <span className="rounded-pill bg-surface-3 px-1.5 text-[11px]">
                         {t('scheduling.levelShort', { level: person?.level ?? '?' })}
                       </span>
-                      <span className="min-w-0 flex-1 truncate">{person?.name ?? t('team.former')}</span>
+                      {/* Marked as starting earlier (2026-11-25): red here too, so the manager sees it. */}
+                      <span
+                        className={cx('min-w-0 flex-1 truncate', assignment.startsEarly && 'text-danger')}
+                      >
+                        {person?.name ?? t('team.former')}
+                        {assignment.startsEarly && (
+                          <span className="sr-only"> ({t('schedule.startsEarly')})</span>
+                        )}
+                      </span>
                       {assignment.locked && (
                         <span className="text-[10px] tracking-[0.06em] text-muted uppercase">
                           {t('scheduling.grid.kept')}
@@ -376,11 +393,26 @@ function DayRow({
                     <span className="line-clamp-2 min-w-0 break-words">{shift.managerNote}</span>
                   </span>
                 )}
-                {missing.map((issue) => (
-                  <StatusChip key={issue.parameters.level} tone="danger" className="self-start">
-                    {t('scheduling.grid.missingLevel', { level: issue.parameters.level })}
-                  </StatusChip>
-                ))}
+                {/* The missing levels sit at the bottom left and the note mark at the bottom right, on one row,
+                    so cards with and without a note line up (Hoang, 2026-11-25). */}
+                {(missing.length > 0 || shift.notes.length > 0) && (
+                  <span className="mt-auto flex items-end gap-1 pt-1">
+                    <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                      {missing.map((issue) => (
+                        <StatusChip key={issue.parameters.level} tone="danger">
+                          {t('scheduling.grid.missingLevel', { level: issue.parameters.level })}
+                        </StatusChip>
+                      ))}
+                    </span>
+                    {/* FR-103a: someone who can work it left a note on this shift (Hoang: a dot on the card). */}
+                    {shift.notes.length > 0 && (
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-note text-on-note">
+                        <Icon name="note" className="size-3.5" />
+                        <span className="sr-only">{t('draft.editor.hasNotes')}</span>
+                      </span>
+                    )}
+                  </span>
+                )}
               </button>
             </li>
           );
@@ -557,21 +589,42 @@ function ShiftEditor({
           const person = people.get(assignment.membershipId);
           const name = person?.name ?? t('team.former');
           return (
-            <li key={assignment.membershipId} className="rounded-field bg-surface-3 px-4 py-2">
+            <li
+              key={assignment.membershipId}
+              className={cx(
+                'rounded-field px-4 py-2',
+                assignment.startsEarly ? 'bg-danger-soft' : 'bg-surface-3',
+              )}
+            >
               <div className="flex items-center gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold">
+                {/* Tapping the person's box marks them as starting earlier: the box turns light red, and their
+                    name shows in red on the team's shift cards (Hoang, 2026-11-25). Tapping again takes it off. */}
+                <button
+                  type="button"
+                  className="min-h-11 min-w-0 flex-1 text-left"
+                  aria-pressed={assignment.startsEarly === true}
+                  aria-label={t('draft.editor.startsEarly', { name })}
+                  disabled={actions.early.isPending}
+                  onClick={() =>
+                    actions.early.mutate({
+                      shiftId: shift.id,
+                      membershipId: assignment.membershipId,
+                      startsEarly: !assignment.startsEarly,
+                    })
+                  }
+                >
+                  <span className="block font-bold">
                     {name}{' '}
                     <span className="text-xs text-muted">
                       {person && t('scheduling.levelShort', { level: person.level })}
                     </span>
-                  </p>
+                  </span>
                   {person && (
-                    <p className="text-xs text-muted">
+                    <span className="block text-xs text-muted">
                       {t('draft.editor.thisWeek', { hours: hours(person) })}
-                    </p>
+                    </span>
                   )}
-                </div>
+                </button>
                 <Button
                   variant={assignment.locked ? 'dark' : 'white'}
                   className="min-h-11 px-4 text-sm"
@@ -704,5 +757,53 @@ function WeekNotes({ periodId, people }: { periodId: string; people: DraftPerson
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * The dashboard (Hoang, 2026-11-25): for the week shown, each person's shifts and hours against the hours they
+ * asked for, most shifts first. Not in the mockups: it reuses the bottom sheet and the shift sheet's rows (1m).
+ */
+function Dashboard({ draft, week, onClose }: { draft: DraftView; week: number; onClose: () => void }) {
+  const { t, i18n } = useTranslation();
+  const language = i18n.language;
+  const shifts = draft.shifts.filter((shift) => weekOf(draft.period, shift.date) === week);
+  const rows = draft.people
+    .map((person) => ({
+      person,
+      count: shifts.filter((shift) => shift.people.some((x) => x.membershipId === person.membershipId))
+        .length,
+      hours: person.weeklyHours[week] ?? 0,
+    }))
+    .sort((a, b) => b.count - a.count || a.person.name.localeCompare(b.person.name, language));
+  return (
+    <Sheet
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title={t('draft.dashboard.title')}
+      description={draft.period.weeks > 1 ? t('scheduling.grid.week', { number: week + 1 }) : undefined}
+    >
+      <ul className="flex flex-col gap-2">
+        {rows.map(({ person, count, hours }) => (
+          <li
+            key={person.membershipId}
+            className="flex items-center justify-between gap-3 rounded-field bg-surface-3 px-4 py-3"
+          >
+            <span className="min-w-0 font-bold">{person.name}</span>
+            <span className="shrink-0 text-right text-sm">
+              <span className="block font-bold">{t('draft.dashboard.shifts', { count })}</span>
+              <span className="block text-xs text-muted">
+                {person.desiredWeeklyHours == null
+                  ? t('draft.dashboard.hours', { hours: formatNumber(hours, language) })
+                  : t('draft.dashboard.hoursOf', {
+                      hours: formatNumber(hours, language),
+                      wanted: formatNumber(person.desiredWeeklyHours, language),
+                    })}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </Sheet>
   );
 }

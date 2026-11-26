@@ -28,6 +28,7 @@ const shift = (id: string, start: string, end: string, selected = false, note: s
   hours: 6,
   selected,
   busyElsewhere: false,
+  timeOff: false,
   note,
 });
 const mine = (shifts: Schemas['AvailabilityShift'][], canEdit = true): Schemas['MyAvailability'] => ({

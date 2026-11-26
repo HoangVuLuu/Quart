@@ -41,36 +41,52 @@ In a second terminal, while the app is running:
 node scripts/dev/seed.mjs
 ```
 
-It creates Presotea Montmorency with nine people, the two shifts a day, and a two-week period where
-everyone but Liam has sent their availability. Everyone's password is `tapioca-pearls-4-everyone`.
+It creates Presotea Montmorency with the same team as staging: Philippe (owner) and 14 staff, five at each
+level, the two shifts a day, and a two-week period where everyone has sent their availability, some with
+notes. Everyone's password is `!apple1755`; every email is the first name, lower case, `@demo.quart`.
 
-| Log in as | To see |
-| --------- | ------ |
+| Log in as | Who |
+| --------- | --- |
 | `philippe@demo.quart` | The owner: Schedule → Generate schedule → fix → Publish |
-| `sophie@demo.quart` | Staff: Home, My shifts, Give away, Trade |
-| `liam@demo.quart` | Someone who has not sent their availability |
+| `kymanh@` `jay@` `noemie@` `aymen@` | Level 3 (Kym-Anh sees the app in French) |
+| `tony@` `cecilia@` `lili@` `wendy@` `jason@` | Level 2 (Tony sees the app in French) |
+| `emilie@` `joseph@` `cedric@` `selma@` `ayman@` | Level 1 |
 | `hoang@demo.quart` | The platform admin: creates workplaces, member of none |
+
+## Commands for testing
+
+Run them in a second terminal while `scripts/dev/start.sh` is running. They only touch your own computer.
+
+| Command | What it does |
+| ------- | ------------ |
+| `node scripts/dev/reset-workplace.mjs` | Takes Presotea back to "no period yet": every period goes, with its availability, notes, shifts and schedules, plus give-aways, trades and alerts. People, levels, generator rules, settings and time off stay. Add a name in quotes to reset another workplace. |
+| `node scripts/dev/fill-availability.mjs` | Everyone on the team sends availability for the period that is open, and Cecilia, Wendy, Joseph, Emilie, Lili and Jay add a note. Each person answers like their note says (Wendy prefers openings, Lili is away one Saturday…), Selma, Tony and Kym-Anh add shift notes, and every shift gets enough people free, with a level 3. Anyone who already sent keeps their answer. |
+
+A typical round: reset, then as Philippe *Open the next period*, then fill availability, then *Generate*.
 
 ## A walk through the whole loop
 
 1. **Philippe**: Schedule → *Generate schedule*. Tap a shift to add, remove or keep people. Open
    *issues*, then *Publish*.
-2. **Sophie** (on your phone): Home shows her next shift. Schedule → tap a shift → *Give away*.
-3. **Kevin** (`kevin@demo.quart`): Alerts → *Claim*. The shift is his; Sophie and Philippe are told.
-4. **Sophie**: tap another shift → *Trade* → *Ask* a coworker. They accept in Alerts.
+2. **Cecilia** (on your phone): Home shows her next shift. Trade → *Give away or trade one of my
+   shifts* → pick a shift → *Give away*.
+3. **Jason** (`jason@demo.quart`): Trade → *Claim*. The shift is his; Cecilia and Philippe are told.
+4. **Cecilia**: the same page, another shift → *Trade* → *Ask* a coworker. They accept in Trade.
 5. **Philippe**: Profile → turn on *Approve claims* or *Approve trades* and repeat 2 to 4: requests
    now wait for him in Alerts.
-6. **Philippe**: Schedule → *Edit* → move someone → *Update*. Only the people whose shifts changed
-   are notified.
-7. To start the next cycle: Schedule → *Open the next period*. Staff fill in Availability.
+6. **Philippe**: Schedule → *Edit current period* → move someone → *Update*. Only the people whose
+   shifts changed are notified.
+7. To start the next cycle: Schedule → *Open the next period*, then `node scripts/dev/fill-availability.mjs`.
 
 ## Start again from nothing
 
 ```bash
-docker compose down -v      # deletes the local database
+docker compose down -v      # deletes the local database, accounts included
 scripts/dev/start.sh
 node scripts/dev/seed.mjs
 ```
+
+To keep the accounts and only clear the schedule, use `node scripts/dev/reset-workplace.mjs` instead.
 
 ## Your own account instead of the demo ones
 
@@ -116,5 +132,6 @@ Wi-Fi; phones are tried on staging. Pushes leave with the background tick: run i
 | ------------ | ---------- |
 | `port is already allocated` for 5432 | Quit Postgres.app, then start again |
 | The phone cannot open the page | Same Wi-Fi? Some guest networks block devices from seeing each other. macOS may also ask to allow incoming connections: allow them |
-| "No verification email … in Mailpit" from the seed script | The demo accounts already exist. Start again from nothing (above) |
+| "No verification email … in Mailpit" from the seed script | The demo accounts already exist. Start again from nothing (above), or use the testing commands |
+| "No period is collecting availability" | As Philippe: Schedule → *Open the next period*, then run the command again |
 | The log-in page says the session needs a refresh | Reload the page once |

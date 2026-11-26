@@ -6,7 +6,7 @@ import { messageKeyFor } from '../../i18n/errors';
 import { formatDateRange } from '../../i18n/format';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
-import { Skeleton } from '../../ui/Skeleton';
+import { DaysSkeleton, Loading, Skeleton } from '../../ui/Skeleton';
 import { useToast } from '../../ui/toast-context';
 import { cx } from '../../ui/cx';
 import { pressClassName } from '../../ui/button-styles';
@@ -39,7 +39,9 @@ export function BuildingPage({ mode }: { mode: 'build' | 'edit' }) {
   if (!periods.data) {
     return (
       <SubPage backTo="/schedule" title={mode === 'build' ? t('building.title') : t('building.editTitle')}>
-        <Skeleton className="h-48" />
+        <Loading>
+          <DaysSkeleton />
+        </Loading>
       </SubPage>
     );
   }
@@ -133,7 +135,10 @@ function BuildingVisit({ periodId, mode }: { periodId: string; mode: 'build' | '
       }
     >
       {!actions.start.isSuccess && !actions.start.isError ? (
-        <Skeleton className="h-48" />
+        <Loading>
+          <Skeleton className="h-12 rounded-pill" />
+          <DaysSkeleton />
+        </Loading>
       ) : (
         <div className="flex flex-col gap-4">
           <FormError message={error ? t(messageKeyFor(error)) : undefined} />

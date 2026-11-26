@@ -33,6 +33,10 @@ export const notificationTypes = [
   'trade.rejected',
   'trade.expired',
   'trade.cancelled',
+  'timeoff.requested',
+  'timeoff.accepted',
+  'timeoff.refused',
+  'timeoff.ended',
 ] as const;
 
 type NotificationType = (typeof notificationTypes)[number];
@@ -46,6 +50,13 @@ export function notificationText(item: NotificationItem, t: TFunction, language:
   const values: Record<string, string> = { ...item.parameters };
   for (const name of ['date', 'periodStart']) {
     if (values[name]) values[name] = formatShortDate(values[name], language);
+  }
+  // BL-01: a time off's days, with no last day meaning "no end date".
+  if (item.type.startsWith('timeoff.') && values.firstDay) {
+    const first = formatShortDate(values.firstDay, language);
+    values.days = values.lastDay
+      ? t('timeOff.days', { first, last: formatShortDate(values.lastDay, language) })
+      : t('timeOff.daysOpen', { first });
   }
   // The key is built from the type, so it is looked up without the compile-time key check.
   return (t as unknown as (key: string, values: Record<string, string>) => string)(

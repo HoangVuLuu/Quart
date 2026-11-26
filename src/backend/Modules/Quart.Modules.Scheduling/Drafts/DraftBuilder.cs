@@ -78,20 +78,31 @@ internal sealed class DraftBuilder(SchedulingDb db, IWorkplaceDirectory director
     {
         var zone = DateTimeZoneProviders.Tzdb[data.Period.TimeZone];
         var memberOf = data.Members.ToDictionary(x => x.UserId, x => x.MembershipId);
-        return data.Busy
+        var elsewhere = data.Busy
             .Where(x => memberOf.ContainsKey(x.UserId))
             .Select(x => new BusyTime(
                 Id(memberOf[x.UserId]),
                 x.Start.InZone(zone).LocalDateTime.ToDateTimeUnspecified(),
-                x.End.InZone(zone).LocalDateTime.ToDateTimeUnspecified()))
-            .ToList();
+                x.End.InZone(zone).LocalDateTime.ToDateTimeUnspecified()));
+        // Accepted time off (BL-01): each of its days in this period is busy from midnight to midnight, so the
+        // generator never places the person then, and a hand placement reads as "not available".
+        var days = data.Shifts.Select(x => x.Date).Distinct().ToList();
+        var timeOff = data.Members
+            .SelectMany(member => days.Where(member.IsOffOn).Select(day => new BusyTime(
+                Id(member.MembershipId),
+                day.AtMidnight().ToDateTimeUnspecified(),
+                day.PlusDays(1).AtMidnight().ToDateTimeUnspecified())));
+        return elsewhere.Concat(timeOff).ToList();
     }
 
-    /// <summary>Whether the person works at another workplace during this shift. Says nothing about where (FR-094).</summary>
+    /// <summary>
+    /// Whether the person works at another workplace during this shift (FR-094), or is on accepted time off that day
+    /// (BL-01). Says nothing about where or why.
+    /// </summary>
     public static bool IsBusyElsewhere(PeriodData data, Guid membershipId, Shift shift)
     {
-        var userId = data.Members.FirstOrDefault(x => x.MembershipId == membershipId)?.UserId;
-        return userId is { } id && data.Busy.Any(x => x.UserId == id && x.Overlaps(shift));
+        var member = data.Members.FirstOrDefault(x => x.MembershipId == membershipId);
+        return member is not null && (member.IsOffOn(shift.Date) || data.Busy.Any(x => x.UserId == member.UserId && x.Overlaps(shift)));
     }
 
     /// <summary>

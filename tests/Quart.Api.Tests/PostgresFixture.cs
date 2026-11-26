@@ -15,6 +15,10 @@ public sealed class PostgresFixture : IAsyncLifetime
     private readonly string? external = Environment.GetEnvironmentVariable("QUART_TEST_POSTGRES") is { Length: > 0 } value ? value : null;
     private PostgreSqlContainer? container;
 
+    // Every database made on a server that outlives the run, so the run can drop them at the end. One full run
+    // makes about 250 of them (10 MB each): left behind, they filled a disk (2026-11-26).
+    private readonly System.Collections.Concurrent.ConcurrentBag<string> created = [];
+
     private string ServerConnectionString => external ?? container!.GetConnectionString();
 
     public async ValueTask InitializeAsync()
@@ -30,7 +34,18 @@ public sealed class PostgresFixture : IAsyncLifetime
     {
         if (container is not null)
         {
+            // The container goes, and its databases with it.
             await container.DisposeAsync();
+            return;
+        }
+        // A server that stays: drop what this run made. FORCE closes connections a test left open.
+        NpgsqlConnection.ClearAllPools();
+        await using var connection = new NpgsqlConnection(ServerConnectionString);
+        await connection.OpenAsync();
+        foreach (var name in created)
+        {
+            await using var command = new NpgsqlCommand($"DROP DATABASE IF EXISTS {name} WITH (FORCE)", connection);
+            await command.ExecuteNonQueryAsync();
         }
     }
 
@@ -42,6 +57,7 @@ public sealed class PostgresFixture : IAsyncLifetime
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand($"CREATE DATABASE {name}", connection);
         await command.ExecuteNonQueryAsync();
+        created.Add(name);
         return new NpgsqlConnectionStringBuilder(ServerConnectionString) { Database = name }.ConnectionString;
     }
 }

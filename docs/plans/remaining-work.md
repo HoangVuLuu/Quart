@@ -385,7 +385,7 @@ section 5 where the two differ (for example 3.1 has two pages, Editing Shift and
 | 5.3 | M9-03 | Calendar feed of my shifts | nothing |
 | 5.4 | M9-01, M9-02, M9-04 | Google Calendar free/busy import; app verification waits for 6.3 | D6 |
 | 5.5 | M3-05 | Drag to create shifts on a desktop calendar | nothing |
-| 5.6 | BL-01 | Time-off requests. **Not now: after the pilot (D7).** | D7 |
+| 5.6 | BL-01 | Time-off requests. **Built 2026-11-25** (Hoang moved it before the pilot; FR-036a). | n/a |
 | 5.7 | BL-02 | Payslips. **Not now: after the pilot (D7).** | D7 |
 
 ### Phase 6: go live (last)
@@ -885,7 +885,7 @@ are in the spec's decision log (section 17).
 | D4 | Who reviews the privacy text; contact name and email for privacy requests | Hoang as the contact; a short review by someone qualified before go-live | 6.2 |
 | D5 | Domain name (after the final product name, Q-05); Azure subscription for production; always-on or scale to zero; where backups and files are stored | One always-on replica in production; storage in a Canadian region. Hoang owns no domain yet. | 6.1, 6.3, 6.4 |
 | D6 | A Google Cloud project with OAuth credentials | Created by Hoang (a free test project is enough to build); client ID and secret given as secrets | 4.4, 5.4 |
-| D7 | Whether time-off and payslips are wanted at all, and their rules | **Answered:** after the pilot | 5.6, 5.7 |
+| D7 | Whether time-off and payslips are wanted at all, and their rules | **Answered:** after the pilot; time off moved before it on 2026-11-25 | 5.6, 5.7 |
 | Q-08 | Hours before an unclaimed give-away alerts the admins | **Answered:** 24 hours, a setting; **changed 2026-11-23:** fixed at 36 hours, no setting | 3.5 |
 
 Things only Hoang can do: buy the domain and create DNS records, create accounts (email provider,

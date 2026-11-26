@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, unwrap, type Schemas } from '../../lib/api/client';
+import { useTimeOffRequests } from '../time-off/data';
 import { useMarketplace } from '../marketplace/data';
 import { useWorkplace } from '../workplaces/workplace';
 
@@ -56,7 +57,10 @@ export function useMarkRead() {
  */
 export function useDecisionCount(): number {
   const board = useMarketplace().data;
+  // BL-01: time off waiting for this manager's answer.
+  const timeOff = useTimeOffRequests().data?.length ?? 0;
   return (
+    timeOff +
     (board?.claims.length ?? 0) +
     (board?.trades.filter((trade) => trade.role === 'approver' && trade.status === 'awaiting_approval')
       .length ?? 0)

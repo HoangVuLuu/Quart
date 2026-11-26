@@ -9,7 +9,7 @@ import { formatDateRange, formatDateTime, formatDayShort, formatDue, formatNumbe
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { cx } from '../../ui/cx';
-import { Skeleton } from '../../ui/Skeleton';
+import { DaysSkeleton, Loading } from '../../ui/Skeleton';
 import { StatusChip } from '../../ui/StatusChip';
 import { TextArea, TextField } from '../../ui/TextField';
 import { useToast } from '../../ui/toast-context';
@@ -41,7 +41,9 @@ export function AvailabilityPage() {
   if (!mine.data) {
     return (
       <SubPage backTo="/" title={t('availability.title')}>
-        <Skeleton className="h-64" />
+        <Loading>
+          <DaysSkeleton days={4} />
+        </Loading>
       </SubPage>
     );
   }
@@ -92,7 +94,10 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
   // The first shift of a day is its opening and the last its closing (BR-034).
   const days = byDay(mine.shifts);
   // FR-094: shifts that overlap one the person already works at another workplace cannot be picked.
-  const busy = new Set(mine.shifts.filter((shift) => shift.busyElsewhere).map((shift) => shift.id));
+  // BL-01: days of accepted time off cannot be picked either.
+  const busy = new Set(
+    mine.shifts.filter((shift) => shift.busyElsewhere || shift.timeOff).map((shift) => shift.id),
+  );
   const pickable = (ids: Iterable<string>) => new Set([...ids].filter((id) => !busy.has(id)));
 
   /** The chosen shifts become these; a shift no longer chosen loses its note (FR-103a, Hoang: no question asked). */
@@ -196,7 +201,12 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
           </div>
         )}
 
-        {busy.size > 0 && <p className="text-sm text-muted">{t('availability.busyElsewhereHint')}</p>}
+        {mine.shifts.some((shift) => shift.busyElsewhere) && (
+          <p className="text-sm text-muted">{t('availability.busyElsewhereHint')}</p>
+        )}
+        {mine.shifts.some((shift) => shift.timeOff) && (
+          <p className="text-sm text-muted">{t('availability.timeOffHint')}</p>
+        )}
 
         <Card className="flex flex-col gap-3 p-4" {...swipeWeeks}>
           {days
@@ -212,7 +222,7 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
                     <p className="w-14 shrink-0 text-sm font-bold">{dayLabel}</p>
                     {day.shifts.map((shift, index) => {
                       const on = selected.has(shift.id);
-                      const elsewhere = shift.busyElsewhere;
+                      const elsewhere = shift.busyElsewhere || shift.timeOff === true;
                       const name = names[index] ?? '';
                       const note = on ? shiftNotes.get(shift.id) : undefined;
                       // FR-103a: a chosen shift carries the note strip on its right; locked, only a note shows.
@@ -250,7 +260,7 @@ function AvailabilityForm({ mine }: { mine: MyAvailability }) {
                             </span>
                             {elsewhere && (
                               <span className="block text-[11px] font-bold">
-                                {t('availability.busyElsewhere')}
+                                {shift.timeOff ? t('availability.timeOff') : t('availability.busyElsewhere')}
                               </span>
                             )}
                           </button>

@@ -63,6 +63,7 @@ internal static class DraftEndpoints
         group.MapPost("/assignments", AddAsync).WithName("AddDraftAssignment");
         group.MapDelete("/assignments/{shiftId:guid}/{membershipId:guid}", RemoveAsync).WithName("RemoveDraftAssignment");
         group.MapPut("/assignments/{shiftId:guid}/{membershipId:guid}/lock", SetLockAsync).WithName("LockDraftAssignment");
+        group.MapPut("/assignments/{shiftId:guid}/{membershipId:guid}/early", SetEarlyAsync).WithName("MarkDraftAssignmentEarly");
         group.MapPut("/shifts/{shiftId:guid}/note", SetNoteAsync).WithName("SetShiftNote");
         group.MapPost("/publish", PublishAsync).WithName("PublishDraft");
     }
@@ -401,6 +402,25 @@ internal static class DraftEndpoints
     }
 
     /// <summary>
+    /// Tapping a person on a shift marks them as starting earlier, and tapping again takes it off (Hoang,
+    /// 2026-11-25). Like any draft change it reaches the team when published.
+    /// </summary>
+    private static async Task<Results<Ok<DraftView>, ProblemHttpResult>> SetEarlyAsync(
+        Guid workplaceId, Guid periodId, Guid shiftId, Guid membershipId, EarlyRequest request, HttpContext http, SchedulingDb db, DraftBuilder builder, CancellationToken cancellationToken)
+    {
+        if (await AvailabilityEndpoints.FindPeriodAsync(db, workplaceId, periodId, cancellationToken) is not { } period)
+        {
+            return Problems.NotFound();
+        }
+        var updated = await db.Assignments
+            .Where(x => x.PeriodId == period.Id && x.ShiftId == shiftId && x.MembershipId == membershipId && x.IsDraft)
+            .ExecuteUpdateAsync(update => update.SetProperty(x => x.StartsEarly, request.StartsEarly), cancellationToken);
+        return updated == 0
+            ? Problems.Conflict(NotOnShift)
+            : TypedResults.Ok(await ViewAsync(db, builder, period, http.Member(), cancellationToken));
+    }
+
+    /// <summary>
     /// Publishes the draft as version 1, or as the next version when one is already live (FR-160, FR-163).
     /// Issues set to "block" stop it; issues set to "confirm" need <see cref="PublishRequest.Confirmed"/>
     /// (FR-144). Empty slots are allowed and become open shifts (FR-165).
@@ -438,10 +458,14 @@ internal static class DraftEndpoints
         var liveKeys = live.Select(x => (x.ShiftId, x.MembershipId)).ToHashSet();
         var added = draft.Where(x => !liveKeys.Contains((x.ShiftId, x.MembershipId))).ToList();
         var removed = live.Where(x => !draftKeys.Contains((x.ShiftId, x.MembershipId))).ToList();
+        // 2026-11-25: someone marked (or no longer marked) as starting earlier is a change to publish too.
+        var earlyInDraft = draft.Where(x => x.StartsEarly).Select(x => (x.ShiftId, x.MembershipId)).ToHashSet();
+        var remarked = live.Where(x => draftKeys.Contains((x.ShiftId, x.MembershipId))
+            && x.StartsEarly != earlyInDraft.Contains((x.ShiftId, x.MembershipId))).Select(x => x.Id).ToList();
         // FR-145: a changed shift note is a change to publish too.
         var shifts = await db.Shifts.Where(x => x.PeriodId == period.Id).ToListAsync(cancellationToken);
         var renoted = shifts.Where(x => x.DraftNote != x.Note).ToList();
-        if (period.Version > 0 && added.Count == 0 && removed.Count == 0 && renoted.Count == 0)
+        if (period.Version > 0 && added.Count == 0 && removed.Count == 0 && renoted.Count == 0 && remarked.Count == 0)
         {
             return Problems.Conflict(NothingToPublish);
         }
@@ -463,6 +487,7 @@ internal static class DraftEndpoints
                 MembershipId = x.MembershipId,
                 UserId = x.UserId,
                 IsDraft = false,
+                StartsEarly = x.StartsEarly,
                 Source = x.Source,
                 StartsAt = x.StartsAt,
                 EndsAt = x.EndsAt,
@@ -471,6 +496,8 @@ internal static class DraftEndpoints
             {
                 shift.Note = shift.DraftNote;
             }
+            await db.Assignments.Where(x => remarked.Contains(x.Id))
+                .ExecuteUpdateAsync(update => update.SetProperty(x => x.StartsEarly, x => !x.StartsEarly), cancellationToken);
             period.Version++;
             period.Status = Period.Published;
             period.PublishedAt = now;
@@ -622,6 +649,7 @@ internal static class DraftEndpoints
                 .ToDictionaryAsync(x => x.Key, x => x.Count(), cancellationToken)
             : [];
         var summaries = evaluation.Members.ToDictionary(x => x.MemberId);
+        var nameOf = data.Members.ToDictionary(x => x.MembershipId, x => x.DisplayName);
 
         var shifts = data.Shifts.Select(shift => new DraftShift(
             shift.Id,
@@ -633,7 +661,11 @@ internal static class DraftEndpoints
             shift.Headcount,
             PartOf(parts[DraftBuilder.Id(shift.Id)]),
             shift.Requirements.OrderBy(x => x.Level).Select(x => new DraftRequirement(x.Level, x.MinCount)).ToList(),
-            draft.Where(x => x.ShiftId == shift.Id).Select(x => new DraftAssignment(x.MembershipId, x.IsLocked)).ToList(),
+            // By name, so the list stays put when someone is kept or marked (the database returns rows in any order).
+            draft.Where(x => x.ShiftId == shift.Id)
+                .OrderBy(x => nameOf.GetValueOrDefault(x.MembershipId), StringComparer.CurrentCultureIgnoreCase)
+                .ThenBy(x => x.MembershipId)
+                .Select(x => new DraftAssignment(x.MembershipId, x.IsLocked, x.StartsEarly)).ToList(),
             // Someone working at another workplace then shows as simply not available (FR-094).
             data.Availabilities
                 .Where(x => x.Status == Persistence.Availability.Sent && x.Blocks.Any(b => b.ShiftId == shift.Id)
@@ -660,8 +692,8 @@ internal static class DraftEndpoints
             summaries.TryGetValue(DraftBuilder.Id(person.MembershipId), out var summary) ? summary.WeeklyHours : new decimal[period.Weeks],
             noteCounts.GetValueOrDefault(person.MembershipId))).ToList();
 
-        var draftKeys = draft.Select(x => (x.ShiftId, x.MembershipId)).ToHashSet();
-        var liveKeys = live.Select(x => (x.ShiftId, x.MembershipId)).ToHashSet();
+        var draftKeys = draft.Select(x => (x.ShiftId, x.MembershipId, x.StartsEarly)).ToHashSet();
+        var liveKeys = live.Select(x => (x.ShiftId, x.MembershipId, x.StartsEarly)).ToHashSet();
         return new DraftView(
             Support.Summarize(period),
             period.Seed,
@@ -703,6 +735,8 @@ public sealed record GenerateRequest(int? Seed);
 public sealed record AssignRequest(Guid ShiftId, Guid MembershipId);
 
 public sealed record LockRequest(bool Locked);
+
+public sealed record EarlyRequest(bool StartsEarly);
 
 /// <param name="Confirmed">True once the admin has seen the issues that ask for confirmation (FR-144).</param>
 public sealed record PublishRequest(bool Confirmed);
@@ -758,7 +792,8 @@ public sealed record DraftShiftNote(Guid MembershipId, string Note);
 public sealed record DraftRequirement(int Level, int MinCount);
 
 /// <param name="Locked">Kept through the next generation (FR-123).</param>
-public sealed record DraftAssignment(Guid MembershipId, bool Locked);
+/// <param name="StartsEarly">The manager marked them as starting earlier than the shift (2026-11-25).</param>
+public sealed record DraftAssignment(Guid MembershipId, bool Locked, bool StartsEarly = false);
 
 /// <param name="Availability">"sent" or "not_sent".</param>
 /// <param name="WeeklyHours">Hours assigned in the draft, one entry per week of the period (FR-141).</param>

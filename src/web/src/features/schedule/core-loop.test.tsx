@@ -41,6 +41,7 @@ function availabilityShift(
     hours: start === '10:00' ? 6 : 7,
     selected,
     busyElsewhere: false,
+    timeOff: false,
   };
 }
 
@@ -79,8 +80,24 @@ function scheduleShift(
   };
 }
 
-const sophie: Schemas['SchedulePerson'] = { membershipId: mine, name: 'Sophie L.', level: 2, isMe: true };
-const kevinT: Schemas['SchedulePerson'] = { membershipId: kevin, name: 'Kevin T.', level: 3, isMe: false };
+// Everyone on a shift, one name per span (2026-11-25): match the line they make together.
+const names = (text: string) => (_: string, element: Element | null) =>
+  element?.tagName === 'P' && element.textContent === text;
+
+const sophie: Schemas['SchedulePerson'] = {
+  membershipId: mine,
+  name: 'Sophie L.',
+  level: 2,
+  isMe: true,
+  startsEarly: false,
+};
+const kevinT: Schemas['SchedulePerson'] = {
+  membershipId: kevin,
+  name: 'Kevin T.',
+  level: 3,
+  isMe: false,
+  startsEarly: false,
+};
 const published = { ...period, status: 'published', version: 1, locked: true };
 const schedule: Schemas['ScheduleView'] = {
   period: published,
@@ -229,7 +246,7 @@ describe('the schedule tab', () => {
     renderApp('/schedule');
 
     expect(await screen.findByRole('heading', { name: en.schedule.upcoming })).toBeInTheDocument();
-    expect(screen.getByText('With Kevin T.')).toBeInTheDocument();
+    expect(screen.getByText(names('Sophie L., Kevin T.'))).toBeInTheDocument();
     // One shift is hers; Monday's opening is Kevin's alone.
     expect(within(screen.getByRole('main')).getAllByRole('listitem')).toHaveLength(1);
     // AD-012: drafts are the admin's.
@@ -266,7 +283,7 @@ describe('the schedule tab', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /Closing/ }));
     const people = within(await screen.findByRole('dialog', { name: /Closing/ }));
-    expect(people.getByText(en.schedule.sheet.with)).toBeInTheDocument();
+    expect(people.getByText(en.schedule.sheet.onShift)).toBeInTheDocument();
     expect(people.queryByRole('button', { name: en.schedule.sheet.giveAway })).toBeNull();
 
     await router.navigate('/trade/mine');
@@ -375,7 +392,7 @@ describe('the schedule tab', () => {
           headcount: 2,
           part: 'closing',
           requirements: [{ level: 3, minCount: 1 }],
-          people: [{ membershipId: mine, locked: true }],
+          people: [{ membershipId: mine, locked: true, startsEarly: false }],
           availableIds: [mine, kevin],
           notes: [{ membershipId: kevin, note: 'Until 21:00 only' }],
           managerNote: null,
@@ -517,7 +534,7 @@ describe('the schedule tab', () => {
           headcount: 1,
           part: 'closing',
           requirements: [],
-          people: [{ membershipId: mine, locked: false }],
+          people: [{ membershipId: mine, locked: false, startsEarly: false }],
           availableIds: [mine, kevin],
           notes: [],
           managerNote: null,
@@ -561,11 +578,11 @@ describe('the schedule tab', () => {
     renderApp('/schedule');
 
     const which = await screen.findByRole('group', { name: en.schedule.which });
-    expect(await screen.findByText('With Kevin T.')).toBeInTheDocument();
+    expect(await screen.findByText(names('Sophie L., Kevin T.'))).toBeInTheDocument();
     await userEvent.click(within(which).getAllByRole('button')[1]!);
 
     // The later period has no shift of hers yet.
-    expect(screen.queryByText('With Kevin T.')).not.toBeInTheDocument();
+    expect(screen.queryByText(names('Sophie L., Kevin T.'))).not.toBeInTheDocument();
     expect(within(which).getAllByRole('button')[1]).toHaveAttribute('aria-pressed', 'true');
   });
 });
@@ -675,6 +692,8 @@ describe('notifications', () => {
         reason: 'stale',
         sent: '12',
         total: '15',
+        firstDay: '2099-10-05',
+        lastDay: '2099-10-09',
       };
 
       for (const type of notificationTypes) {
@@ -736,7 +755,7 @@ describe('changes of 2026-11-19', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: en.home.viewShift }));
     const people = within(await screen.findByRole('dialog'));
-    expect(people.getByText(en.schedule.sheet.with)).toBeInTheDocument();
+    expect(people.getByText(en.schedule.sheet.onShift)).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/');
   });
 
@@ -751,7 +770,9 @@ describe('changes of 2026-11-19', () => {
     const card = document.querySelector<HTMLButtonElement>('button[aria-hidden="true"][tabindex="-1"]');
     expect(card).not.toBeNull();
     await userEvent.click(card!);
-    expect(within(await screen.findByRole('dialog')).getByText(en.schedule.sheet.with)).toBeInTheDocument();
+    expect(
+      within(await screen.findByRole('dialog')).getByText(en.schedule.sheet.onShift),
+    ).toBeInTheDocument();
   });
 
   it('keeps Whole team when switching periods (8)', async () => {
@@ -1188,7 +1209,7 @@ describe('the manager’s note on a shift (FR-145)', () => {
           headcount: 1,
           part: 'closing',
           requirements: [],
-          people: [{ membershipId: mine, locked: false }],
+          people: [{ membershipId: mine, locked: false, startsEarly: false }],
           availableIds: [mine],
           notes: [],
           managerNote: 'Bring the keys',
@@ -1239,5 +1260,106 @@ describe('the manager’s note on a shift (FR-145)', () => {
         note: 'Leaving at 5pm',
       }),
     );
+  });
+});
+
+describe('changes of 2026-11-25', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  const building = { ...period, status: 'building', locked: true };
+  const person = (membershipId: string, name: string, hours: number, desired: number) => ({
+    membershipId,
+    name,
+    level: 3,
+    desiredWeeklyHours: desired,
+    maxWeeklyHours: null,
+    availability: 'sent',
+    weeklyHours: [hours],
+    noteCount: 0,
+  });
+  const draft: Schemas['DraftView'] = {
+    period: building,
+    seed: 7,
+    score: 0,
+    openSlots: 1,
+    hasUnpublishedChanges: true,
+    hasUnsavedChanges: false,
+    shifts: [
+      {
+        id: 'mon-close',
+        blockId: 'block-close',
+        date: '2099-10-05',
+        start: '16:00',
+        end: '23:00',
+        hours: 7,
+        headcount: 2,
+        part: 'closing',
+        requirements: [],
+        people: [{ membershipId: mine, locked: false, startsEarly: false }],
+        availableIds: [mine, kevin],
+        notes: [],
+        managerNote: null,
+        name: null,
+        addedByHand: false,
+      },
+    ],
+    people: [person(mine, 'Sophie L.', 7, 14), person(kevin, 'Kevin T.', 0, 20)],
+    issues: [],
+  };
+  const answers = {
+    [`GET ${base}/periods/current`]: {
+      live: null,
+      next: { ...next, period: building, canEditAvailability: false },
+    },
+    [`GET ${base}/periods/${periodId}/draft`]: draft,
+    [`POST ${base}/periods/${periodId}/draft/start`]: draft,
+  };
+
+  it('the dashboard shows each person’s shifts and hours for the week', async () => {
+    signedIn('owner', answers);
+    renderApp('/schedule/build');
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: en.draft.dashboard.open }));
+    const sheet = within(await screen.findByRole('dialog', { name: en.draft.dashboard.title }));
+    const rows = sheet.getAllByRole('listitem');
+
+    expect(rows[0]).toHaveTextContent('Sophie L.1 shift7 h of 14 h wanted');
+    expect(rows[1]).toHaveTextContent('Kevin T.0 shifts0 h of 20 h wanted');
+  });
+
+  it('tapping a person on a shift marks them as starting earlier', async () => {
+    const calls = signedIn('owner', {
+      ...answers,
+      [`PUT ${base}/periods/${periodId}/draft/assignments/mon-close/${mine}/early`]: draft,
+    });
+    renderApp('/schedule/build');
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: /^Closing/ }));
+    await user.click(await screen.findByRole('button', { name: 'Sophie L. starts earlier' }));
+
+    await waitFor(() =>
+      expect(calls.find((call) => call.path.endsWith('/early'))?.body).toEqual({ startsEarly: true }),
+    );
+  });
+
+  it('shows everyone on the next shift, someone starting earlier in red', async () => {
+    signedIn('employee', {
+      [`GET ${base}/periods/current`]: { live: published, next: null },
+      [`GET ${base}/periods/${periodId}/schedule`]: {
+        ...schedule,
+        shifts: [
+          scheduleShift('mon-close', '2099-10-05', 'closing', [sophie, { ...kevinT, startsEarly: true }]),
+        ],
+      },
+    });
+    renderApp('/');
+
+    const name = await screen.findByText('Kevin T.');
+    expect(name).toHaveClass('text-danger');
+    expect(name).toHaveTextContent(`Kevin T. (${en.schedule.startsEarly})`);
   });
 });

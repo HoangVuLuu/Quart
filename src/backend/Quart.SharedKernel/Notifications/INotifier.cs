@@ -73,6 +73,21 @@ public static class NotificationTypes
     /// <summary>To the person giving it away: nobody has taken their shift yet, 36 hours before it (FR-183, M7-05).</summary>
     public const string ShiftUnclaimedMine = "shift.unclaimed_mine";
 
+    /// <summary>To managers who approve requests: a staff member asks for time off (BL-01, 2026-11-25).</summary>
+    public const string TimeOffRequested = "timeoff.requested";
+
+    /// <summary>To the person: a manager accepted their time off.</summary>
+    public const string TimeOffAccepted = "timeoff.accepted";
+
+    /// <summary>To the person: a manager refused their time off.</summary>
+    public const string TimeOffRefused = "timeoff.refused";
+
+    /// <summary>To the person: a manager turned their shifts back on, which ended the time off early.</summary>
+    public const string TimeOffEnded = "timeoff.ended";
+
+    // A time off's days; lastDay is empty when it has no end date.
+    private static readonly string[] TimeOffDays = ["name", "firstDay", "lastDay"];
+
     // shiftId and periodId: the shift the alert opens on the Schedule tab, when there is one (2026-11-18).
     private static readonly string[] Shift = ["date", "start", "end", "name", "shiftId", "periodId"];
 
@@ -87,7 +102,7 @@ public static class NotificationTypes
     /// Approve and Decline, so the Recent list and its count leave them out, like <see cref="TradeTab"/>. They
     /// are still stored, pushed and emailed.
     /// </summary>
-    public static IReadOnlySet<string> Decisions { get; } = new HashSet<string>(StringComparer.Ordinal) { ClaimRequested, TradeAwaitingApproval };
+    public static IReadOnlySet<string> Decisions { get; } = new HashSet<string>(StringComparer.Ordinal) { ClaimRequested, TradeAwaitingApproval, TimeOffRequested };
 
     /// <summary>
     /// "Just so you know" updates for managers (Hoang, 2026-11-22): shown in Alerts, never pushed to a phone.
@@ -128,5 +143,9 @@ public static class NotificationTypes
             [TradeCancelled] = Shift,
             [ShiftUnclaimed] = Shift,
             [ShiftUnclaimedMine] = Shift,
+            [TimeOffRequested] = TimeOffDays,
+            [TimeOffAccepted] = TimeOffDays,
+            [TimeOffRefused] = TimeOffDays,
+            [TimeOffEnded] = TimeOffDays,
         };
 }

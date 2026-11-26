@@ -236,7 +236,8 @@ public sealed class EvaluatorTests
         var even = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("next-mon", "ana")]);
         var lumped = Evaluator.Evaluate(input, [On("d0-open", "ana"), On("d2-open", "ana")]);
 
-        Assert.Equal(12 * Evaluator.HoursWeight, even.Score - lumped.Score);
+        // Plus, since 2026-11-25, the empty week's 6 short hours squared, so the even split wins by more.
+        Assert.Equal(12 * Evaluator.HoursWeight + 6 * 6 * Evaluator.WeeklySpreadWeight, even.Score - lumped.Score);
         Assert.DoesNotContain(lumped.Issues, issue => issue.Code is IssueCodes.UnderHours or IssueCodes.OverHours);
     }
 

@@ -28,6 +28,8 @@ cat <<MESSAGE
     Emails (Mailpit)   http://localhost:8025    (on a phone: http://${ADDRESS}:8025)
 
   First time? In a second terminal:  node scripts/dev/seed.mjs
+  Testing:  node scripts/dev/reset-workplace.mjs      back to "no period yet"
+            node scripts/dev/fill-availability.mjs    everyone sends availability
   Ctrl+C stops everything.
 
 MESSAGE

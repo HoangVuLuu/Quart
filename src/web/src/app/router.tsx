@@ -30,6 +30,7 @@ import { OwnerInvitationPage, WorkplacesPage } from '../features/workplaces/Work
 import { AppShell } from './AppShell';
 import { RequireSession, SignedOutOnly, WithToasts } from './guards';
 import { NotFoundPage } from './NotFoundPage';
+import { TimeOffPage } from '../features/time-off/TimeOffPage';
 import { RootErrorPage } from './RootErrorPage';
 
 // The component gallery (M0-11) is for developers and for the team's review on staging. The condition
@@ -119,6 +120,7 @@ export const routes: RouteObject[] = [
                   },
                   // Opened from a tab, with a back arrow and no tab bar (mockups 1e, 1w, 1m, 1k3).
                   { path: 'team', element: <TeamPage /> },
+                  { path: 'time-off', element: <TimeOffPage /> },
                   { path: 'availability', element: <AvailabilityPage /> },
                   { path: 'availability/team', element: <TeamAvailabilityPage /> },
                   {
