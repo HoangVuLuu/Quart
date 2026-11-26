@@ -363,7 +363,15 @@ function DayRow({
                       <span className="rounded-pill bg-surface-3 px-1.5 text-[11px]">
                         {t('scheduling.levelShort', { level: person?.level ?? '?' })}
                       </span>
-                      <span className="min-w-0 flex-1 truncate">{person?.name ?? t('team.former')}</span>
+                      {/* Marked as starting earlier (2026-11-25): red here too, so the manager sees it. */}
+                      <span
+                        className={cx('min-w-0 flex-1 truncate', assignment.startsEarly && 'text-danger')}
+                      >
+                        {person?.name ?? t('team.former')}
+                        {assignment.startsEarly && (
+                          <span className="sr-only"> ({t('schedule.startsEarly')})</span>
+                        )}
+                      </span>
                       {assignment.locked && (
                         <span className="text-[10px] tracking-[0.06em] text-muted uppercase">
                           {t('scheduling.grid.kept')}
