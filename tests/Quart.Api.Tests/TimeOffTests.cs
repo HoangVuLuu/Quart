@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json.Nodes;
 using NodaTime;
+using NodaTime.Text;
 
 namespace Quart.Api.Tests;
 
@@ -27,10 +28,12 @@ public sealed class TimeOffTests(PostgresFixture postgres)
         var team = await Team.CreateAsync(app);
         var before = Team.ShiftsOf(await team.PublishAsync(), team.Staff[4]);
         var paul = team.Staff[4];
-        var inside = before.Where(x => Date(x) is "2026-11-11" or "2026-11-12").ToList();
-        Assert.NotEmpty(inside);
+        // The days off are the day of Paul's first shift and the day after, whatever the generator gave him.
+        var first = LocalDatePattern.Iso.Parse(Date(before[0])).Value;
+        var days = new[] { first, first.PlusDays(1) }.Select(x => LocalDatePattern.Iso.Format(x)).ToList();
+        var inside = before.Where(x => days.Contains(Date(x))).ToList();
 
-        var id = await AskAsync(team, paul, "2026-11-11", "2026-11-12", "Exams");
+        var id = await AskAsync(team, paul, days[0], days[1], "Exams");
         var waiting = Assert.Single((await team.Owner.GetAsync($"{team.Base}/time-off")).AsArray())!;
         await team.Owner.PostAsync($"{team.Base}/time-off/{id}/accept");
 
